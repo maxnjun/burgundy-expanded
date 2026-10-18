@@ -31,7 +31,7 @@ export function practiceBoard(variant = 0): BoardDefinition {
   return board;
 }
 
-export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly shieldPreview?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
 
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
@@ -191,9 +191,9 @@ export function createPracticeSession(config: PracticeConfig): GameState {
       whiteDie: null, rolledForRound: false, roundGoodsDistributed: false },
     turn: { phase: "A", round: 1, stage: "round-setup", activePlayerId: null, orderTrack: [{ position: 0, players: [...players.slice(firstSeat), ...players.slice(0, firstSeat)].map(p => p.id) }], actedPlayerIds: [], blackPurchaseUsed: false, monasterySixUsed: false, pendingEffects: [], pendingChoice: null },
     scoreLedger: Object.fromEntries(players.map(p => [p.id, []])), random, extensionStates: {}, finalScores: null };
-  if(config.shieldPreview){
-    const shields=createShieldLayout(count as 2|3|4,state.random);
-    Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
+  if(config.shieldPreview||config.shieldRules){
+    const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules);
+    Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:config.shieldRules?{rules:true}:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
   }
   const valid = validateCoreState(state);
   if (!valid.valid) throw new Error(valid.issues.map(i => i.message).join(", "));

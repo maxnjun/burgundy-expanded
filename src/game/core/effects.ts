@@ -1,6 +1,8 @@
+import { validShieldChoice, resolveShieldChoice, castleShieldOptions, resolveCastleShield } from "./shield-effects";
+import { rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
 import { executeIntent, intentIssue } from "./intents";
-import { prepareShipChoice, resolveShipChoice, validShipChoice } from "./ship";
+import { prepareShipChoice, resolveShipChoice, validShipChoice, refreshShipChoice } from "./ship";
 import { prioritizeMonastery27 } from "./monasteries";
 type Kind = "castle" | "town-hall" | "market" | "carpenters-workshop" | "church" | "warehouse" | "crane";
 const names: Record<Kind, string> = { crane:"기중기 · 건물 효과 선택", castle: "성 · 자유 추가 행동", "town-hall": "시청 · 보관 타일 추가 배치", market: "시장 · 선박/가축 획득", "carpenters-workshop": "목공소 · 건물 획득", church: "교회 · 성/광산/수도원 획득", warehouse: "창고 · 상품 판매" };
@@ -20,7 +22,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
         intents.push({ intent: { kind: "take-workers" }, label: "일꾼 획득" });
     if (kind === "castle" || kind === "warehouse")
         for (const g of player.goods)
-            intents.push({ intent: { kind: "sell-goods", goodsType: g.type }, label: `${g.type}번 상품 ${g.tiles.length}개 판매` });
+            if(!intentIssue(state,player,{kind:"sell-goods",goodsType:g.type}))intents.push({ intent: { kind: "sell-goods", goodsType: g.type }, label: `${g.type}번 상품 ${g.tiles.length}개 판매` });
     if (kind === "castle" || kind === "town-hall")
         for (const id of player.storage)
             if (id)
@@ -42,7 +44,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
     const options = intents.map(({ intent, label }) => ({ id: JSON.stringify(intent), label, payload: { intent } as unknown as JsonValue }));
     if (kind !== "castle")
         options.push({ id: "skip", label: "건물 효과 사용하지 않기", payload: null });
-    return options;
+    return kind==="castle"?[...options,...castleShieldOptions(state,player)]:options;
 }
 export function prepareTileEffect(state: GameState, playerId: string, tileId: string): GameState {
     const tile = state.tiles[tileId];
@@ -79,9 +81,10 @@ export function validImmediateChoice(state: GameState): boolean {
         return false;
     }
 }
-export const validPendingChoice = (state: GameState): boolean => validShipChoice(state) || validImmediateChoice(state);
+export const validPendingChoice = (state: GameState): boolean => validShipChoice(state) || validImmediateChoice(state) || validShieldChoice(state);
 /** Resolving consumes the parent benefit before scheduling a child: no replay, implicit dice or infinite queue. */
 export function resolveTileChoice(state: GameState, optionId: string): GameState {
+    if(validShieldChoice(state))return resolveShieldChoice(state,optionId);
     if (validShipChoice(state))
         return resolveShipChoice(state, optionId);
     if (!validImmediateChoice(state))
@@ -92,11 +95,12 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
     const cleared = { ...state, turn: { ...state.turn, pendingChoice: null, pendingEffects: [] } };
     if (option.id === "skip")
         return cleared;
+    if(option.id.startsWith("castle-shield:"))return resolveCastleShield(cleared,(option.payload as unknown as {shield:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}).shield);
     if(option.id.startsWith("crane:")){
         const building=(option.payload as {building:string}).building,playerId=state.turn.activePlayerId!;
         if(building==="bank"||building==="boarding-house"||building==="watchtower"){
             const points=building==="watchtower"?4:0;
-            return {...cleared,players:cleared.players.map(p=>p.id===playerId?{...p,silver:p.silver+(building==="bank"?2:0),workers:p.workers+(building==="boarding-house"?4:0),victoryPoints:p.victoryPoints+points}:p),scoreLedger:points?{...cleared.scoreLedger,[playerId]:[...cleared.scoreLedger[playerId],{id:`core:${state.revision+1}:crane`,category:"building",points,source:{document:"special-edition-rulebook",pages:[13],section:"Crane"}}]}:cleared.scoreLedger};
+            return rewardShieldWorkerGain({...cleared,players:cleared.players.map(p=>p.id===playerId?{...p,silver:p.silver+(building==="bank"?2:0),workers:p.workers+(building==="boarding-house"?4:0),victoryPoints:p.victoryPoints+points}:p),scoreLedger:points?{...cleared.scoreLedger,[playerId]:[...cleared.scoreLedger[playerId],{id:`core:${state.revision+1}:crane`,category:"building",points,source:{document:"special-edition-rulebook",pages:[13],section:"Crane"}}]}:cleared.scoreLedger},playerId,building==="boarding-house"?4:0);
         }
         if(!isKind(building)||building==="castle"||building==="crane")throw new Error("Invalid crane effect");
         const effect=state.turn.pendingEffects[0],tileId=(effect.payload as {tileId:string}).tileId;
@@ -118,5 +122,5 @@ export function refreshPendingChoice(state: GameState): GameState {
     };
     if (isKind(payload.kind))
         return { ...state, turn: { ...state.turn, pendingChoice: { ...state.turn.pendingChoice, options: immediateOptions(state, state.players.find(p => p.id === effect.playerId)!, payload.kind) } } };
-    return state;
+    return refreshShipChoice(state);
 }

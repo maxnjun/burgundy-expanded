@@ -1,4 +1,5 @@
-import { acquireShieldPreview, shieldAcquireIssue, type ShieldAcquireAction } from "../shields";
+import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, hasShield, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -26,8 +27,12 @@ function actionIssue(state: GameState, action: GameAction): EngineResult<never> 
     const owner=state.players.find(p=>p.id===action.playerId);
     return owner && owner.silver>=1 && monasteryNumbers(state,owner).includes(28) ? null : failure("illegal-action","Monastery28 requires one silver");
   }
+  if(action.type==="extension"&&action.extensionId==="shields"&&(action.command==="choose-monastery-target"||(action.command==="change-die"&&state.turn.stage==="player-turn"&&state.turn.activePlayerId===action.playerId))){
+    if((state.turn.pendingChoice||state.turn.pendingEffects.length)&&!validPendingChoice(state))return failure("unresolved-rule","Invalid pending choice");
+    const issue=shieldSpecialIssue(state,action);return issue?failure("illegal-action",issue):null;
+  }
   if (state.turn.pendingChoice || state.turn.pendingEffects.length) {
-    if (action.type === "resolve-choice" && state.turn.stage === "player-turn" && action.playerId === state.turn.activePlayerId && validPendingChoice(state) &&
+    if (action.type === "resolve-choice" && (state.turn.stage === "player-turn" || (state.turn.stage==="phase-end"&&!!shieldLayout(state)?.rules?.phase)) && action.playerId === state.turn.activePlayerId && validPendingChoice(state) &&
       action.choiceId === state.turn.pendingChoice?.id && state.turn.pendingChoice.options.some(o => o.id === action.optionId)) return null;
     if (!validPendingChoice(state) || (action.type !== "buy-black-tile" && action.type !== "use-monastery-six")) return failure("unresolved-rule", "Resolve the pending tile choice first");
   }
@@ -49,7 +54,7 @@ function actionIssue(state: GameState, action: GameAction): EngineResult<never> 
   }
   if (action.type === "extension") {
     if(action.extensionId!=="shields" || !state.config.extensions.some(e=>e.id==="shields"))return failure("unsupported-extension", "Extensions are outside this core subset");
-    const issue=shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
+    const issue=action.command==="change-die"?shieldSpecialIssue(state,action):shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
   if (action.type === "resolve-choice") return failure("illegal-action", "No pending choice");
   if (action.type === "use-monastery-six") {
@@ -73,6 +78,7 @@ function actionIssue(state: GameState, action: GameAction): EngineResult<never> 
   switch (action.intent.kind) {
     case "take-workers": return null;
     case "sell-goods":
+      if(hasShield(state,player.id,9)&&monasteryNumbers(state,player).includes(3))return failure("unresolved-rule","Shield9/monastery3 combined silver requires an authoritative ruling");
       return action.intent.goodsType === value && player.goods.some(g => g.type === value && g.tiles.length)
         ? null : failure("illegal-action", "Selling requires an owned goods stack matching the adjusted die");
     case "take-tile": {
@@ -138,10 +144,10 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   let payload: JsonValue = { actionType: action.type };
   try {
     if (action.type === "extension") {
-      draft=structuredClone(acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
-      pages=[17];payload={actionType:"shield-acquire-preview",...action.payload as object};
+      draft=structuredClone(action.command==="choose-monastery-target"||action.command==="change-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
+      pages=[17,18];payload={actionType:action.command,extensionId:"shields",...action.payload as object};
     } else if (action.type === "buy-workers") {
-      player.silver--;player.workers+=2;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
+      player.silver--;player.workers+=2;draft=structuredClone(rewardShieldWorkerGain(draft,player.id,2)) as Draft;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
     } else if (action.type === "resolve-choice") {
       draft = structuredClone(resolveTileChoice(draft, action.optionId)) as Draft;
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
@@ -195,6 +201,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
         cellId: action.intent.kind === "place-tile" ? action.intent.cellId : null,
         discardedTileId: action.intent.kind === "take-tile" ? action.intent.discardTileId ?? null : null };
     }
+    draft=structuredClone(settleShieldState(draft)) as Draft;
     draft.revision++;
     const valid = validateCoreState(draft);
     if (!valid.valid) return { ok: false, issues: valid.issues };

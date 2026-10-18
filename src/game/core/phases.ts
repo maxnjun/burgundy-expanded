@@ -1,3 +1,5 @@
+import { startShieldPhase } from "./shield-effects";
+import { hasShield, shieldLayout, setShieldLayout, rewardShieldWorkerGain } from "../shields";
 import type { EngineResult, GameEndResult, Transition } from "../interfaces";
 import type { GameState, Phase, PlayerState, ScoreBreakdown, ScoreEntry, Tile } from "../types";
 import { drawSupplyTile } from "./supply";
@@ -16,7 +18,7 @@ export function finalScore(state: GameState, player: PlayerState): EngineResult<
   const monks = monasteryNumbers(state, player);
   const placed = player.duchy.cells.flatMap(c => c.tileId ? [state.tiles[c.tileId]] : []);
   const additions: ScoreEntry[] = [];
-  const add = (category: ScoreEntry["category"], points: number, suffix: string) => additions.push({ id: `final:${player.id}:${suffix}`, category, points, source });
+  const add = (category: ScoreEntry["category"], points: number, suffix: string) => additions.push({ id: `final:${player.id}:${suffix}`, category, points, source: suffix.startsWith("shield-")?{document:"special-edition-rulebook",pages:[18],section:"Shield final scoring"}:source,...(suffix.startsWith("shield-")?{extensionId:"shields" as const}:{}) });
   add("remaining-goods", player.goods.reduce((n, g) => n + g.tiles.length, 0), "goods");
   add("remaining-silver", player.silver, "silver");
   add("remaining-workers", Math.floor(player.workers / 2), "workers");
@@ -27,11 +29,12 @@ export function finalScore(state: GameState, player: PlayerState): EngineResult<
     if (n === 24) points = new Set(placed.flatMap(t => t.type === "livestock" ? [t.species] : [])).size * 4;
     if (n === 25) points = player.soldGoods.length;
     if (n === 26) points = (player.bonuses.length + state.scoreLedger[player.id].filter(e => e.id === `border:${player.id}:all`).length) * 3;
-    if (n >= 15) add("monastery", points, `monastery-${n}`);
+    if (n >= 15) add("monastery", points*(hasShield(state,player.id,10)?2:1), `monastery-${n}`);
   }
   // A crane may count as ONE chosen building for16~23. All these bonuses are4 points.
   // Monk29 is outside the enabled catalog, so no unsupported29 interpretation is applied.
-  if(monks.some(n=>n>=16&&n<=23))add("monastery",placed.filter(t=>t.type==="building"&&t.building==="crane").length*4,"crane-building");
+  if(monks.some(n=>n>=16&&n<=23))add("monastery",placed.filter(t=>t.type==="building"&&t.building==="crane").length*4*(hasShield(state,player.id,10)?2:1),"crane-building");
+  if(shieldLayout(state)?.effectsActive)for(const m of shieldLayout(state)!.mounted.filter(m=>m.playerId===player.id))add("extension",(m.shieldNumber<=6?12:m.shieldNumber<=12?8:4)*(hasShield(state,player.id,13)?2:1),`shield-${m.shieldNumber}`);
   const earned = state.scoreLedger[player.id];
   const finalAdditionsTotal = additions.reduce((n, e) => n + e.points, 0);
   return { ok: true, value: { playerId: player.id, earned, earnedTotal: player.victoryPoints, finalAdditions: additions, finalAdditionsTotal, total: player.victoryPoints + finalAdditionsTotal } };
@@ -56,13 +59,19 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     state.turn.activePlayerId !== null || state.market.roundGoods.length || state.turn.pendingChoice || state.turn.pendingEffects.length || playerId !== orderedPlayers(state)[0]) {
     return { ok: false, issues: [{ code: "illegal-action", message: "Only a completed phase may advance, once, by the track leader" }] };
   }
-  const draft = structuredClone(state) as Mutable<GameState>;
+  if(shieldLayout(state)?.effectsActive){
+    const boundary=startShieldPhase(state);
+    if(shieldLayout(boundary)!.rules!.phase!.stage!=="ready")return {ok:true,value:{state:{...boundary,revision:state.revision+1},events:[{type:"shield:phase-choices",playerId,source:{...source,pages:[17,18]},payload:null}]}};
+    state=boundary;
+  }
+  let draft = structuredClone(state) as Mutable<GameState>;
   const income = draft.players.map(p => {
     const mines = p.duchy.cells.filter(c => c.tileId && draft.tiles[c.tileId].type === "mine").length;
     const workers = monasteryNumbers(draft, p).includes(2) ? mines : 0;
-    p.silver += mines; p.workers += workers;
-    return { playerId: p.id, silver: mines, workers };
+    p.silver += mines*(hasShield(draft,p.id,8)?2:1); p.workers += workers;
+    return { playerId: p.id, silver: mines*(hasShield(draft,p.id,8)?2:1), workers };
   });
+  for(const gain of income)draft=structuredClone(rewardShieldWorkerGain(draft,gain.playerId,gain.workers)) as Mutable<GameState>;
   if (state.turn.phase === "E") {
     const scores: ScoreBreakdown[] = [];
     for (const player of draft.players) {
@@ -121,6 +130,7 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     draft.turn.actedPlayerIds = []; draft.turn.blackPurchaseUsed = false; draft.turn.monasterySixUsed = false;
     draft.dice.rolledForRound = false; draft.dice.roundGoodsDistributed = false; draft.dice.whiteDie = null;
   }
+  if(shieldLayout(draft)?.effectsActive){const layout=shieldLayout(draft)!;draft=structuredClone(setShieldLayout(draft,{...layout,rules:{...layout.rules!,phase:null}})) as Mutable<GameState>;}
   draft.revision++;
   const result = validateCoreState(draft);
   if (!result.valid) return { ok: false, issues: result.issues };

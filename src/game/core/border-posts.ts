@@ -1,3 +1,4 @@
+import { hasShield } from "../shields";
 import type { GameState, PlayerState, ScoreEntry } from "../types";
 import { areAxialNeighbors } from "../boards/axial";
 
@@ -36,7 +37,7 @@ export function borderPostScore(state: GameState, before: PlayerState, after: Pl
   }));
   if (previous.length < 3 && next.length === 3) {
     const claimed = state.players.filter(p => state.scoreLedger[p.id].some(e => e.id === `border:${p.id}:all`)).length;
-    if (claimed < 2) entries.push({ id: `border:${after.id}:all`, category: "extension", extensionId: "border-posts", points: state.config.playerCount + (claimed === 0 ? 3 : 0), source });
+    if (claimed < 2) entries.push({ id: `border:${after.id}:all`, category: "extension", extensionId: "border-posts", points: (state.config.playerCount + (claimed === 0 ? 3 : 0))*(hasShield(state,after.id,7)?2:1), source });
   }
   return entries;
 }

@@ -1,13 +1,15 @@
-import { validShieldLayout } from "../shields";
+import { validShieldLayout, hasShield, shieldLayout } from "../shields";
 import type { EngineIssue, ValidationResult } from "../interfaces";
-import type { GameState, PlayerState, Tile } from "../types";
+import type { GameState, PlayerState } from "../types";
 
 export const isCount = (n: number): boolean => Number.isSafeInteger(n) && n >= 0;
 export const isDie = (n: number): boolean => Number.isInteger(n) && n >= 1 && n <= 6;
-export const monasteryNumbers = (state: Pick<GameState, "tiles">, player: Pick<PlayerState, "duchy">): readonly number[] => player.duchy.cells
-  .map(cell => cell.tileId === null ? undefined : state.tiles[cell.tileId])
-  .filter((tile): tile is Extract<Tile, { type: "monastery" }> => tile?.type === "monastery")
-  .map(tile => tile.number);
+export function monasteryNumbers(state: Pick<GameState,"tiles"> & {readonly players?:readonly unknown[];readonly extensionStates?:GameState["extensionStates"]}, player: Pick<PlayerState,"duchy"> & Partial<Pick<PlayerState,"id">>): readonly number[] {
+  const physical=(p:Pick<PlayerState,"duchy">)=>p.duchy.cells.flatMap(c=>{const t=c.tileId?state.tiles[c.tileId]:null;return t?.type==="monastery"?[t.number]:[];});
+  const own=physical(player);
+  const target=hasShield(state,player.id,6)?state.players?.find(p=>!!p&&typeof p==="object"&&"id" in p&&p.id===(state.extensionStates?shieldLayout({extensionStates:state.extensionStates})?.rules?.monasteryTarget:null)):undefined;
+  return target&&typeof target==="object"&&"duchy" in target?[...new Set([...own,...physical(target as Pick<PlayerState,"duchy">).filter(n=>n!==27)])]:own;
+}
 
 /** Larger positions lead; each stack is top-to-bottom, independent of seat order. PDF pp.5-7. */
 export function orderedPlayers(state: GameState): readonly string[] {
@@ -59,7 +61,7 @@ export function validateCoreState(state: GameState): ValidationResult {
     };
     for (const player of state.players) {
       if (![player.workers, player.silver, player.victoryPoints].every(isCount)) issue("Resources and points must be safe nonnegative integers");
-      if (player.storage.length !== 3) issue("Base tile storage must have three slots");
+      if (player.storage.length < 3 || player.storage.length > Object.keys(state.tiles).length+3 || (player.storage.length !== 3 && !hasShield(state,player.id,4) && !(state.turn.pendingEffects[0]?.payload as {kind?:string}|null)?.kind?.startsWith("shield-storage"))) issue("Base tile storage must have three slots");
       tileLocations.push(...player.storage.filter((id): id is string => id !== null));
       const cellIds = player.duchy.cells.map(c => c.id);
       if (new Set(cellIds).size !== cellIds.length) issue("Duplicate cell ID");

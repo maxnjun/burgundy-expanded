@@ -1,3 +1,4 @@
+import { shieldLayout } from "./shields";
 import type { GameState } from "./types";
 import { validateCoreState } from "./core/state";
 import { validateBoardDefinition } from "./boards/validation";
@@ -74,7 +75,7 @@ export function parseSavedGame(text: string): SavedGame {
   const phases = ["A", "B", "C", "D", "E"] as const;
   for (const phase of phases) if (game.market.phaseGoods[phase].length !== (phase > game.turn.phase ? 5 : 0)) return reject();
   if (game.turn.stage === "round-setup" && game.market.roundGoods.length !== 6 - game.turn.round) return reject();
-  if (game.turn.stage === "phase-end" && (game.turn.round !== 5 || game.market.roundGoods.length || game.turn.activePlayerId !== null || game.dice.rolledForRound)) return reject();
+  if (game.turn.stage === "phase-end" && (game.turn.round !== 5 || game.market.roundGoods.length || (game.turn.activePlayerId !== null && !(shieldLayout(game)?.effectsActive && shieldLayout(game)?.rules?.phase && validPendingChoice(game))) || game.dice.rolledForRound)) return reject();
   if (game.status === "finished") {
     if (game.turn.stage !== "finished" || game.turn.phase !== "E" || game.turn.round !== 5 || game.turn.activePlayerId !== null || !game.finalScores || game.finalScores.length !== game.players.length || new Set(game.finalScores.map(s => s.playerId)).size !== game.players.length) return reject();
     for (const p of game.players) {

@@ -1,3 +1,4 @@
+import { hasShield, rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, DieValue, GameState, PlayerState } from "../types";
 import { placementIssue, resolvePlacement } from "./placement";
 import { monasteryNumbers } from "./state";
@@ -24,7 +25,7 @@ export function destinationIssue(player: Pick<PlayerState, "storage">, action: {
 export function intentIssue(state: GameState, player: PlayerState, intent: ActionIntent, value?: DieValue): string | null {
     switch (intent.kind) {
         case "take-workers": return null;
-        case "sell-goods": return (value === undefined || intent.goodsType === value) && player.goods.some(g => g.type === intent.goodsType) ? null : "Goods stack or die mismatch";
+        case "sell-goods": return hasShield(state,player.id,9)&&monasteryNumbers(state,player).includes(3)?"Unresolved shield9/monastery3 sale combination":(value === undefined || intent.goodsType === value) && player.goods.some(g => g.type === intent.goodsType) ? null : "Goods stack or die mismatch";
         case "take-tile": return (value === undefined || intent.depot === value) && state.market.numberedDepots.find(d => d.number === intent.depot)?.slots.some(s => s.tileId === intent.tileId) ? destinationIssue(player, intent) : "Depot or die mismatch";
         case "place-tile": return placementIssue(state, player, intent.tileId, intent.cellId, value ?? player.duchy.cells.find(c => c.id === intent.cellId)?.number ?? 1)?.message ?? null;
         default: return "Unknown intent";
@@ -45,10 +46,10 @@ export function executeIntent(state: GameState, playerId: string, intent: Action
             break;
         case "sell-goods": {
             const stack = player.goods.find(g => g.type === intent.goodsType)!;
-            const points = stack.tiles.length * draft.config.playerCount;
+            const points = stack.tiles.length * draft.config.playerCount*(hasShield(state,playerId,12)?2:1);
             player.goods = player.goods.filter(g => g.type !== intent.goodsType);
             player.soldGoods.push(...stack.tiles);
-            player.silver += monks.includes(3) ? 2 : 1;
+            player.silver += hasShield(state,playerId,9)?stack.tiles.length:monks.includes(3)?2:1;
             if (monks.includes(4))
                 player.workers++;
             player.victoryPoints += points;
@@ -71,5 +72,5 @@ export function executeIntent(state: GameState, playerId: string, intent: Action
             break;
         }
     }
-    return draft;
+    return rewardShieldWorkerGain(draft,playerId,player.workers-state.players.find(p=>p.id===playerId)!.workers);
 }

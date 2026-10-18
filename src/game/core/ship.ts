@@ -1,3 +1,4 @@
+import { prepareShieldFive } from "./shield-effects";
 import { prioritizeMonastery27 } from "./monasteries";
 import { monasteryNumbers } from "./state";
 import type { GameState, PendingChoice, PlayerState } from "../types";
@@ -80,5 +81,13 @@ export function resolveShipChoice(state: GameState, optionId: string): GameState
   const orderTrack = state.turn.orderTrack.map(s => ({ ...s, players: s.players.filter(id => id !== playerId) }));
   const target = orderTrack.find(s => s.position === destination);
   if (target) target.players.unshift(playerId); else orderTrack.push({ position: destination, players: [playerId] });
-  return { ...withGoods, turn: { ...withGoods.turn, orderTrack: prioritizeMonastery27(withGoods,orderTrack.filter(s => s.players.length)), pendingChoice: null, pendingEffects: [] } };
+  return prepareShieldFive({ ...withGoods, turn: { ...withGoods.turn, orderTrack: prioritizeMonastery27(withGoods,orderTrack.filter(s => s.players.length)), pendingChoice: null, pendingEffects: [] } },playerId,effectPayload.tileId);
+}
+
+/** Rebuild trusted ship options after an anytime shield6 target selection. */
+export function refreshShipChoice(state:GameState):GameState {
+  const effect=state.turn.pendingEffects[0],choice=state.turn.pendingChoice;
+  const payload=effect?.payload as {kind?:string;primary?:number}|null;
+  const player=state.players.find(p=>p.id===choice?.playerId);
+  return choice&&player&&payload?.kind==="ship"?{...state,turn:{...state.turn,pendingChoice:{...choice,options:choiceOptions(state,player,payload)}}}:state;
 }

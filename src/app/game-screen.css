@@ -52,3 +52,7 @@
 .shield-controls p{margin:6px 0}.shield-controls [aria-label="장착 방패"] span{display:block}
 .shield-selection-panel{display:flex;gap:14px;align-items:flex-start;border-top:1px solid #d9c797;padding-top:12px;margin-top:10px}.shield-selection-panel>svg{width:64px;height:78px;flex-shrink:0}.shield-selection-panel>div{min-width:0;flex:1}.shield-selection-panel label{display:block;margin:8px 0}.shield-selection-panel select{max-width:100%;padding:8px;min-height:44px}.shield-selection-panel button{min-height:44px;width:100%}
 @media(max-width:500px){.shield-controls{font-size:11px;padding:10px}.shield-selection-panel{gap:8px}.shield-selection-panel>svg{width:48px;height:64px}}
+
+[data-shields-active] .live-storage{flex-wrap:wrap;justify-content:flex-start}.shield-rule-tools{display:grid;gap:12px;margin:10px 0}.shield-rule-tools select{max-width:100%;min-height:44px}.shield-rule-tools button{min-height:44px;margin:4px}.choice-panel>div{max-height:420px;overflow:auto}
+
+[data-shields-active] .estate-keyspaces{flex-wrap:wrap}[data-shields-active] .estate-keyspaces button{flex-shrink:0}

@@ -1,3 +1,4 @@
+import { hasShield } from "../shields";
 import type { EngineIssue } from "../interfaces";
 import type { DieValue, GameState, PlayerState, ScoreEntry, Tile } from "../types";
 import { areAxialNeighbors } from "../boards/axial";
@@ -17,7 +18,7 @@ export function placementIssue(state: GameState, player: PlayerState, tileId: st
   if (!player.storage.includes(tileId) || !tile) return fail("Place a tile from your own storage");
   if (!cell || cell.tileId !== null || cell.terrain !== tile.type || cell.number !== value) return fail("Placement needs an empty matching terrain and die number");
   if (!supportsPlacement(tile)) return fail("This tile's choice or additional action resolver is not implemented", "unresolved-rule");
-  if (!player.duchy.cells.some(c => c.tileId !== null && areAxialNeighbors(c.coord, cell.coord))) return fail("Placement must share an edge with an occupied cell");
+  if (!hasShield(state,player.id,18) && !player.duchy.cells.some(c => c.tileId !== null && areAxialNeighbors(c.coord, cell.coord))) return fail("Placement must share an edge with an occupied cell");
   const cells = player.duchy.cells;
   let regions: ReturnType<typeof deriveRegions>;
   try { regions = deriveRegions(cells); }
@@ -53,7 +54,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
     if (tile.building === "watchtower") score("building", 4, [9]);
   }
   if (tile.type === "livestock") {
-    const pasture = cells.filter(c => c.regionId === cell.regionId).map(c => c.tileId && state.tiles[c.tileId])
+    const pasture = cells.filter(c => c.regionId === cell.regionId || (hasShield(state,player.id,1)&&c.terrain==="livestock")).map(c => c.tileId && state.tiles[c.tileId])
       .filter((t): t is Extract<Tile, { type: "livestock" }> => !!t && t.type === "livestock");
     const herdFor = (species: string) => pasture.filter(t => t.species === species || t.species === "geese");
     const value = (herd: typeof pasture) => herd.reduce((sum, t) => sum + t.count, 0) + (monks.includes(7) ? herd.length : 0);
@@ -65,7 +66,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   const region = cells.filter(c => c.regionId === cell.regionId);
   if (region.every(c => c.tileId !== null)) {
     completedRegionIds.push(cell.regionId);
-    score("region-size", [0, 1, 3, 6, 10, 15, 21, 28, 36][region.length], [4, 9]);
+    score("region-size", [0, 1, 3, 6, 10, 15, 21, 28, 36, 45][region.length+(hasShield(state,player.id,17)?1:0)], [4, 9]);
     score("phase-bonus", { A: 10, B: 8, C: 6, D: 4, E: 2 }[state.turn.phase], [4, 9]);
   }
   let bonusTiles = [...state.market.bonusTiles];
@@ -73,7 +74,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   if (cells.filter(c => c.terrain === cell.terrain).every(c => c.tileId !== null)) {
     completedColors.push(cell.terrain);
     const bonus = bonusTiles.filter(b => b.color === cell.terrain).sort((a, b) => Number(a.rank === "second") - Number(b.rank === "second"))[0];
-    if (bonus) { bonuses.push(bonus); bonusTiles = bonusTiles.filter(b => b.id !== bonus.id); score("color-bonus", bonus.points, [9]); }
+    if (bonus) { bonuses.push(bonus); bonusTiles = bonusTiles.filter(b => b.id !== bonus.id); score("color-bonus", bonus.points*(hasShield(state,player.id,7)?2:1), [9,18]); }
   }
   const updated = { ...player, silver, workers, bonuses, storage: player.storage.map(id => id === tileId ? null : id), duchy: { ...player.duchy, cells, completedRegionIds, completedColors } };
   entries.push(...borderPostScore(state, player, updated));
