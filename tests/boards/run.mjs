@@ -12,7 +12,7 @@ try {
   if (compile.error) throw compile.error;
   if (compile.status !== 0) process.exitCode = compile.status ?? 1;
   else {
-    const tests = spawnSync(process.execPath, ["--test", join(output, "tests/boards/boards.test.js"), join(output, "tests/boards/duchy-sheet.test.js")], { cwd: root, stdio: "inherit" });
+    const tests = spawnSync(process.execPath, ["--test", ...["boards", "duchy-sheet", "mode-topology", "solo-transcription"].map(name => join(output, `tests/boards/${name}.test.js`))], { cwd: root, stdio: "inherit" });
     if (tests.error) throw tests.error;
     process.exitCode = tests.status ?? 1;
   }
