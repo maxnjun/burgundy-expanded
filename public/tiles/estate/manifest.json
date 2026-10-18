@@ -1,112 +1,58 @@
 {
   "canvas": 1024,
   "radius": 512.0,
-  "borderInsetRatio": 0.01,
+  "mapping": "shared-six-vertex-registration",
+  "borderInsetRatio": 0,
+  "sourceVertices": [
+    [
+      384,
+      24
+    ],
+    [
+      716,
+      216
+    ],
+    [
+      716,
+      552
+    ],
+    [
+      384,
+      744
+    ],
+    [
+      52,
+      552
+    ],
+    [
+      52,
+      216
+    ]
+  ],
   "assets": {
     "castle": {
-      "sourceSha256": "0d2b8164e698fe993028a3e08d9eb755a67060c650eb9ab81ab6987b86e4b568",
+      "sourceSha256": "12fb2086e791b3cd83220fb146b9100d7e1462628802ca1c5a05b0c0cb298296",
       "sourceSize": [
         768,
         768
       ],
-      "bodyVertices": [
-        [
-          384.619,
-          62.674
-        ],
-        [
-          672,
-          229.053
-        ],
-        [
-          672,
-          538.043
-        ],
-        [
-          383.908,
-          703.019
-        ],
-        [
-          95,
-          537.929
-        ],
-        [
-          95,
-          228.99
-        ]
-      ],
-      "uniformScale": 1.6402611,
-      "outputSha256": "f65952137b57a8437d0166c1af1c62f8f4e3ecb690dfdedce32968d552a5faa8"
+      "outputSha256": "16376923ea26c3f9b5415e40281e5be3e02ed6b3257617313b873f92ddd2a65b"
     },
     "mine": {
-      "sourceSha256": "e8ff8715f2e65480f3388dd6c5c31fab58ebfb153e90c27a1769f579ef81d3c8",
+      "sourceSha256": "66903b15f33fa8b9fd58fa927d344d3bbe75dfe9bb05bb0fe484090d9047dc35",
       "sourceSize": [
         768,
         768
       ],
-      "bodyVertices": [
-        [
-          385.261,
-          62.993
-        ],
-        [
-          672,
-          229.0
-        ],
-        [
-          672,
-          538.02
-        ],
-        [
-          384.99,
-          702.994
-        ],
-        [
-          95,
-          538.0
-        ],
-        [
-          95,
-          228.857
-        ]
-      ],
-      "uniformScale": 1.64301316,
-      "outputSha256": "63cbac77f2bc6c3afd5f9469e08c4477383eddd1cabdb4656da4dfd50952dbc1"
+      "outputSha256": "86056d02bf3f87fd59ae2d1f1e969179821addaf8c58956dc5018df7a8a5ef8c"
     },
     "ship": {
-      "sourceSha256": "853e698193405cb5162112b1f0f806a44c34f496612994bd064943a7275a459f",
+      "sourceSha256": "ec7a2fc3e7bb2a9b78692d9959fb882e9afac3ea808a23d0e90294865e4bab3f",
       "sourceSize": [
         768,
         768
       ],
-      "bodyVertices": [
-        [
-          375.429,
-          62.658
-        ],
-        [
-          681,
-          246.0
-        ],
-        [
-          681,
-          558.402
-        ],
-        [
-          378.721,
-          731.841
-        ],
-        [
-          73,
-          557.551
-        ],
-        [
-          73,
-          229.789
-        ]
-      ],
-      "uniformScale": 1.60211988,
-      "outputSha256": "38f305a009a02225cf925aafb605f2919beb44c1f7ed85efb6a0ae6455fbbb31"
+      "outputSha256": "d36ca5d48d81721a8ef2c1de0f24c16f2c64028657625f6bc705036b939d3df1"
     }
   }
 }

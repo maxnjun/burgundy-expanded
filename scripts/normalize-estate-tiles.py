@@ -1,97 +1,82 @@
-"""Presentation-only estate assets. Run with Python + Pillow; originals are never written.
-
-Fit the six body edges from opaque alpha runs (not flags or bounding-box margins).
-Uniformly cover a regular pointy hex, excluding the baked-in border by 1% of
-body height. All three images use exactly this algorithm, canvas and mask.
+"""Register the final shared 768px hex artwork to the board without cropping.
+Run with Python + Pillow. Originals are read-only. Six triangles map the measured
+source vertices to a regular pointy hex; one common transform preserves the rims.
 """
 from pathlib import Path
-from collections import Counter
-from statistics import median
 import hashlib
 import json
 import math
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 1024
+SOURCE_SIZE = 768
+SOURCE_CENTER = (384, 384)
+# Shared final alpha-mask vertices, measured from all three originals.
+SOURCE_VERTICES = [(384, 24), (716, 216), (716, 552), (384, 744), (52, 552), (52, 216)]
+TARGET_VERTICES = [(SIZE/2+SIZE/2*math.cos(math.radians(-90+60*i)),
+                    SIZE/2+SIZE/2*math.sin(math.radians(-90+60*i))) for i in range(6)]
 
 
-def line(points):
-    slope = median((x2-x1)/(y2-y1) for i, (y1, x1) in enumerate(points)
-                   for y2, x2 in points[i+1:] if y2 != y1)
-    return slope, median(x-slope*y for y, x in points)
+def affine(destination, source):
+    (x0,y0),(x1,y1),(x2,y2) = destination
+    determinant = (x1-x0)*(y2-y0)-(x2-x0)*(y1-y0)
+    def coefficients(values):
+        a = ((values[1]-values[0])*(y2-y0)-(values[2]-values[0])*(y1-y0))/determinant
+        b = ((x1-x0)*(values[2]-values[0])-(x2-x0)*(values[1]-values[0]))/determinant
+        return a,b,values[0]-a*x0-b*y0
+    return (*coefficients([p[0] for p in source]), *coefficients([p[1] for p in source]))
 
 
-def intersection(a, b):
-    y = (b[1]-a[1])/(a[0]-b[0])
-    return a[0]*y+a[1], y
-
-
-def normalize(name):
-    source = ROOT / f"public/tiles/{name}.png"
-    image = Image.open(source).convert("RGBA")
-    w, h = image.size
-    alpha = image.getchannel("A")
-    rows = []
-    for y in range(h):
-        opaque = [x for x in range(w) if alpha.getpixel((x, y)) >= 250]
-        if opaque:
-            rows.append((y, min(opaque), max(opaque)))
-    # The ship flag protrudes in the upper right. Sample the actual diagonal
-    # below it; all sampling bands are identical fractions for every source.
-    left = Counter(a for y, a, b in rows if .4*h < y < .7*h).most_common(1)[0][0]
-    right = Counter(b for y, a, b in rows if .4*h < y < .7*h).most_common(1)[0][0]
-    ul = line([(y, a) for y, a, b in rows if .14*h < y < .29*h])
-    ur = line([(y, b) for y, a, b in rows if .27*h < y < .30*h])
-    ll = line([(y, a) for y, a, b in rows if .76*h < y < .9*h])
-    lr = line([(y, b) for y, a, b in rows if .76*h < y < .9*h])
-    top, bottom = intersection(ul, ur), intersection(ll, lr)
-    body = [top, (right, (right-ur[1])/ur[0]),
-            (right, (right-lr[1])/lr[0]), bottom,
-            (left, (left-ll[1])/ll[0]), (left, (left-ul[1])/ul[0])]
-    cx, cy = (left+right)/2, (top[1]+bottom[1])/2
-    inset = (bottom[1]-top[1])*.01
-    vertices = [(SIZE/2*math.cos(math.radians(-90+60*i)),
-                 SIZE/2*math.sin(math.radians(-90+60*i))) for i in range(6)]
-    scale = 0
-    for i, a in enumerate(body):
-        b = body[(i+1) % 6]
-        nx, ny = b[1]-a[1], a[0]-b[0]
-        length = math.hypot(nx, ny)
-        nx, ny = nx/length, ny/length
-        distance = nx*(a[0]-cx)+ny*(a[1]-cy)-inset
-        assert distance > 0, "Invalid measured hex body"
-        scale = max(scale, max(nx*x+ny*y for x, y in vertices)/distance)
-    # One isotropic scale: no independent x/y stretch or image-specific CSS.
-    result = image.transform((SIZE, SIZE), Image.Transform.AFFINE,
-                             (1/scale, 0, cx-SIZE/2/scale,
-                              0, 1/scale, cy-SIZE/2/scale), Image.Resampling.BICUBIC)
-    mask = Image.new("L", (SIZE*4, SIZE*4))
-    ImageDraw.Draw(mask).polygon([((x+SIZE/2)*4, (y+SIZE/2)*4) for x, y in vertices], fill=255)
-    mask = mask.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
-    # LANCZOS has a small ringing fringe; strictly clear every outside pixel.
-    pixels = mask.load()
+def mask():
+    result = Image.new("L", (SIZE*4,SIZE*4))
+    ImageDraw.Draw(result).polygon([(x*4,y*4) for x,y in TARGET_VERTICES],fill=255)
+    result = result.resize((SIZE,SIZE),Image.Resampling.LANCZOS)
+    pixels=result.load()
     for y in range(SIZE):
         for x in range(SIZE):
-            dx, dy = abs(x+.5-SIZE/2), abs(y+.5-SIZE/2)
-            if dx > math.sqrt(3)*SIZE/4 or dy+dx/math.sqrt(3) > SIZE/2:
-                pixels[x, y] = 0
-    # Source ship artwork is alpha 250..253 even in the solid body. Validate
-    # coverage first, then give every asset the identical opaque body/mask.
-    assert all(m < 250 or a >= 240 for m, a in
-               zip(mask.get_flattened_data(), result.getchannel("A").get_flattened_data())), "Transparent hole inside measured body"
-    result.putalpha(mask)
-    output = ROOT / f"public/tiles/estate/{name}.png"
-    result.save(output)
-    return {"sourceSha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-            "sourceSize": [w, h], "bodyVertices": [[round(x, 3), round(y, 3)] for x, y in body],
-            "uniformScale": round(scale, 8), "outputSha256": hashlib.sha256(output.read_bytes()).hexdigest()}
+            dx,dy=abs(x+.5-SIZE/2),abs(y+.5-SIZE/2)
+            if dx>math.sqrt(3)*SIZE/4 or dy+dx/math.sqrt(3)>SIZE/2:
+                pixels[x,y]=0
+    return result
 
 
-if __name__ == "__main__":
-    target = ROOT / "public/tiles/estate"
-    target.mkdir(exist_ok=True)
-    assets = {name: normalize(name) for name in ("castle", "mine", "ship")}
-    (target / "manifest.json").write_text(json.dumps({"canvas": SIZE, "radius": SIZE/2,
-        "borderInsetRatio": .01, "assets": assets}, indent=2)+"\n", encoding="utf-8")
-    print("Normalized 3 estate assets; original files preserved.")
+def normalize(name, common_alpha):
+    source=ROOT/f"public/tiles/{name}.png"
+    image=Image.open(source).convert("RGBA")
+    assert image.size==(SOURCE_SIZE,SOURCE_SIZE), "Unexpected final source size"
+    assert image.getchannel("A").getbbox()==(52,24,717,745), "Source vertices changed; inspect artwork first"
+    assert image.getchannel("A").tobytes()==common_alpha, "Source masks differ; inspect new artwork first"
+    # Extend RGB just outside the alpha edge for interpolation only. This adds
+    # no visible area: the final exact board mask still clears everything outside.
+    rgb=image.convert("RGB")
+    alpha=image.getchannel("A")
+    for _ in range(2):
+        for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+            moved=Image.new("RGB",image.size);moved.paste(rgb,(dx,dy))
+            moved_alpha=Image.new("L",image.size);moved_alpha.paste(alpha,(dx,dy))
+            fill=Image.eval(alpha,lambda a:255-a)
+            fill=ImageChops.multiply(fill,moved_alpha)
+            rgb.paste(moved,(0,0),fill)
+            alpha=ImageChops.lighter(alpha,moved_alpha)
+    result=Image.new("RGB",(SIZE,SIZE))
+    for i in range(6):
+        destination=[(SIZE/2,SIZE/2),TARGET_VERTICES[i],TARGET_VERTICES[(i+1)%6]]
+        original=[SOURCE_CENTER,SOURCE_VERTICES[i],SOURCE_VERTICES[(i+1)%6]]
+        part=rgb.transform((SIZE,SIZE),Image.Transform.AFFINE,affine(destination,original),Image.Resampling.BICUBIC)
+        triangle=Image.new("L",(SIZE,SIZE));ImageDraw.Draw(triangle).polygon(destination,fill=255)
+        result.paste(part,(0,0),triangle)
+    result.putalpha(mask())
+    output=ROOT/f"public/tiles/estate/{name}.png";result.save(output)
+    return {"sourceSha256":hashlib.sha256(source.read_bytes()).hexdigest(),
+            "sourceSize":[SOURCE_SIZE,SOURCE_SIZE],"outputSha256":hashlib.sha256(output.read_bytes()).hexdigest()}
+
+
+if __name__=="__main__":
+    target=ROOT/"public/tiles/estate";target.mkdir(exist_ok=True)
+    common=Image.open(ROOT/"public/tiles/castle.png").convert("RGBA").getchannel("A").tobytes()
+    assets={name:normalize(name,common) for name in ("castle","mine","ship")}
+    (target/"manifest.json").write_text(json.dumps({"canvas":SIZE,"radius":SIZE/2,
+        "mapping":"shared-six-vertex-registration","borderInsetRatio":0,
+        "sourceVertices":SOURCE_VERTICES,"assets":assets},indent=2)+"\n",encoding="utf-8")
+    print("Registered 3 final estate assets, rims retained; originals preserved.")

@@ -1,3 +1,7 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { EstateTile, EstateGrid } from "../../src/app/estate-tile";
+import { estatePoints } from "../../src/app/estate-geometry";
 import { test,expect,type Page } from "@playwright/test";
 import { setup,placed } from "../fixtures/shields";
 import { serializeSavedGame } from "../../src/game/save";
@@ -14,7 +18,7 @@ test("estate zoom preserves board cells and saved game while recording layout",a
  const game=await load(page),board=page.getByRole("group",{name:"규칙A 영지",exact:true});let zoom=100;
  for(const target of [100,160,200]){while(zoom<target){await page.getByRole("button",{name:"규칙A 영지 확대",exact:true}).click();zoom+=10;}await expect(board.locator(".hex-cell")).toHaveCount(37);
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
-  if(process.env.ESTATE_CAPTURE_PREFIX==="before"?((info.project.name==="mobile-375"||info.project.name==="desktop-1280")&&target===160):(info.project.name==="mobile-375"||((info.project.name==="mobile-390"||info.project.name==="desktop-1280")&&target===160)))await board.screenshot({path:`.local-data/qa/estate-${process.env.ESTATE_CAPTURE_PREFIX??"after"}-${info.project.name}-${target}.png`});
+  if(process.env.ESTATE_CAPTURE_PREFIX==="before"?((info.project.name==="mobile-375"||info.project.name==="desktop-1280")&&target===160):(info.project.name==="desktop-1280"||info.project.name==="mobile-375"||(info.project.name==="mobile-390"&&target===160)))await board.screenshot({path:`.local-data/qa/estate-${process.env.ESTATE_CAPTURE_PREFIX??"after"}-${info.project.name}-${target}.png`});
  }
  const panel=board.locator("xpath=ancestor::section[1]"),viewport=board.locator("..");await panel.getByRole("button",{name:"영지 드래그 이동",exact:true}).click();await viewport.scrollIntoViewIfNeeded();
  if(await viewport.evaluate(el=>el.scrollWidth>el.clientWidth)){await viewport.evaluate(el=>{el.scrollLeft=0;});const b=(await viewport.boundingBox())!,size=page.viewportSize()!,x=Math.min(b.x+b.width-30,size.width-30),y=(Math.max(130,b.y)+Math.min(b.y+b.height,size.height-80))/2;await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-90,y,{steps:6});await page.mouse.up();expect(await viewport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);}
@@ -53,4 +57,14 @@ test("normalized estate PNGs share one exact opaque hex mask without border padd
  const board=page.getByRole("group",{name:"규칙A 영지",exact:true});
  const images=board.locator('image[data-estate-image="normalized"]');expect(await images.count()).toBeGreaterThanOrEqual(4);
  const specs=await images.evaluateAll(els=>els.map(el=>["x","y","width","height","preserveAspectRatio"].map(a=>el.getAttribute(a)).join("|")));expect(new Set(specs).size).toBe(1);
+});
+
+
+test("all final framed tile pairs share edges and retain rims at PC zooms",async({page})=>{
+ const cells=(["castle","mine","ship"] as const).flatMap((type,row)=>[0,1].map(column=>({id:`${type}-${column}`,coord:{q:column-row,r:2*row},tile:{id:`pair-${type}-${column}`,type,back:"matching-color"} as Tile})));
+ const markup=renderToStaticMarkup(createElement("svg",{xmlns:"http://www.w3.org/2000/svg",viewBox:"260 220 190 410",width:380,height:820,"data-pair-board":"true"},...cells.map(cell=>createElement("g",{key:cell.id,"data-estate-cell":cell.id},createElement("polygon",{points:estatePoints(cell.coord),fill:"#eee9db"}),createElement(EstateTile,{tile:cell.tile,coord:cell.coord}))),createElement(EstateGrid,{cells})));
+ await page.goto("/");await page.setContent(`<html><body style="margin:0;background:#f5f0d2"><div>TEST FIXTURE · shared game EstateTile renderer</div>${markup}</body></html>`);
+ await page.locator('image[data-estate-image="normalized"]').evaluateAll(async els=>{await Promise.all(els.map(async el=>{const probe=new Image();probe.src=el.getAttribute("href")!;await probe.decode();}));});
+ const board=page.locator("[data-pair-board]");
+ for(const zoom of [100,160,200]){await board.evaluate((el,z)=>{el.setAttribute("width",String(190*z/100));el.setAttribute("height",String(410*z/100));},zoom);await board.screenshot({path:`.local-data/qa/final-tiles-pairs-${zoom}.png`});expect(await board.locator('[data-estate-tile]').count()).toBe(6);}
 });

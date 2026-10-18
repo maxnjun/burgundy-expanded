@@ -3,6 +3,7 @@
 import { useEffect, useState, type SVGProps } from "react";
 import type { Tile, TileType } from "../game/types";
 import { ESTATE_ART_HEIGHT } from "./estate-geometry";
+import finalTiles from "../../public/tiles/estate/manifest.json";
 
 export const terrainPaint: Record<TileType, string> = {
   castle: "#247654", ship: "#277f9b", mine: "#8f9188",
@@ -14,8 +15,10 @@ const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 export function TileArt({ tile, estate=false, ...props }: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
-  const framedSource = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? `/tiles/${tile.type}.png` : null;
-  const candidate = (estate&&framedSource?`/tiles/estate/${tile.type}.png`:framedSource) ?? (tile.type === "monastery" && (tile.number === 27 || tile.number === 28) ? `/tiles/monastery-${tile.number}.png` : building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null);
+  const framedType = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? tile.type : null;
+  const framedSource = framedType ? `/tiles/${framedType}.png` : null;
+  const version = framedType ? finalTiles.assets[framedType][estate?"outputSha256":"sourceSha256"].slice(0,12) : null;
+  const candidate = (framedSource?`${estate?`/tiles/estate/${framedType}.png`:framedSource}?v=${version}`:null) ?? (tile.type === "monastery" && (tile.number === 27 || tile.number === 28) ? `/tiles/monastery-${tile.number}.png` : building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null);
   const [failedIllustration,setFailedIllustration]=useState<string|null>(null);
   // An SSR image may fail before hydration attaches onError. Probe again after mount.
   useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
