@@ -35,7 +35,7 @@ export function parseSavedGame(text: string): SavedGame {
   const saved = value as unknown as SavedGame;
   const game = saved.game;
   if (saved.view.computerPlayerIds !== undefined && (!Array.isArray(saved.view.computerPlayerIds) || saved.view.computerPlayerIds.length > 4 || new Set(saved.view.computerPlayerIds).size !== saved.view.computerPlayerIds.length || saved.view.computerPlayerIds.some(id => typeof id !== "string" || !game.players.some(p=>p.id===id)))) return reject();
-  if (!validateCoreState(game).valid || (game.extensionStates.shields && saved.view.computerPlayerIds?.length)) return reject();
+  if (!validateCoreState(game).valid || (game.extensionStates.shields && !shieldLayout(game)?.effectsActive && saved.view.computerPlayerIds?.length)) return reject();
   if(game.config.marketRecipeId!==undefined){
     if(!["se:main:2", "se:main:3-4"].includes(game.config.marketRecipeId)||(game.config.playerCount!==2&&game.config.playerCount!==3&&game.config.playerCount!==4))return reject();
     const recipe=officialMarketRecipe(game.config.playerCount,game.turn.phase);

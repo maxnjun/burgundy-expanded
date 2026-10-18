@@ -1,5 +1,5 @@
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
-import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, type ShieldAcquireAction } from "../shields";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -233,6 +233,16 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   const candidates: GameAction[] = [{type:"buy-workers",playerId},{ type: "roll-round", playerId }, { type: "end-turn", playerId }, { type: "advance-phase", playerId }];
   const player = state.players.find(p => p.id === playerId)!;
   if (state.turn.pendingChoice) for (const option of state.turn.pendingChoice.options) candidates.push({ type: "resolve-choice", playerId, choiceId: state.turn.pendingChoice.id, optionId: option.id });
+  const layout=shieldLayout(state);
+  if(layout?.effectsActive){
+    if(layout.mounted.some(m=>m.playerId===playerId&&m.shieldNumber===6)&&layout.rules?.monasteryTarget===null)
+      for(const target of state.players)candidates.push({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId,payload:{targetPlayerId:target.id}});
+    if(state.turn.stage==="player-turn"&&state.turn.activePlayerId===playerId){
+      if(layout.mounted.some(m=>m.playerId===playerId&&m.shieldNumber===16))for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:"change-die",playerId,payload:{dieId:die.id,value}});
+      if(!state.turn.pendingChoice&&!state.turn.pendingEffects.length&&!state.dice.players[playerId].some(d=>d.used))for(const slot of layout.slots)if(slot.shieldNumber!==null)for(const cell of player.duchy.cells)if(cell.tileId&&state.tiles[cell.tileId].type==="castle")
+        candidates.push({type:"extension",extensionId:"shields",command:"acquire",playerId,payload:{slotId:slot.id,castleCellId:cell.id,steps:state.dice.players[playerId].map(d=>shieldWorkerSteps(d.value,slot.depot)),replaceShieldNumber:layout.mounted.find(m=>m.playerId===playerId&&m.cellId===cell.id)?.shieldNumber??null}});
+    }
+  }
   const destinations = player.storage.map((tileId, storageSlot) => ({ storageSlot,
     ...(tileId !== null && !player.storage.includes(null) ? { discardTileId: tileId } : {}) }));
   for (const tileId of state.market.blackDepot) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });

@@ -7,12 +7,16 @@ import { spawnSync } from "node:child_process";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const tempRoot = resolve(tmpdir());
 const output = mkdtempSync(join(tempRoot, "burgundy-core-tests-"));
+const cases = ["core", "placement", "practice", "phases", "save", "ship", "effects", "scenarios", "market", "optional-rules", "computer", "rooms", "room-http", "additional-hexes", "solo-scoring", "solo-round", "solo-ship", "team", "supply", "shields", "shield-rules", "direct-actions", "atomic-write", "shield-computer"];
+const requested=process.argv.slice(2);
+if(requested.some(name=>!cases.includes(name)))throw new Error("Unknown core test suite");
+const selected=requested.length?requested:cases;
 try {
   const compile = spawnSync(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "-p", "tsconfig.core-tests.json", "--outDir", output], { cwd: root, stdio: "inherit" });
   if (compile.error) throw compile.error;
   if (compile.status !== 0) process.exitCode = compile.status ?? 1;
   else {
-    const tests = spawnSync(process.execPath, ["--test", ...["core", "placement", "practice", "phases", "save", "ship", "effects", "scenarios", "market", "optional-rules", "computer", "rooms", "room-http", "additional-hexes", "solo-scoring", "solo-round", "solo-ship", "team", "supply", "shields", "shield-rules", "direct-actions", "atomic-write"].map(name => join(output, `tests/core/${name}.test.js`))], { cwd: root, stdio: "inherit" });
+    const tests = spawnSync(process.execPath, ["--test", ...selected.map(name => join(output, `tests/core/${name}.test.js`))], { cwd: root, stdio: "inherit" });
     if (tests.error) throw tests.error;
     process.exitCode = tests.status ?? 1;
   }

@@ -53,7 +53,7 @@ src/game/shields.ts, core/state.ts·engine.ts 및 practice.ts·save.ts: 상태/�
 
 tests/core/shields.test.ts의12개 검사: 인원수별 준비·중복 없음·획득·일꾼·거절 원자성·교체·저장·조작 거절·단계 보충 없음·기존 저장/AI 경계. tests/browser/shields.spec.ts는 네 화면에서2/3/4인 고정 그룹·타일과 비충돌·선택·획득·빈 슬롯·복원·실제 준비 화면을 검사하며390px 프로젝트에서844×390 가로 화면도 검사한다. 실제 휴대폰/iOS 검증과 구별한다.
 
-브라우저 산출물은 Git 제외 test-results/ 아래 보관한다. 최종 실행 결과와 백업 상태는 PROGRESS.md를 따른다. 후속 활성 규칙은 core/shield-effects.ts 및 tests/core/shield-rules.test.ts·tests/browser/shield-rules.spec.ts에 구현했다. U15는 사용자 확정 프로젝트 규칙으로 해결했다. AI/온라인/팀·솔로 방패 조합은 미지원이다. 실제 검사/백업 결과는 PROGRESS.md를 따른다.
+브라우저 산출물은 Git 제외 test-results/ 아래 보관한다. 최종 실행 결과와 백업 상태는 PROGRESS.md를 따른다. 후속 활성 규칙은 core/shield-effects.ts 및 tests/core/shield-rules.test.ts·tests/browser/shield-rules.spec.ts에 구현했다. U15는 사용자 확정 프로젝트 규칙으로 해결했다. 활성 방패 로컬 AI 대전을 지원한다. 공개 정보로 방패·유지비·종료 가치와 교체를 평가하는 프로젝트 휴리스틱이며 공식 샤토마가 아니다. 미적용 preview는 AI를 지원하지 않는다. 온라인/팀·솔로 방패 조합은 다음/보류 작업이다. 실제 검사/백업 결과는 PROGRESS.md를 따른다.
 
 ## 활성 규칙 최종 검사
 

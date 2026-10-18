@@ -2,6 +2,10 @@ import type { ActionIntent, GameAction, GameState, PlayerState, Tile } from "./t
 import type { EngineResult } from "./interfaces";
 import { listCoreActionOptions, orderedPlayers } from "./core";
 import { areAxialNeighbors } from "./boards/axial";
+import { shieldLayout, hasShield } from "./shields";
+import { monasteryNumbers } from "./core/state";
+import { goodsSaleReward } from "./core/intents";
+import { shieldChoiceValue, shieldExtensionValue } from "./computer-shields";
 import { resolvePlacement } from "./core/placement";
 
 /** A project heuristic opponent, NOT the official Chateauma or solo rules.
@@ -9,7 +13,7 @@ import { resolvePlacement } from "./core/placement";
  * Returns an engine-generated legal action without changing state or rolling future dice.
  */
 export function chooseComputerAction(state: GameState, playerId = state.turn.activePlayerId ?? orderedPlayers(state)[0]): EngineResult<GameAction> {
-  if(state.config.extensions.some(e=>e.id==="shields"))return {ok:false,issues:[{code:"unsupported-extension",message:"Shield games are local-only; automated shield decisions are not implemented"}]};
+  if(state.config.extensions.some(e=>e.id==="shields")&&!shieldLayout(state)?.effectsActive)return {ok:false,issues:[{code:"unsupported-extension",message:"Legacy shield preview has no active AI rules"}]};
   const options = listCoreActionOptions(state, playerId);
   if (!options.ok) return options;
   const player = state.players.find(p => p.id === playerId)!;
@@ -19,7 +23,9 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if (action.type === "roll-round" || action.type === "advance-phase") return 10000;
     if (action.type === "end-turn") return -100;
     if (action.type === "buy-workers") return player.workers<2?10:-190;
+    if(action.type==="extension"&&action.extensionId==="shields")return shieldExtensionValue(state,player,action);
     if (action.type === "resolve-choice") {
+      const special=shieldChoiceValue(state,player,action.optionId);if(special!==null)return special;
       const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; goodsIds?: string[] } | null;
       return payload?.intent ? intentValue(state, player, payload.intent) : action.optionId === "skip" ? -200 : 10 + (payload?.goodsIds?.length ?? 0)*3;
     }
@@ -40,8 +46,8 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
 
 function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): number {
   const possible = player.duchy.cells.filter(c => c.tileId === null && c.terrain === tile.type &&
-    player.duchy.cells.some(n => n.tileId !== null && areAxialNeighbors(c.coord,n.coord)) &&
-    (tile.type !== "building" || !player.duchy.cells.some(n => {
+    (hasShield(state,player.id,18)||player.duchy.cells.some(n => n.tileId !== null && areAxialNeighbors(c.coord,n.coord))) &&
+    (tile.type !== "building" || monasteryNumbers(state,player).includes(1) || !player.duchy.cells.some(n => {
       const placed = n.tileId ? state.tiles[n.tileId] : null;
       return n.regionId === c.regionId && placed?.type === "building" && placed.building === tile.building;
     })));
@@ -55,7 +61,7 @@ function intentValue(state: GameState, player: PlayerState, intent: ActionIntent
     const placed = resolvePlacement(state,player,intent.tileId,intent.cellId);
     return 35 + placed.entries.reduce((sum,e)=>sum+e.points,0)*2 + (placed.player.silver-player.silver)*3 + (placed.player.workers-player.workers);
   }
-  if (intent.kind === "sell-goods") return 8 + (player.goods.find(g=>g.type===intent.goodsType)?.tiles.length??0)*state.config.playerCount*2;
-  if (intent.kind === "take-workers") return player.workers < 2 ? 12 : player.workers < 5 ? 2 : -10;
+  if (intent.kind === "sell-goods") {const reward=goodsSaleReward(state,player,player.goods.find(g=>g.type===intent.goodsType)?.tiles.length??0);return 8+reward.points*2+reward.silver*2;}
+  if (intent.kind === "take-workers") {const fees=shieldLayout(state)?.mounted.filter(m=>m.playerId===player.id).length??0;return hasShield(state,player.id,3)&&player.workers+player.silver<fees?20:player.workers < 2 ? 12 : player.workers < 5 ? 2 : -10;}
   return intent.discardTileId ? -150 : acquisitionValue(state,player,state.tiles[intent.tileId]);
 }
