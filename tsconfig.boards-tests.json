@@ -1,0 +1,12 @@
+﻿{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "incremental": false,
+    "rootDir": "."
+  },
+  "include": ["src/game/**/*.ts", "tests/boards/**/*.ts"],
+  "exclude": ["node_modules"]
+}
