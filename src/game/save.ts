@@ -12,10 +12,10 @@ export interface SavedGame {
   readonly randomAlgorithm: "counter-v1";
   readonly game: GameState;
   readonly logs: readonly string[];
-  readonly view: { readonly zoom: number; readonly focus: boolean; readonly table?: boolean; readonly commonZoom?: number; readonly boardZooms: Readonly<Record<string, number>> };
+  readonly view: { readonly zoom: number; readonly focus: boolean; readonly table?: boolean; readonly commonZoom?: number; readonly computerPlayerIds?: readonly string[]; readonly computerPaused?: boolean; readonly boardZooms: Readonly<Record<string, number>> };
 }
 const terrains = ["castle", "ship", "mine", "livestock", "building", "monastery"];
-const buildings = ["market", "carpenters-workshop", "church", "warehouse", "boarding-house", "bank", "town-hall", "watchtower"];
+const buildings = ["market", "carpenters-workshop", "church", "warehouse", "boarding-house", "bank", "town-hall", "watchtower", "crane"];
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
 const boundedZoom = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= .5 && v <= 2;
 const reject = (): never => { throw new Error("저장 파일의 형식·규칙 상태가 올바르지 않거나 지원하지 않는 버전입니다."); };
@@ -35,10 +35,12 @@ export function parseSavedGame(text: string): SavedGame {
   if (!object(value) || value.format !== "burgundy-local-v1" || value.randomAlgorithm !== "counter-v1" ||
     !object(value.game) || !Array.isArray(value.logs) || value.logs.length > 60 || value.logs.some(x => typeof x !== "string" || x.length > 2000) ||
     !object(value.view) || !boundedZoom(value.view.zoom) || typeof value.view.focus !== "boolean" || (value.view.table !== undefined && typeof value.view.table !== "boolean") ||
+    (value.view.computerPaused !== undefined && typeof value.view.computerPaused !== "boolean") ||
     (value.view.commonZoom !== undefined && (!boundedZoom(value.view.commonZoom) || value.view.commonZoom < .75)) ||
     !object(value.view.boardZooms) || Object.values(value.view.boardZooms).some(z => !boundedZoom(z))) return reject();
   const saved = value as unknown as SavedGame;
   const game = saved.game;
+  if (saved.view.computerPlayerIds !== undefined && (!Array.isArray(saved.view.computerPlayerIds) || saved.view.computerPlayerIds.length > 4 || new Set(saved.view.computerPlayerIds).size !== saved.view.computerPlayerIds.length || saved.view.computerPlayerIds.some(id => typeof id !== "string" || !game.players.some(p=>p.id===id)))) return reject();
   if (!validateCoreState(game).valid) return reject();
   if(game.config.marketRecipeId!==undefined){
     if(!["se:main:2", "se:main:3-4"].includes(game.config.marketRecipeId)||(game.config.playerCount!==2&&game.config.playerCount!==3&&game.config.playerCount!==4))return reject();
@@ -59,7 +61,7 @@ export function parseSavedGame(text: string): SavedGame {
     if (!terrains.includes(tile.type) || !["black", "matching-color"].includes(tile.back) ||
       (tile.type === "building" && !buildings.includes(tile.building)) ||
       (tile.type === "livestock" && (!["cattle", "sheep", "pigs", "chickens", "geese"].includes(tile.species) || ![2,3,4].includes(tile.count))) ||
-      (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 26))) return reject();
+      (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 28))) return reject();
   }
   const colors = game.players.map(p=>p.color).filter(c=>c!==undefined);
   if (new Set(colors).size !== colors.length || colors.some(c=>!["blue","red","green","yellow"].includes(c))) return reject();

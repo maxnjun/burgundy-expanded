@@ -7,7 +7,7 @@ import { monasteryNumbers } from "./state";
 import { borderPostScore } from "./border-posts";
 
 export function supportsPlacement(tile: Tile): boolean {
-  return tile.type !== "monastery" || (Number.isInteger(tile.number) && tile.number >= 1 && tile.number <= 26);
+  return tile.type !== "monastery" || (Number.isInteger(tile.number) && tile.number >= 1 && tile.number <= 28);
 }
 
 /** Geometry is injected, not inferred from a board number or certified official here. */

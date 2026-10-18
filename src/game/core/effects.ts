@@ -1,15 +1,17 @@
 import type { ActionIntent, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
 import { executeIntent, intentIssue } from "./intents";
 import { prepareShipChoice, resolveShipChoice, validShipChoice } from "./ship";
-type Kind = "castle" | "town-hall" | "market" | "carpenters-workshop" | "church" | "warehouse";
-const names: Record<Kind, string> = { castle: "성 · 자유 추가 행동", "town-hall": "시청 · 보관 타일 추가 배치", market: "시장 · 선박/가축 획득", "carpenters-workshop": "목공소 · 건물 획득", church: "교회 · 성/광산/수도원 획득", warehouse: "창고 · 상품 판매" };
+import { prioritizeMonastery27 } from "./monasteries";
+type Kind = "castle" | "town-hall" | "market" | "carpenters-workshop" | "church" | "warehouse" | "crane";
+const names: Record<Kind, string> = { crane:"기중기 · 건물 효과 선택", castle: "성 · 자유 추가 행동", "town-hall": "시청 · 보관 타일 추가 배치", market: "시장 · 선박/가축 획득", "carpenters-workshop": "목공소 · 건물 획득", church: "교회 · 성/광산/수도원 획득", warehouse: "창고 · 상품 판매" };
 const tileName = (state: GameState, id: string): string => {
     const tile = state.tiles[id];
-    const buildings = { market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "boarding-house": "숙소", bank: "은행", "town-hall": "시청", watchtower: "감시탑" };
+    const buildings = { crane: "기중기", market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "boarding-house": "숙소", bank: "은행", "town-hall": "시청", watchtower: "감시탑" };
     return tile.type === "building" ? buildings[tile.building] : tile.type === "monastery" ? `수도원 ${tile.number}` : tile.type === "livestock" ? `가축 ${tile.count}마리` : tile.type === "castle" ? "성" : tile.type === "mine" ? "광산" : "선박";
 };
 const isKind = (s: unknown): s is Kind => typeof s === "string" && Object.hasOwn(names, s);
 export function immediateOptions(state: GameState, player: PlayerState, kind: Kind): PendingChoice["options"] {
+    if(kind==="crane")return [...(["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower"] as const).map(building=>({id:`crane:${building}`,label:({market:"시장","carpenters-workshop":"목공소",church:"교회",warehouse:"창고","boarding-house":"숙소",bank:"은행","town-hall":"시청",watchtower:"감시탑"})[building],payload:{building}})),{id:"skip",label:"기중기 효과 사용하지 않기",payload:null}];
     const intents: {
         intent: ActionIntent;
         label: string;
@@ -44,6 +46,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
 }
 export function prepareTileEffect(state: GameState, playerId: string, tileId: string): GameState {
     const tile = state.tiles[tileId];
+    if(tile.type==="monastery"&&tile.number===27)return {...state,turn:{...state.turn,orderTrack:prioritizeMonastery27(state,state.turn.orderTrack)}};
     if (tile.type === "ship")
         return prepareShipChoice(state, playerId, tileId);
     const kind = tile.type === "castle" ? "castle" : tile.type === "building" && isKind(tile.building) ? tile.building : null;
@@ -51,7 +54,7 @@ export function prepareTileEffect(state: GameState, playerId: string, tileId: st
         return state;
     const player = state.players.find(p => p.id === playerId)!;
     const id = `core:${state.revision + 1}:benefit:${tileId}`;
-    const source = { document: "special-edition-rulebook" as const, pages: [7, 8, 9], section: names[kind] };
+    const source = { document: "special-edition-rulebook" as const, pages: kind==="crane"?[13]:[7, 8, 9], section: names[kind] };
     const options = immediateOptions(state, player, kind);
     // Keep even a skip-only window: a black purchase during a town-hall effect can create a new target.
     return { ...state, turn: { ...state.turn, pendingEffects: [{ id, playerId, kind: "tile-benefit", source, payload: { kind, tileId } }], pendingChoice: { id, playerId, source, options } } };
@@ -68,7 +71,7 @@ export function validImmediateChoice(state: GameState): boolean {
         if (!payload || !isKind(payload.kind) || typeof payload.tileId !== "string" || !player.duchy.cells.some(c => c.tileId === payload.tileId))
             return false;
         const tile = state.tiles[payload.tileId];
-        if (!(tile.type === "castle" && payload.kind === "castle") && !(tile.type === "building" && payload.kind === tile.building))
+        if (!(tile.type === "castle" && payload.kind === "castle") && !(tile.type === "building" && (payload.kind === tile.building || (tile.building==="crane" && payload.kind!=="castle"))))
             return false;
         return JSON.stringify(choice.options) === JSON.stringify(immediateOptions(state, player, payload.kind));
     }
@@ -89,6 +92,16 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
     const cleared = { ...state, turn: { ...state.turn, pendingChoice: null, pendingEffects: [] } };
     if (option.id === "skip")
         return cleared;
+    if(option.id.startsWith("crane:")){
+        const building=(option.payload as {building:string}).building,playerId=state.turn.activePlayerId!;
+        if(building==="bank"||building==="boarding-house"||building==="watchtower"){
+            const points=building==="watchtower"?4:0;
+            return {...cleared,players:cleared.players.map(p=>p.id===playerId?{...p,silver:p.silver+(building==="bank"?2:0),workers:p.workers+(building==="boarding-house"?4:0),victoryPoints:p.victoryPoints+points}:p),scoreLedger:points?{...cleared.scoreLedger,[playerId]:[...cleared.scoreLedger[playerId],{id:`core:${state.revision+1}:crane`,category:"building",points,source:{document:"special-edition-rulebook",pages:[13],section:"Crane"}}]}:cleared.scoreLedger};
+        }
+        if(!isKind(building)||building==="castle"||building==="crane")throw new Error("Invalid crane effect");
+        const effect=state.turn.pendingEffects[0],tileId=(effect.payload as {tileId:string}).tileId;
+        return {...cleared,turn:{...cleared.turn,pendingEffects:[{...effect,payload:{kind:building,tileId}}],pendingChoice:{...state.turn.pendingChoice!,source:{...effect.source,section:names[building]},options:immediateOptions(cleared,cleared.players.find(p=>p.id===playerId)!,building)}}};
+    }
     const { intent } = option.payload as unknown as {
         intent: ActionIntent;
     };

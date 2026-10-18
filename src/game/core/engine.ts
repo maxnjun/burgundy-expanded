@@ -21,6 +21,10 @@ export function adjustedDie(value: DieValue, steps: readonly (1 | -1)[]): DieVal
 
 function actionIssue(state: GameState, action: GameAction): EngineResult<never> | null {
   if (state.status !== "playing") return failure("illegal-action", "Game is not playing");
+  if (action.type === "buy-workers") {
+    const owner=state.players.find(p=>p.id===action.playerId);
+    return owner && owner.silver>=1 && monasteryNumbers(state,owner).includes(28) ? null : failure("illegal-action","Monastery28 requires one silver");
+  }
   if (state.turn.pendingChoice || state.turn.pendingEffects.length) {
     if (action.type === "resolve-choice" && state.turn.stage === "player-turn" && action.playerId === state.turn.activePlayerId && validPendingChoice(state) &&
       action.choiceId === state.turn.pendingChoice?.id && state.turn.pendingChoice.options.some(o => o.id === action.optionId)) return null;
@@ -129,7 +133,9 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   let pages = [6];
   let payload: JsonValue = { actionType: action.type };
   try {
-    if (action.type === "resolve-choice") {
+    if (action.type === "buy-workers") {
+      player.silver--;player.workers+=2;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
+    } else if (action.type === "resolve-choice") {
       draft = structuredClone(resolveTileChoice(draft, action.optionId)) as Draft;
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
       pages = [7];
@@ -211,7 +217,7 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   const valid = validateCoreState(state);
   if (!valid.valid) return { ok: false, issues: valid.issues };
   if (!state.players.some(p => p.id === playerId)) return failure("illegal-action", "Unknown player");
-  const candidates: GameAction[] = [{ type: "roll-round", playerId }, { type: "end-turn", playerId }, { type: "advance-phase", playerId }];
+  const candidates: GameAction[] = [{type:"buy-workers",playerId},{ type: "roll-round", playerId }, { type: "end-turn", playerId }, { type: "advance-phase", playerId }];
   const player = state.players.find(p => p.id === playerId)!;
   if (state.turn.pendingChoice) for (const option of state.turn.pendingChoice.options) candidates.push({ type: "resolve-choice", playerId, choiceId: state.turn.pendingChoice.id, optionId: option.id });
   const destinations = player.storage.map((tileId, storageSlot) => ({ storageSlot,

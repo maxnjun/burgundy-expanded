@@ -56,6 +56,11 @@ logs/
 # vercel
 .vercel
 
+# Private local game rooms and browser test artifacts
+/.local-data/
+/test-results/
+/playwright-report/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

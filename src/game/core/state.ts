@@ -20,7 +20,7 @@ export function validateCoreState(state: GameState): ValidationResult {
   try {
     if (state.config.ruleset !== "special-edition-base" || state.config.mode !== "competitive" ||
       state.config.playerCount < 2 || state.config.playerCount > 4 || state.players.length !== state.config.playerCount) issue("Core requires 2-4 competitive players");
-    if (state.config.extensions.some(e => !["geese","border-posts"].includes(e.id) || !e.options || Object.keys(e.options).length) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).length || state.players.some(p => p.controller !== "human")) {
+    if (state.config.extensions.some(e => !["geese","border-posts","additional-hexes"].includes(e.id) || !e.options || Object.keys(e.options).length) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).length || state.players.some(p => p.controller !== "human")) {
       issues.push({ code: "unsupported-extension", message: "Core does not resolve extensions or automated players" });
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
@@ -35,6 +35,10 @@ export function validateCoreState(state: GameState): ValidationResult {
     const order = orderedPlayers(state);
     if (order.length !== ids.length || new Set(order).size !== ids.length || order.some(id => !ids.includes(id)) ||
       state.turn.orderTrack.some(s => !isCount(s.position)) || new Set(state.turn.orderTrack.map(s => s.position)).size !== state.turn.orderTrack.length) issue("Invalid order track");
+    for(const space of state.turn.orderTrack){
+      const priority=space.players.findIndex(id=>monasteryNumbers(state,state.players.find(p=>p.id===id)!).includes(27));
+      if(priority>0)issue("Monastery27 must stay on top of its turn-order stack");
+    }
     if (new Set(state.turn.actedPlayerIds).size !== state.turn.actedPlayerIds.length || state.turn.actedPlayerIds.some(id => !ids.includes(id))) issue("Invalid acted players");
     if (state.turn.activePlayerId !== null && !ids.includes(state.turn.activePlayerId)) issue("Unknown active player");
     if (state.turn.stage === "player-turn" && (state.status !== "playing" || state.turn.activePlayerId === null ||
@@ -45,8 +49,8 @@ export function validateCoreState(state: GameState): ValidationResult {
     const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [];
     for (const tile of Object.values(state.tiles)) {
       if (!["castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
-        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 26)) ||
-        (tile.type === "building" && !["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower"].includes(tile.building)) ||
+        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 28 || (tile.number > 26 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
+        (tile.type === "building" && (!["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane"].includes(tile.building) || (tile.building==="crane" && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "livestock" && (![2,3,4].includes(tile.count) || !["cattle","sheep","pigs","chickens","geese"].includes(tile.species) || (tile.species === "geese" && (tile.count !== 2 || tile.back !== "black" || !state.config.extensions.some(e=>e.id==="geese")))))) issue("Invalid base-game tile definition");
     }
     const goods = (tiles: readonly { id: string; type: number }[]) => {

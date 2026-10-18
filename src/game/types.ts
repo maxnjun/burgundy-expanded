@@ -8,10 +8,10 @@ export type Phase = "A" | "B" | "C" | "D" | "E";
 export type DieValue = 1 | 2 | 3 | 4 | 5 | 6;
 export type RoundNumber = 1 | 2 | 3 | 4 | 5;
 export type TileType = "castle" | "ship" | "mine" | "livestock" | "building" | "monastery";
-export type BuildingType = "market" | "carpenters-workshop" | "church" | "warehouse" | "boarding-house" | "bank" | "town-hall" | "watchtower";
-export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26;
+export type BuildingType = "market" | "carpenters-workshop" | "church" | "warehouse" | "boarding-house" | "bank" | "town-hall" | "watchtower" | "crane";
+export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28;
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
-export type ExtensionId = "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
+export type ExtensionId = "additional-hexes" | "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
 export interface RuleSource { readonly document: "special-edition-rulebook"; readonly pages: readonly number[]; readonly section: string }
 export interface AxialCoord { readonly q: number; readonly r: number }
 interface TileIdentity { readonly id: TileId; readonly back: "matching-color" | "black" }
@@ -92,6 +92,7 @@ export interface DieAdjustment {
   readonly monasteryNumber?: MonasteryNumber;
 }
 export type GameAction =
+  | { readonly type: "buy-workers"; readonly playerId: PlayerId }
   | { readonly type: "advance-phase"; readonly playerId: PlayerId }
   | { readonly type: "roll-round"; readonly playerId: PlayerId }
   | { readonly type: "use-die"; readonly playerId: PlayerId; readonly dieId: DieId; readonly adjustment: DieAdjustment; readonly intent: ActionIntent }

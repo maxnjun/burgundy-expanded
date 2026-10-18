@@ -1,4 +1,4 @@
 {
   "extends": "./tsconfig.boards-tests.json",
-  "include": ["src/game/**/*.ts", "tests/core/**/*.ts"]
+  "include": ["src/game/**/*.ts", "src/server/**/*.ts", "tests/core/**/*.ts"]
 }

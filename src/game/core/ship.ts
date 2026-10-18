@@ -1,3 +1,4 @@
+import { prioritizeMonastery27 } from "./monasteries";
 import { monasteryNumbers } from "./state";
 import type { GameState, PendingChoice, PlayerState } from "../types";
 
@@ -79,5 +80,5 @@ export function resolveShipChoice(state: GameState, optionId: string): GameState
   const orderTrack = state.turn.orderTrack.map(s => ({ ...s, players: s.players.filter(id => id !== playerId) }));
   const target = orderTrack.find(s => s.position === destination);
   if (target) target.players.unshift(playerId); else orderTrack.push({ position: destination, players: [playerId] });
-  return { ...withGoods, turn: { ...withGoods.turn, orderTrack: orderTrack.filter(s => s.players.length), pendingChoice: null, pendingEffects: [] } };
+  return { ...withGoods, turn: { ...withGoods.turn, orderTrack: prioritizeMonastery27(withGoods,orderTrack.filter(s => s.players.length)), pendingChoice: null, pendingEffects: [] } };
 }

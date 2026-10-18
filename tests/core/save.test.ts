@@ -44,3 +44,18 @@ test("negative resources, duplicate tile locations, bad phases and invalid view 
   const mutations=[(s:SaveDraft)=>s.game.players[0].silver=-1,(s:SaveDraft)=>s.game.players[0].storage[0]=s.game.players[0].duchy.cells.find(c=>c.tileId)!.tileId,(s:SaveDraft)=>s.game.market.phaseGoods.B=[],(s:SaveDraft)=>s.view.zoom=99];
   for(const mutate of mutations){const s=JSON.parse(JSON.stringify(save()));mutate(s);assert.throws(()=>parseSavedGame(JSON.stringify(s)));}
 });
+
+
+test("computer view preferences accept only unique known seats",()=>{
+  const original=save();
+  const good={...original,view:{...original.view,computerPlayerIds:["seat-2"]}};
+  assert.deepEqual(parseSavedGame(serializeSavedGame(good)).view.computerPlayerIds,["seat-2"]);
+  for(const computerPlayerIds of [["unknown"],["seat-1","seat-1"],null,"seat-1",[1]])assert.throws(()=>parseSavedGame(JSON.stringify({...original,view:{...original.view,computerPlayerIds}})));
+});
+
+
+test("saved AI pause is boolean and older saves do not require it",()=>{
+  const original=save();const paused={...original,view:{...original.view,computerPaused:true}};
+  assert.equal(parseSavedGame(serializeSavedGame(paused)).view.computerPaused,true);
+  for(const computerPaused of [null,"true",1])assert.throws(()=>parseSavedGame(JSON.stringify({...original,view:{...original.view,computerPaused}})));
+});
