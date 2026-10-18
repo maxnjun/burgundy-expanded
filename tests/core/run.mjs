@@ -12,7 +12,7 @@ try {
   if (compile.error) throw compile.error;
   if (compile.status !== 0) process.exitCode = compile.status ?? 1;
   else {
-    const tests = spawnSync(process.execPath, ["--test", ...["core", "placement", "practice", "phases", "save", "ship", "effects", "scenarios", "market", "optional-rules", "computer", "rooms", "room-http", "additional-hexes", "solo-scoring"].map(name => join(output, `tests/core/${name}.test.js`))], { cwd: root, stdio: "inherit" });
+    const tests = spawnSync(process.execPath, ["--test", ...["core", "placement", "practice", "phases", "save", "ship", "effects", "scenarios", "market", "optional-rules", "computer", "rooms", "room-http", "additional-hexes", "solo-scoring", "team", "supply"].map(name => join(output, `tests/core/${name}.test.js`))], { cwd: root, stdio: "inherit" });
     if (tests.error) throw tests.error;
     process.exitCode = tests.status ?? 1;
   }

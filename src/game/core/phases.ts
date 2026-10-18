@@ -1,6 +1,6 @@
 import type { EngineResult, GameEndResult, Transition } from "../interfaces";
-import type { GameState, Phase, PlayerState, ScoreBreakdown, ScoreEntry } from "../types";
-import { drawDie } from "./random";
+import type { GameState, Phase, PlayerState, ScoreBreakdown, ScoreEntry, Tile } from "../types";
+import { drawSupplyTile } from "./supply";
 import { monasteryNumbers, orderedPlayers, validateCoreState } from "./state";
 import { MONASTERY_BUILDINGS } from "./monasteries";
 import { officialMarketRecipe } from "../market-recipes";
@@ -104,17 +104,11 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     }
     for (const id of draft.market.blackDepot) if (id !== null) draft.market.removedTileIds.push(id);
     draft.market.blackDepot = draft.market.blackDepot.map(() => null);
-    const draw = (back: "black" | "matching-color", type?: string): string | null => {
-      const eligible = draft.market.supplyPools.flatMap(pool => pool.remainingTileIds.filter(id => draft.tiles[id].back === back && (!type || draft.tiles[id].type === type)));
-      if (!eligible.length) return null; // Preflight above rejects incomplete catalogs.
-      let range = 1, value = 0;
-      do {
-        range = 1; value = 0;
-        while (range < eligible.length) { const roll = drawDie(draft.random); draft.random = roll.random; range *= 6; value = value * 6 + roll.value - 1; }
-      } while (value >= range - range % eligible.length);
-      const id = eligible[value % eligible.length];
-      for (const pool of draft.market.supplyPools) pool.remainingTileIds = pool.remainingTileIds.filter(t => t !== id);
-      return id;
+    const draw = (back: Tile["back"], type?: Tile["type"]): string => {
+      const result = drawSupplyTile(draft, back, type);
+      draft.random = result.random;
+      draft.market.supplyPools = structuredClone(result.market.supplyPools) as Mutable<GameState["market"]["supplyPools"]>;
+      return result.tileId;
     };
     // No slot identity is guessed from its current color; the official alternating slot needs its recipe.
     if (!draft.config.marketRecipeId && !draft.config.catalogId.startsWith("practice:") && draft.config.playerCount === 3) {

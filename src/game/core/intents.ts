@@ -8,11 +8,11 @@ type Mutable<T, D extends unknown[] = [
         0
     ]>;
 } : T;
-export function destinationIssue(player: PlayerState, action: {
+export function destinationIssue(player: Pick<PlayerState, "storage">, action: {
     storageSlot: number;
     discardTileId?: string;
 }): string | null {
-    if (!Number.isInteger(action.storageSlot) || action.storageSlot < 0 || action.storageSlot > 2)
+    if (!Number.isInteger(action.storageSlot) || action.storageSlot < 0 || action.storageSlot >= player.storage.length)
         return "Invalid tile storage slot";
     const occupant = player.storage[action.storageSlot];
     if (occupant === null)

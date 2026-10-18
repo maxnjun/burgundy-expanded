@@ -6,6 +6,7 @@ import { VERIFIED_BOARD_DEFINITIONS } from "./boards/catalog";
 import { practiceBoard } from "./practice";
 import { validPendingChoice } from "./core/effects";
 import { officialMarketRecipe } from "./market-recipes";
+import { parseBoundedGameJson } from "./bounded-json";
 
 export interface SavedGame {
   readonly format: "burgundy-local-v1";
@@ -22,16 +23,8 @@ const reject = (): never => { throw new Error("저장 파일의 형식·규칙 �
 
 /** Untrusted JSON is bounded and checked before being offered to the UI. No executable data. */
 export function parseSavedGame(text: string): SavedGame {
-  if (text.length > 2_000_000) return reject();
   let value: unknown;
-  try { value = JSON.parse(text); } catch { return reject(); }
-  let nodes = 0;
-  const walk = (v: unknown, depth: number) => {
-    if (++nodes > 100_000 || depth > 30) reject();
-    if (Array.isArray(v)) v.forEach(x => walk(x, depth + 1));
-    else if (object(v)) for (const [k,x] of Object.entries(v)) { if (["__proto__", "prototype", "constructor"].includes(k)) reject(); walk(x, depth + 1); }
-  };
-  walk(value, 0);
+  try { value = parseBoundedGameJson(text); } catch { return reject(); }
   if (!object(value) || value.format !== "burgundy-local-v1" || value.randomAlgorithm !== "counter-v1" ||
     !object(value.game) || !Array.isArray(value.logs) || value.logs.length > 60 || value.logs.some(x => typeof x !== "string" || x.length > 2000) ||
     !object(value.view) || !boundedZoom(value.view.zoom) || typeof value.view.focus !== "boolean" || (value.view.table !== undefined && typeof value.view.table !== "boolean") ||

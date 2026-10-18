@@ -97,3 +97,20 @@ p.13의11~18 선택 규칙은 ‘직선’이 아니라 같은 색 연결 경로
 `mode-topology.ts`는 같은 색 점수 지역과 지리적 육지 구역을 분리한다. 강 접점은 입력 데이터이며 좌표 거리로 추정 생성하지 않는다. p.16에 근거한 솔로 점수/종료 보조 함수는 `modes/solo-scoring.ts`이며, 실제 솔로 모드/선택 큐 완성을 뜻하지 않는다.
 
 추가 검색에서 BGG의 [솔로 확장 소개](https://boardgamegeek.com/boardgame/264104/the-castles-of-burgundy-10th-expansion-solo)와 [관련 포럼 목록](https://boardgamegeek.com/boardgame/264104/the-castles-of-burgundy-10th-expansion-solo/forums)을 확인했다. 검색 내용만으로 강의 칸별 접점이나 공식 판정을 확정하지 않았으며 구현 근거는 로컬 공식 PDF와 명시적으로 주입한 TEST FIXTURE로 제한했다.
+
+## 12. 팀 엔진 및 추가 실물 사진 조사 (2026-10-18)
+
+팀 규칙 구현 근거는 로컬 공식 PDF p.15와 기본판 규칙이다. 팀당 자원·영지 한 벌, 개인 주사위/점수, 개인2칸/공유2칸, A1/B1/A2/B2 순서, 마지막 트랙에서 스택 위 이동, 종료 점수 합산과 빈칸이 많은 팀 우선에 적용했다. 추가 확장 조합으로 확대하지 않는다. 실행 범위와 검사는 ../team-engine.md를 참조한다.
+
+PDF p.15의 포함 팀 이미지 Im2.jpg(985×622)를 reference/team-p15-source.jpg로 추출·시각 확인했다. SHA256: `71990c193c925f864808f1c60f169f7d2300bf4e9ee6d067ead11affd8692b90`.
+
+| 실제 조사 URL/자료 | 결과 | 사용 범위 |
+| --- | --- | --- |
+| [Ludopedia 팀 시작 성 토론](https://ludopedia.com.br/topico/88418/onde-se-coloca-o-castelo-inicial-no-modo-jogo-em-time?pagina=2) | 공개 본문과 연결된 사진 확인 가능. 팬 토론에서는 규칙서의 사진이 고급면이라고 설명한다. | 출판사 정오표나 공식 규칙 확정으로 취급하지 않는다. p.15와 실물 모양을 대조하는 단서다. |
+| [기본면 실물 사진](https://ludopedia-posts.nyc3.cdn.digitaloceanspaces.com/85ba4_ilxmzn.jpg) | 웹 이미지 도구는 Cache miss, 동일 공개 URL 직접 요청은 HTTP200.600×800,31a 표기 확인, 상단 도상이 잘려 있음. | reference/team-basic-forum.jpg. 전수 숫자/지형·반대쪽 면 식별·시작 칸의 독립 대조가 부족하다. |
+| [고급면 표시 사진](https://ludopedia-posts.nyc3.cdn.digitaloceanspaces.com/a06b9_hkyk89.jpeg) | 동일하게 HTTP200.800×497, 시작 후보를 표시한 팬 주석 포함. p.15와 도안이 시각적으로 일치한다. | reference/team-advanced-forum.jpeg. 번호가 읽히는 독립 원본과 대조하기 전 고급면 후보일 뿐이다. 주석을 규칙 근거로 사용하지 않는다. |
+| [RulesPal](https://www.rulespal.com/the-castles-of-burgundy/rulebook), [옛 팀 확장 판매 사진](https://greenzinkgames.com/products/castles-of-burgundy-team-game-9th-expansion) | 검색 결과는 구판12a/12b 자료를 포함한다. | SE31/32와 동일하다고 전제하거나 숫자를 전용하지 않는다. |
+
+기본면 사진 해시 `1053b6eb369c53bbe62c20fcdbfda8ecee4bd8a0cabd5cc0b922c38afc4cc43d`, 고급면 사진 해시 `cf9fde70aefae083a445f1a3c24c66ebc4d3e77ab992c4421b4b5461ad200ec4`. 이미지는 연구용 reference에만 두며 Git/제품 SVG에는 넣지 않는다. 접근 제한/로그인을 우회하지 않았다.
+
+**추론 범위:** p.15 사진을 기본31a/32a 도상이라고 확정해서 전사해서는 안 된다. 팬 설명과 모양 대조는 고급면을 가리키지만 공식 면 번호·모든 칸 대조는 남아 있다. 완전한 기본면 사진과 면 번호가 보이는 고급면 원본을 추가 조사한다. 현재 공식 팀 보드가 선택 불가능한 이유는 규칙 부재가 아니라 이 식별/전수 검수의 미완료다.

@@ -3,7 +3,7 @@ import type { GameState, PlayerState, Tile } from "../types";
 
 export const isCount = (n: number): boolean => Number.isSafeInteger(n) && n >= 0;
 export const isDie = (n: number): boolean => Number.isInteger(n) && n >= 1 && n <= 6;
-export const monasteryNumbers = (state: GameState, player: PlayerState): readonly number[] => player.duchy.cells
+export const monasteryNumbers = (state: Pick<GameState, "tiles">, player: Pick<PlayerState, "duchy">): readonly number[] => player.duchy.cells
   .map(cell => cell.tileId === null ? undefined : state.tiles[cell.tileId])
   .filter((tile): tile is Extract<Tile, { type: "monastery" }> => tile?.type === "monastery")
   .map(tile => tile.number);

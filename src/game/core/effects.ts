@@ -33,7 +33,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
     for (const depot of state.market.numberedDepots)
         for (const slot of depot.slots)
             if (slot.tileId && allowed.includes(state.tiles[slot.tileId].type))
-                for (let storageSlot = 0; storageSlot < 3; storageSlot++) {
+                for (let storageSlot = 0; storageSlot < player.storage.length; storageSlot++) {
                     const occupant = player.storage[storageSlot];
                     const intent: ActionIntent = { kind: "take-tile", depot: depot.number, tileId: slot.tileId, storageSlot, ...(occupant && !player.storage.includes(null) ? { discardTileId: occupant } : {}) };
                     if (!intentIssue(state, player, intent))

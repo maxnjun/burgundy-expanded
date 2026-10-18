@@ -1,6 +1,6 @@
 import type { ActionIntent, DieAdjustment, GameState, PlayerState } from "../types";
 import { monasteryNumbers } from "./state";
-function freeModifier(state: GameState, intent: ActionIntent): 9 | 10 | 11 | 12 | undefined {
+function freeModifier(state: Pick<GameState, "tiles">, intent: ActionIntent): 9 | 10 | 11 | 12 | undefined {
     if (intent.kind === "take-tile")
         return 12;
     if (intent.kind !== "place-tile")
@@ -21,7 +21,7 @@ function minimumWorkers(steps: readonly (1 | -1)[], double: boolean): number {
     }
     return cost;
 }
-export function adjustmentValid(state: GameState, player: PlayerState, intent: ActionIntent, adjustment: DieAdjustment): boolean {
+export function adjustmentValid(state: Pick<GameState, "tiles">, player: Pick<PlayerState, "duchy" | "workers">, intent: ActionIntent, adjustment: DieAdjustment): boolean {
     if (!adjustment || !Number.isSafeInteger(adjustment.workersSpent) || adjustment.workersSpent < 0 || adjustment.workersSpent > player.workers || !Array.isArray(adjustment.steps) || adjustment.steps.length > 64 || adjustment.steps.some(s => s !== 1 && s !== -1))
         return false;
     const monks = monasteryNumbers(state, player), free = adjustment.monasteryNumber;
@@ -31,7 +31,7 @@ export function adjustmentValid(state: GameState, player: PlayerState, intent: A
     return variants.some(steps => adjustment.workersSpent >= minimumWorkers(steps, monks.includes(8)) && adjustment.workersSpent <= steps.length);
 }
 /** Canonical shortest cost for the UI and action enumeration; the engine validates it again. */
-export function planAdjustment(state: GameState, player: PlayerState, intent: ActionIntent, steps: readonly (1 | -1)[]): DieAdjustment {
+export function planAdjustment(state: Pick<GameState, "tiles">, player: Pick<PlayerState, "duchy" | "workers">, intent: ActionIntent, steps: readonly (1 | -1)[]): DieAdjustment {
     const monks = monasteryNumbers(state, player), candidate = freeModifier(state, intent);
     const free = steps.length && candidate && monks.includes(candidate) ? candidate : undefined;
     const variants = free === undefined ? [steps] : steps.map((_, i) => steps.filter((_, j) => j !== i));
