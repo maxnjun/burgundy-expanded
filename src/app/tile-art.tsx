@@ -1,4 +1,6 @@
-import type { SVGProps } from "react";
+"use client";
+
+import { useEffect, useState, type SVGProps } from "react";
 import type { Tile, TileType } from "../game/types";
 
 export const terrainPaint: Record<TileType, string> = {
@@ -11,19 +13,25 @@ const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElement>) {
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
-  const illustration = tile.type === "monastery" && (tile.number === 27 || tile.number === 28) ? `/tiles/monastery-${tile.number}.png` : building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null;
-  return <svg viewBox="0 0 100 110" aria-hidden="true" focusable="false" {...props}>
-    <polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
+  const framedSource = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? `/tiles/${tile.type}.png` : null;
+  const candidate = framedSource ?? (tile.type === "monastery" && (tile.number === 27 || tile.number === 28) ? `/tiles/monastery-${tile.number}.png` : building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null);
+  const [failedIllustration,setFailedIllustration]=useState<string|null>(null);
+  // An SSR image may fail before hydration attaches onError. Probe again after mount.
+  useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
+  const illustration=failedIllustration===candidate?null:candidate;
+  const fullTile=!!framedSource&&!!illustration;
+  return <svg viewBox="0 0 100 110" aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?candidate:undefined} {...props}>
+    {!fullTile&&<g data-tile-frame="svg"><polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
     <polygon points="50,8 89,31 89,77 50,100 11,77 11,31" fill="none" stroke="#fff7bf" strokeOpacity=".45"/>
-    <path d="M11 65Q32 41 60 61T89 60V77L50 100 11 77Z" fill={tile.type === "ship" ? "#44a9b9" : "#b6bf69"} opacity=".6"/>
-    {tile.type === "castle" && <g stroke="#554b35" strokeWidth="1.2">
+    <path d="M11 65Q32 41 60 61T89 60V77L50 100 11 77Z" fill={tile.type === "ship" ? "#44a9b9" : "#b6bf69"} opacity=".6"/></g>}
+    {!illustration && tile.type === "castle" && <g stroke="#554b35" strokeWidth="1.2">
       <ellipse cx="51" cy="80" rx="32" ry="9" fill="#284e31" opacity=".6"/>
       <path d="M23 43 50 28 77 43V72L50 87 23 72Z" fill="#d6c398"/>
       <path d="M50 52 77 38V72L50 87Z" fill="#a89573"/>
       {[25, 58].map((x, i) => <g key={x} transform={`translate(${x} ${i ? 25 : 36})`}><path d="M0 0H18V35L9 40 0 35Z" fill="#e5d2aa"/><path d="M-4 0 9-15 22 0Z" fill="#984c35"/><path d="M7 10H11V19H7Z" fill="#494736"/></g>)}
       <path d="M40 78V62Q47 53 54 62V85" fill="#514d36"/>
     </g>}
-    {tile.type === "ship" && <g stroke="#534835" strokeWidth="1.4">
+    {!illustration && tile.type === "ship" && <g stroke="#534835" strokeWidth="1.4">
       <path d="M12 76Q24 70 35 77T61 77T88 74M18 86Q36 78 51 85T82 83" fill="none" stroke="#b8e3d4"/>
       <path d="M22 64 49 73 82 58 69 78 45 87 29 79Z" fill="#855333"/>
       <path d="M26 66 49 77 76 64" fill="none" stroke="#d4aa68"/>
@@ -31,7 +39,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       <path d="M52 28Q78 36 75 58L52 67Z" fill="#fff0ce"/>
       <path d="M49 20 66 25 49 29Z" fill="#b54835"/>
     </g>}
-    {tile.type === "mine" && <g stroke="#514f43" strokeWidth="1.4">
+    {!illustration && tile.type === "mine" && <g stroke="#514f43" strokeWidth="1.4">
       <path d="M13 73 30 35 44 48 61 23 88 74Z" fill="#b9b5a4"/><path d="M30 35 32 65 44 48M61 23 58 63 75 69" fill="#8c8d80"/>
       <path d="M33 76V52Q50 35 66 52V76Z" fill="#343e37"/>
       <path d="M31 80V49H68V80M29 50H71" fill="none" stroke="#896340" strokeWidth="6"/>
@@ -77,7 +85,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
       <circle cx="73" cy="29" r="15" fill="#fff0b1" stroke="#8a7135"/><text x="73" y="34" textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
-    {illustration && <image data-tile-art-png={illustration} href={illustration} x="17" y="22" width="66" height="66" preserveAspectRatio="xMidYMid meet"/>}
+    {illustration && <image data-tile-art-png={illustration} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?0:17} y={fullTile?0:22} width={fullTile?100:66} height={fullTile?110:66} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
     {tile.type === "livestock" && <g><circle cx="76" cy="82" r="10" fill="#f2e6b5" stroke="#687348"/><text x="76" y="86" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
   </svg>;
