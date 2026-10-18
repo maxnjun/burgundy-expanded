@@ -1,0 +1,6 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { replaceRoomFile } from "../../src/server/atomic-write";
+for(const code of ["EPERM","EBUSY","EACCES"])test(`room replacement retries temporary ${code} then succeeds without deleting either file`,async()=>{let count=0;const waits:number[]=[];await replaceRoomFile("fixture.tmp","fixture.json",async(a,b)=>{assert.equal(a,"fixture.tmp");assert.equal(b,"fixture.json");if(++count<3)throw Object.assign(new Error("temporary lock"),{code});},async ms=>{waits.push(ms);});assert.equal(count,3);assert.deepEqual(waits,[25,50]);});
+test("room replacement permanent error is bounded and original error preserved",async()=>{const error=Object.assign(new Error("locked"),{code:"EPERM"});let count=0;await assert.rejects(replaceRoomFile("fixture.tmp","fixture.json",async()=>{count++;throw error;},async()=>{}),e=>e===error);assert.equal(count,4);});
+test("room replacement does not retry unrelated filesystem errors",async()=>{const error=Object.assign(new Error("missing"),{code:"ENOENT"});let count=0;await assert.rejects(replaceRoomFile("fixture.tmp","fixture.json",async()=>{count++;throw error;},async()=>{assert.fail("unexpected delay");}),e=>e===error);assert.equal(count,1);});

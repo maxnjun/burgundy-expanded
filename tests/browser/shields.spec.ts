@@ -31,14 +31,13 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
   expect(neighboringTilesOverlap).toBe(false);
   const firstSlot=shieldLayout(game)!.slots[0];
   const button=page.locator(`[data-shield-slot="${firstSlot.id}"]`);
+  await page.getByRole("button",{name:/^행동 주사위 1 눈/}).click();
   if(info.project.name.startsWith("mobile"))await button.tap();else await button.click();
   await expect(button).toHaveAttribute("aria-pressed","true");
-  await expect(page.getByLabel("선택 방패",{exact:true})).toContainText(`방패 ${firstSlot.shieldNumber}`);
-  // Selecting a tile clears shield selection and keeps tile acquisition independent.
-  const tile=page.locator(".common-board-svg .supply-art-tile").first();if(info.project.name.startsWith("mobile"))await tile.tap();else await tile.click();
-  await expect(page.getByLabel("선택 방패",{exact:true})).toHaveCount(0);
-  await expect(page.getByLabel("공용 보드 선택 타일",{exact:true})).toBeVisible();
-  if(info.project.name.startsWith("mobile"))await button.tap();else await button.click();await page.getByRole("button",{name:"두 주사위로 방패 획득 (검증)",exact:true}).click();
+  // Changing die selection cancels the shield without consuming resources.
+  await page.getByRole("button",{name:/^행동 주사위 2 눈/}).click();await expect(button).toHaveAttribute("aria-pressed","false");
+  if(info.project.name==="mobile-390"&&count===2){await page.setViewportSize({width:844,height:390});await button.tap();await expect(button).toHaveAttribute("aria-pressed","true");expect(await overlapping()).toBe(false);await page.screenshot({path:info.outputPath("shields-landscape.png"),fullPage:true});}else await button.click();
+  await page.getByRole("button",{name:/^방패A .*배치됨.*배치 가능/}).first().click();
   const empty=page.locator(`[data-shield-slot="${firstSlot.id}"]`);
   await expect(empty).toHaveAttribute("data-empty","true");await expect(empty).toHaveAttribute("role","img");
   await expect(page.getByLabel("장착 방패",{exact:true})).toContainText(`방패 ${firstSlot.shieldNumber}`);
@@ -49,11 +48,6 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
   await page.locator(".common-board-panel").scrollIntoViewIfNeeded();
   await page.screenshot({path:info.outputPath(`shields-${count}p-empty.png`),fullPage:true});
   if(info.project.name==="desktop-1280")await page.locator(".common-board-panel").screenshot({path:info.outputPath(`shields-${count}p-board.png`)});
-  if(info.project.name==="mobile-390"&&count===2){
-    await page.setViewportSize({width:844,height:390});
-    const side=page.locator('[data-shield-slot="shield:depot:2:0"]');await side.tap();await expect(side).toHaveAttribute("aria-pressed","true");expect(await overlapping()).toBe(false);
-    await page.screenshot({path:info.outputPath("shields-landscape.png"),fullPage:true});
-  }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);expect(errors).toEqual([]);
 });
 

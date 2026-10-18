@@ -1,5 +1,6 @@
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { replaceRoomFile } from "./atomic-write";
 import { join } from "node:path";
 import { createPracticeSession } from "../game/practice";
 import { applyCoreAction, checkCoreGameEnd, listCoreActionOptions } from "../game/core";
@@ -43,7 +44,7 @@ export class RoomStore {
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
     await writeFile(temporary,JSON.stringify(room),{encoding:"utf8",mode:0o600,flag:"wx"});
-    await rename(temporary,destination);
+    await replaceRoomFile(temporary,destination);
   }
   private seat(room:StoredRoom,token:string){
     if(typeof token!=="string"||token.length<32||token.length>128)throw new RoomError(401,"좌석 인증이 필요합니다.");

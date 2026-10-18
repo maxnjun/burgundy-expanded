@@ -31,3 +31,11 @@ export async function respond(task:()=>Promise<unknown>){
   try{return Response.json(await task(),{headers});}
   catch(error){return Response.json({error:knownRoomError(error)?error.message:"서버 저장 또는 검증에 실패했습니다. 진행은 기존 저장에서 보존됩니다."},{status:knownRoomError(error)?error.status:500,headers});}
 }
+
+/** Shared handlers allow integration tests to inject an isolated store, never live rooms. */
+export function roomHandlers(store:RoomStore=rooms){return {
+ create:(request:Request)=>respond(async()=>store.create((await body(request)).name)),
+ view:(request:Request,id:string)=>respond(async()=>store.view(id,token(request))),
+ join:(request:Request,id:string)=>respond(async()=>store.joinRoom(id,(await body(request)).name)),
+ act:(request:Request,id:string)=>respond(async()=>{const data=await body(request);return store.act(id,token(request),data.revision,data.action);}),
+};}

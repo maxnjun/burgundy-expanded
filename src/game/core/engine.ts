@@ -1,5 +1,5 @@
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
-import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, hasShield, type ShieldAcquireAction } from "../shields";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -21,20 +21,20 @@ export function adjustedDie(value: DieValue, steps: readonly (1 | -1)[]): DieVal
 }
 
 
-function actionIssue(state: GameState, action: GameAction): EngineResult<never> | null {
+function actionIssue(state: GameState, action: GameAction, pendingValid?: boolean): EngineResult<never> | null {
   if (state.status !== "playing") return failure("illegal-action", "Game is not playing");
   if (action.type === "buy-workers") {
     const owner=state.players.find(p=>p.id===action.playerId);
     return owner && owner.silver>=1 && monasteryNumbers(state,owner).includes(28) ? null : failure("illegal-action","Monastery28 requires one silver");
   }
   if(action.type==="extension"&&action.extensionId==="shields"&&(action.command==="choose-monastery-target"||(action.command==="change-die"&&state.turn.stage==="player-turn"&&state.turn.activePlayerId===action.playerId))){
-    if((state.turn.pendingChoice||state.turn.pendingEffects.length)&&!validPendingChoice(state))return failure("unresolved-rule","Invalid pending choice");
+    if((state.turn.pendingChoice||state.turn.pendingEffects.length)&&!(pendingValid??validPendingChoice(state)))return failure("unresolved-rule","Invalid pending choice");
     const issue=shieldSpecialIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
   if (state.turn.pendingChoice || state.turn.pendingEffects.length) {
-    if (action.type === "resolve-choice" && (state.turn.stage === "player-turn" || (state.turn.stage==="phase-end"&&!!shieldLayout(state)?.rules?.phase)) && action.playerId === state.turn.activePlayerId && validPendingChoice(state) &&
+    if (action.type === "resolve-choice" && (state.turn.stage === "player-turn" || (state.turn.stage==="phase-end"&&!!shieldLayout(state)?.rules?.phase)) && action.playerId === state.turn.activePlayerId && (pendingValid??validPendingChoice(state)) &&
       action.choiceId === state.turn.pendingChoice?.id && state.turn.pendingChoice.options.some(o => o.id === action.optionId)) return null;
-    if (!validPendingChoice(state) || (action.type !== "buy-black-tile" && action.type !== "use-monastery-six")) return failure("unresolved-rule", "Resolve the pending tile choice first");
+    if (!(pendingValid??validPendingChoice(state)) || (action.type !== "buy-black-tile" && action.type !== "use-monastery-six")) return failure("unresolved-rule", "Resolve the pending tile choice first");
   }
   const player = state.players.find(p => p.id === action.playerId);
   if (!player) return failure("illegal-action", "Unknown player");
@@ -78,7 +78,6 @@ function actionIssue(state: GameState, action: GameAction): EngineResult<never> 
   switch (action.intent.kind) {
     case "take-workers": return null;
     case "sell-goods":
-      if(hasShield(state,player.id,9)&&monasteryNumbers(state,player).includes(3))return failure("unresolved-rule","Shield9/monastery3 combined silver requires an authoritative ruling");
       return action.intent.goodsType === value && player.goods.some(g => g.type === value && g.tiles.length)
         ? null : failure("illegal-action", "Selling requires an owned goods stack matching the adjusted die");
     case "take-tile": {
@@ -250,6 +249,8 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
       pushIntent({ kind: "place-tile", tileId, cellId: cell.id });
     }
   }
-  return { ok: true, value: { actions: candidates.filter(a => { try { return actionIssue(state,a) === null; } catch { return false; } }),
+  // Canonical pending options are pure for this immutable query; validate once, not per candidate.
+  const pendingValid=state.turn.pendingChoice||state.turn.pendingEffects.length?validPendingChoice(state):undefined;
+  return { ok: true, value: { actions: candidates.filter(a => { try { return actionIssue(state,a,pendingValid) === null; } catch { return false; } }),
     unsupported: ["official-supply-recipes-and-setup", "extensions"] } };
 }

@@ -14,6 +14,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Downloaded evidence and one-off browser fixture artifacts are not application source.
     "reference/**",
+    ".local-data/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 
