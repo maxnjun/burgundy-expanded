@@ -1,0 +1,232 @@
+{
+  "canvas": 1024,
+  "frameInset": 2.2,
+  "mapping": "same-measured-isotropic-fit-algorithm",
+  "assets": {
+    "castle": {
+      "sourceSha256": "12fb2086e791b3cd83220fb146b9100d7e1462628802ca1c5a05b0c0cb298296",
+      "outputSha256": "fd1ed6efbc53a1f6bf15cb636314b54cacbb629fb94ac530b32b778f4d12aab7",
+      "palette": {
+        "dark": "#011d00",
+        "base": "#155714",
+        "light": "#068524"
+      },
+      "surface": [
+        "#7d8a59",
+        "#789e00",
+        "#344401"
+      ],
+      "innerContour": [
+        [
+          384,
+          61
+        ],
+        [
+          669,
+          224
+        ],
+        [
+          669,
+          534
+        ],
+        [
+          384,
+          698
+        ],
+        [
+          87,
+          534
+        ],
+        [
+          87,
+          224
+        ]
+      ],
+      "isotropicFitScale": 1.432614113477976,
+      "measuredContourCenter": [
+        380.0,
+        379.1666666666667
+      ]
+    },
+    "mine": {
+      "sourceSha256": "66903b15f33fa8b9fd58fa927d344d3bbe75dfe9bb05bb0fe484090d9047dc35",
+      "outputSha256": "8a05a258f0759fec9b4f2f84585abc34cb1fb5e6dd929b9a9606d3b35acdc650",
+      "palette": {
+        "dark": "#171918",
+        "base": "#2d3135",
+        "light": "#606872"
+      },
+      "surface": [
+        "#f1d8c7",
+        "#4c6e07",
+        "#e09033"
+      ],
+      "innerContour": [
+        [
+          398,
+          59
+        ],
+        [
+          694,
+          223
+        ],
+        [
+          694,
+          532
+        ],
+        [
+          400,
+          703
+        ],
+        [
+          103,
+          532
+        ],
+        [
+          103,
+          223
+        ]
+      ],
+      "isotropicFitScale": 1.4324283146041181,
+      "measuredContourCenter": [
+        398.6666666666667,
+        378.6666666666667
+      ]
+    },
+    "ship": {
+      "sourceSha256": "ec7a2fc3e7bb2a9b78692d9959fb882e9afac3ea808a23d0e90294865e4bab3f",
+      "outputSha256": "05572d92f2a4c6160e95b50978f4b869048cfe69651a60dccc77d830a7261e67",
+      "palette": {
+        "dark": "#003970",
+        "base": "#046499",
+        "light": "#0a96f1"
+      },
+      "surface": [
+        "#004bbf",
+        "#98d9fa",
+        "#0062b1"
+      ],
+      "innerContour": [
+        [
+          401,
+          64
+        ],
+        [
+          695,
+          224
+        ],
+        [
+          695,
+          540
+        ],
+        [
+          401,
+          702
+        ],
+        [
+          118,
+          540
+        ],
+        [
+          118,
+          224
+        ]
+      ],
+      "isotropicFitScale": 1.3852831150011302,
+      "measuredContourCenter": [
+        404.6666666666667,
+        382.3333333333333
+      ]
+    },
+    "monastery-27": {
+      "sourceSha256": "91f5624fa44ea8b0855a087e6bbea4a92f3a9e0c1315ae25ba53c267a7b71dbb",
+      "outputSha256": "b38ef9082c356061a7e87815180ff070bcdeca6bf029c71f072567c8b3aac94e",
+      "palette": {
+        "dark": "#fdac00",
+        "base": "#fdbc00",
+        "light": "#ffd500"
+      },
+      "surface": [
+        "#d6830c",
+        "#fec601",
+        "#fec401"
+      ],
+      "innerContour": [
+        [
+          384,
+          49
+        ],
+        [
+          706,
+          230
+        ],
+        [
+          706,
+          544
+        ],
+        [
+          384,
+          718
+        ],
+        [
+          62,
+          544
+        ],
+        [
+          62,
+          230
+        ]
+      ],
+      "isotropicFitScale": 1.2954771469632527,
+      "measuredContourCenter": [
+        384.0,
+        385.8333333333333
+      ]
+    },
+    "monastery-28": {
+      "sourceSha256": "ad1b723c7b7ad4359d2c082b9b58e5c2ffcf79dab8bc885a2de945b8066cfc37",
+      "outputSha256": "152e20718bf672ce1c5cc955ee49757a876377f8d3fb1b2ec94d591a3d4f74c1",
+      "palette": {
+        "dark": "#fdad01",
+        "base": "#fdb900",
+        "light": "#fed600"
+      },
+      "surface": [
+        "#8d6404",
+        "#fdc502",
+        "#fec402"
+      ],
+      "innerContour": [
+        [
+          384,
+          49
+        ],
+        [
+          706,
+          230
+        ],
+        [
+          706,
+          544
+        ],
+        [
+          384,
+          718
+        ],
+        [
+          62,
+          544
+        ],
+        [
+          62,
+          230
+        ]
+      ],
+      "isotropicFitScale": 1.2954771469632527,
+      "measuredContourCenter": [
+        384.0,
+        385.8333333333333
+      ]
+    }
+  }
+}
