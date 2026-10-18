@@ -26,7 +26,7 @@
 
 최종 재실행: **코어163/163 + 보드33/33 + 브라우저28/28 =224/224 통과**, TypeScript(noEmit)·전체ESLint·Turbopack 빌드 성공. 브라우저는375/390/768/1280px의 기존 로컬/AI/온라인 회귀이며 신규 솔로/팀 UI 완주 검증이 아니다. 실행 중인 테스트는 없다. 테스트 임시 서버가 종료된 후3000번 포트가 비었음을 확인하고 개발 서버 하나를 다시 시작했다. 게임/온라인 페이지 HEAD200을 확인했고 http://127.0.0.1:3000 에 유지한다. 다음 재개 때 실제 실행 여부를 재확인한다.
 
-이번 추가 변경은 solo-round.ts/solo-ship.ts와 해당 테스트2개, 코어 runner, solo-components.md, TODO/PROGRESS 및 rules/sources.md·unresolved.md의10개 파일이다. 기존 앱 UI·디자인·경쟁 게임 코드는 변경하지 않았다. 민감정보 검사 후 이 체크포인트를 별도 백업한다.
+이번 추가 변경은 solo-round.ts/solo-ship.ts와 해당 테스트2개, 코어 runner, solo-components.md, TODO/PROGRESS 및 rules/sources.md·unresolved.md의10개 파일이다. 기존 앱 UI·디자인·경쟁 게임 코드는 변경하지 않았다. 민감정보 검사 후 **7197d8a**로 커밋하고 비공개 origin/main에 Push했다. 원격 main과 로컬 HEAD 일치 및 깨끗한 작업 트리를 확인했다. 이 확인 기록의 후속 문서 커밋은 git log와 원격으로 확인한다.
 
 ### 이번 실행 이후 다음 작업
 
