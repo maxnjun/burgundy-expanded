@@ -4,6 +4,8 @@ import { replaceRoomFile } from "./atomic-write";
 import { join } from "node:path";
 import { createPracticeSession } from "../game/practice";
 import { applyCoreAction, checkCoreGameEnd, listCoreActionOptions } from "../game/core";
+import { shieldLayout, type ShieldLayout } from "../game/shields";
+import { directCost } from "../game/direct-actions";
 import { parseSavedGame } from "../game/save";
 import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
 
@@ -12,6 +14,8 @@ export class RoomError extends Error {
 }
 interface StoredRoom { version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export interface RoomView {
+  shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
+  finalScores:GameState["finalScores"];
   id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
   depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];dice:GameState["dice"];
@@ -52,11 +56,12 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false){return this.serial("create",async()=>{
+    if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     await mkdir(this.directory,{recursive:true});
     if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
     const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -86,7 +91,9 @@ export class RoomStore {
     const ending=checkCoreGameEnd(s);
     const legal=room.tokens[1] ? listCoreActionOptions(s,s.players[seat].id) : null;
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type})) : [];
-    return {id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    const layout=shieldLayout(s);
+    const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
+    return {shields,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 
@@ -97,6 +104,13 @@ export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="advance-phase")return s.turn.phase==="E"?"최종 정산":"단계 수입·보충";
   if(a.type==="resolve-choice")return s.turn.pendingChoice?.options.find(o=>o.id===a.optionId)?.label??"효과 선택";
   if(a.type==="buy-black-tile"||a.type==="use-monastery-six")return `${tileName(s,a.tileId)} 획득 · ${a.type==="buy-black-tile"?"은화2":"일꾼2"} · 보관${a.storageSlot+1}${a.discardTileId?" 교체":""}`;
+  if(a.type==="extension"&&a.extensionId==="shields"){
+    const payload=a.payload as Record<string,unknown>;
+    if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
+    if(a.command==="change-die")return `방패16 · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
+    const number=shieldLayout(s)?.slots.find(slot=>slot.id===payload.slotId)?.shieldNumber;
+    return `방패${number} 획득 · 성 ${payload.castleCellId} · 두 주사위 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 제거·교체`:""}`;
+  }
   if(a.type!=="use-die")return "확장 행동";
   const i=a.intent,label=i.kind==="take-workers"?"일꾼2 획득":i.kind==="sell-goods"?`${i.goodsType}번 상품 판매`:i.kind==="take-tile"?`${i.depot}번 ${tileName(s,i.tileId)} 획득 · 보관${i.storageSlot+1}${i.discardTileId?" 교체":""}`:`${tileName(s,i.tileId)} → (${i.cellId}) 배치`;
   return `${label} · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===a.dieId)+1} · 일꾼${a.adjustment.workersSpent}`;

@@ -15,3 +15,5 @@
 @media(max-width:950px){.direct-input .game-layout{display:flex;flex-direction:column}.direct-input .common-board-panel{order:0}.direct-input .live-estates{order:1}.direct-toolbar{gap:7px;padding:7px}.direct-toolbar>strong{font-size:12px}.direct-selection{font-size:11px}.direct-goods small{font-size:10px}.direct-input .common-board-scroll{max-height:65vh}}
 
 .supply-art-tile .direct-cost text{font-size:9px}
+
+.online-shields{display:flex;flex-wrap:wrap;gap:8px}.online-shields button{display:grid;justify-items:center;min-width:48px;background:#fff5d8;border:1px solid #b6a06c;border-radius:6px;padding:4px}.online-shields small{font-size:11px}.online-shields button:disabled{opacity:.65}
