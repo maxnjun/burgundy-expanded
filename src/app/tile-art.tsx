@@ -7,10 +7,11 @@ export const terrainPaint: Record<TileType, string> = {
 };
 const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 
-/** Original vector illustrations. No external game artwork or image files. */
+/** Shared SVG tile frame; selected illustrations use the project-provided transparent PNGs. */
 export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElement>) {
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
+  const illustration = tile.type === "monastery" && (tile.number === 27 || tile.number === 28) ? `/tiles/monastery-${tile.number}.png` : building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null;
   return <svg viewBox="0 0 100 110" aria-hidden="true" focusable="false" {...props}>
     <polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
     <polygon points="50,8 89,31 89,77 50,100 11,77 11,31" fill="none" stroke="#fff7bf" strokeOpacity=".45"/>
@@ -38,7 +39,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       <path d="M47 70H72L68 83H51Z" fill="#a58555"/><circle cx="54" cy="85" r="4" fill="#42483e"/><circle cx="66" cy="85" r="4" fill="#42483e"/>
       <path d="M53 70 58 61 63 67 68 60 71 70" fill="#e0dfca"/>
     </g>}
-    {tile.type === "building" && <g stroke="#63513b" strokeWidth="1.3">
+    {!illustration && tile.type === "building" && <g stroke="#63513b" strokeWidth="1.3">
       <ellipse cx="51" cy="80" rx="32" ry="8" fill="#756c3a" opacity=".4"/>
       <path d="M23 48 49 36 78 50V76L49 89 23 76Z" fill="#e6d2a0"/>
       <path d="M49 61 78 49V76L49 89Z" fill="#bca77b"/>
@@ -54,7 +55,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       {building === "boarding-house" && <g><path d="M67 43V23H77V47" fill="#c1a17d"/><path d="M74 20Q66 12 75 7" fill="none" stroke="#f0e2c5" strokeWidth="4"/></g>}
       {building === "town-hall" && <g><path d="M48 27V12M48 13 65 18 48 22" fill="#8d3830"/><circle cx="49" cy="47" r="5" fill="#e9d791"/><path d="M49 43V47L52 49"/></g>}
     </g>}
-    {tile.type === "livestock" && <g>
+    {!illustration && tile.type === "livestock" && <g>
       {[[-19,-11],[17,-8],[-14,15],[20,18]].slice(0,tile.count).map(([dx,dy],i) => <g key={i} transform={`translate(${50+dx} ${52+dy})`} stroke="#58603c" strokeWidth="1.1">
         <ellipse cx="0" cy="9" rx="13" ry="4" fill="#4b6d36" opacity=".25"/>
         <path d="M-7 5V13M5 5V13" strokeWidth="2"/>
@@ -67,7 +68,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
         <circle cx="12" cy="-4" r=".9" fill="#29392b"/>
       </g>)}
     </g>}
-    {tile.type === "monastery" && <g stroke="#74613b" strokeWidth="1.2">
+    {!illustration && tile.type === "monastery" && <g stroke="#74613b" strokeWidth="1.2">
       <path d="M22 62 48 48 79 61V78L51 92 22 78Z" fill="#eee1af"/>
       <path d="M19 61 47 43 83 60 53 77Z" fill="#b28b4a"/>
       <path d="M34 62 49 54 67 62 52 70Z" fill="#858849"/>
@@ -76,6 +77,7 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
       <circle cx="73" cy="29" r="15" fill="#fff0b1" stroke="#8a7135"/><text x="73" y="34" textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
+    {illustration && <image data-tile-art-png={illustration} href={illustration} x="17" y="22" width="66" height="66" preserveAspectRatio="xMidYMid meet"/>}
     {tile.type === "livestock" && <g><circle cx="76" cy="82" r="10" fill="#f2e6b5" stroke="#687348"/><text x="76" y="86" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
   </svg>;
