@@ -29,5 +29,5 @@ test("actual shield UI completes all 25 rounds, phase choices and final score",a
     }
     await changed(page,g.revision);if(n===65)await page.reload();
   }
-  expect(done).toBe(true);await expect(page.getByRole("region",{name:"게임 결과",exact:true})).toBeVisible();const g=await current(page);expect(g.turn.phase).toBe("E");expect(g.finalScores![0].finalAdditions.some(e=>e.id.endsWith("shield-3"))).toBe(true);await page.screenshot({path:info.outputPath("shield-complete-game.png"),fullPage:true});expect(errors).toEqual([]);
+  expect(done).toBe(true);await expect(page.getByRole("region",{name:"게임 결과",exact:true})).toBeVisible();const g=await current(page);await expect(page.locator("[data-mounted-shield]")).toHaveCount((g.extensionStates.shields as unknown as {mounted:unknown[]}).mounted.length);expect(g.turn.phase).toBe("E");expect(g.finalScores![0].finalAdditions.some(e=>e.id.endsWith("shield-3"))).toBe(true);await page.screenshot({path:info.outputPath("shield-complete-game.png"),fullPage:true});expect(errors).toEqual([]);
 });

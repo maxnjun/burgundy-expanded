@@ -1,4 +1,4 @@
-import { shieldLayout } from "./shields";
+import { shieldLayout, setShieldLayout } from "./shields";
 import type { GameState } from "./types";
 import { validateCoreState } from "./core/state";
 import { validateBoardDefinition } from "./boards/validation";
@@ -85,6 +85,10 @@ export function parseSavedGame(text: string): SavedGame {
         s.earnedTotal !== s.earned.reduce((n,e) => n+e.points,0) || s.finalAdditionsTotal !== s.finalAdditions.reduce((n,e) => n+e.points,0) || s.total !== s.earnedTotal+s.finalAdditionsTotal) return reject();
     }
   } else if (game.turn.stage === "finished" || game.finalScores !== null) return reject();
+  // Only after ALL save validation succeeds: resolve the unambiguous legacy cell binding.
+  // Explicit mismatched IDs were rejected above; never repair a broken ownership relation.
+  const layout=shieldLayout(game);
+  if(layout?.mounted.some(m=>m.castleTileId===undefined))return {...saved,game:setShieldLayout(game,{...layout,mounted:layout.mounted.map(m=>({...m,castleTileId:m.castleTileId??game.players.find(p=>p.id===m.playerId)!.duchy.cells.find(c=>c.id===m.cellId)!.tileId!}))})};
   return saved;
 }
 

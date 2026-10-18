@@ -41,7 +41,7 @@ export class RoomStore {
     if(raw.length>2_100_000)throw new RoomError(500,"방 데이터 검증 실패");
     const room=JSON.parse(raw) as StoredRoom;
     if(room.version!==1||room.id!==id||room.tokens.length!==2||room.tokens.some(t=>t!==null&&!/^[a-f0-9]{64}$/.test(t)))throw new RoomError(500,"방 데이터 검증 실패");
-    parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}}));
+    room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
     return room;
   }
   private async write(room:StoredRoom){

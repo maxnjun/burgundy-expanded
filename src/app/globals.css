@@ -17,3 +17,5 @@
 .supply-art-tile .direct-cost text{font-size:9px}
 
 .online-shields{display:flex;flex-wrap:wrap;gap:8px}.online-shields button{display:grid;justify-items:center;min-width:48px;background:#fff5d8;border:1px solid #b6a06c;border-radius:6px;padding:4px}.online-shields small{font-size:11px}.online-shields button:disabled{opacity:.65}
+
+.online-estates [data-can-mount="true"]>polygon{stroke:#a27a30;stroke-width:5}.hex-cell:focus-visible{outline:none;filter:drop-shadow(0 0 4px #a27a30)}

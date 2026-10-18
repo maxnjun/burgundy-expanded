@@ -19,7 +19,8 @@ export interface ShieldLayout {
     readonly phase: null | { readonly phase: string; readonly stage: "free" | "tribute" | "ready"; readonly freeDone: readonly number[]; readonly paid: readonly number[] };
   };
   readonly slots: readonly ShieldSlot[];
-  readonly mounted: readonly { readonly shieldNumber: number; readonly playerId: string; readonly cellId: string }[];
+  /** castleTileId is absent only in validated legacy saves. New acquisitions always bind it. */
+  readonly mounted: readonly { readonly shieldNumber: number; readonly playerId: string; readonly cellId: string; readonly castleTileId?: string }[];
   readonly removed: readonly number[];
   readonly boxed: readonly number[];
 }
@@ -63,7 +64,8 @@ export function validShieldLayout(game: GameState): boolean {
     const numbers: unknown[]=[];
     for(const e of expected){const slot=raw.slots.find(s=>s?.id===e.id);if(!record(slot)||Object.keys(slot).sort().join(",")!=="depot,id,index,shieldNumber"||slot.depot!==e.depot||slot.index!==e.index)return false;if(slot.shieldNumber!==null)numbers.push(slot.shieldNumber);}
     const mounts=new Set<string>();
-    for(const m of raw.mounted){if(!record(m)||Object.keys(m).sort().join(",")!=="cellId,playerId,shieldNumber")return false;const p=game.players.find(p=>p.id===m.playerId);const c=p?.duchy.cells.find(c=>c.id===m.cellId);const key=`${m.playerId}:${m.cellId}`;if(!c?.tileId||game.tiles[c.tileId]?.type!=="castle"||mounts.has(key))return false;mounts.add(key);numbers.push(m.shieldNumber);}
+    const castleTiles=new Set<string>();
+    for(const m of raw.mounted){if(!record(m)||!["cellId,playerId,shieldNumber","castleTileId,cellId,playerId,shieldNumber"].includes(Object.keys(m).sort().join(",")))return false;const p=game.players.find(p=>p.id===m.playerId);const c=p?.duchy.cells.find(c=>c.id===m.cellId);const key=`${m.playerId}:${m.cellId}`;if(!c?.tileId||game.tiles[c.tileId]?.type!=="castle"||("castleTileId" in m&&m.castleTileId!==c.tileId)||mounts.has(key)||castleTiles.has(c.tileId))return false;mounts.add(key);castleTiles.add(c.tileId);numbers.push(m.shieldNumber);}
     numbers.push(...raw.removed,...raw.boxed);
     return numbers.length===18&&new Set(numbers).size===18&&numbers.every(n=>typeof n==="number"&&Number.isInteger(n)&&n>=1&&n<=18)&&raw.boxed.length===18-expected.length;
   }catch{return false;}
@@ -92,7 +94,7 @@ export function acquireShieldPreview(game: GameState, action: ShieldAcquireActio
   const cost=action.payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
   return {...game,extensionStates:{...game.extensionStates,shields:{...layout,
     slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:null}:s),
-    mounted:[...layout.mounted.filter(m=>!(m.playerId===action.playerId&&m.cellId===action.payload.castleCellId)),{shieldNumber:slot.shieldNumber!,playerId:action.playerId,cellId:action.payload.castleCellId}],
+    mounted:[...layout.mounted.filter(m=>!(m.playerId===action.playerId&&m.cellId===action.payload.castleCellId)),{shieldNumber:slot.shieldNumber!,playerId:action.playerId,cellId:action.payload.castleCellId,castleTileId:game.players.find(p=>p.id===action.playerId)!.duchy.cells.find(c=>c.id===action.payload.castleCellId)!.tileId!}],
     removed:action.payload.replaceShieldNumber===null?layout.removed:[...layout.removed,action.payload.replaceShieldNumber],
   } as unknown as JsonValue}, players:game.players.map(p=>p.id===action.playerId?{...p,workers:p.workers-(free?0:cost)}:p),
     dice:free?game.dice:{...game.dice,players:{...game.dice.players,[action.playerId]:game.dice.players[action.playerId].map((d,i)=>({...d,used:true,value:slot.depot, id:game.dice.players[action.playerId][i].id})) as unknown as GameState["dice"]["players"][string]}}};
