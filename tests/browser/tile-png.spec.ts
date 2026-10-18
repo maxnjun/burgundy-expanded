@@ -42,17 +42,17 @@ test("castle silver mine and ship use one full PNG frame in supply storage estat
  for(const asset of ["castle","mine","ship"]){const game=fixture(asset);await load(page,game);const path=`/tiles/${asset}.png`,images=page.locator(`image[data-tile-art-png="${path}"]`);await expect.poll(()=>images.count()).toBeGreaterThanOrEqual(3);
   for(const image of await images.all()){await expect(image).toHaveAttribute("data-tile-image-mode","full");await expect(image).toHaveAttribute("preserveAspectRatio","xMidYMid meet");await expect(frame(image).locator('[data-tile-frame="svg"]')).toHaveCount(0);await expect(frame(image)).toHaveAttribute("viewBox",await frame(image).getAttribute("data-estate-art")?/^0 0 100 115\.47/:"0 0 100 110");}
   await expect(page.locator(`.estate-keyspaces image[href="${path}"]`)).toHaveCount(1);expect(await page.locator(`.common-board-svg image[href="${path}"]`).count()).toBeGreaterThanOrEqual(1);
-  const board=page.getByRole("group",{name:"규칙A 영지",exact:true}),image=board.locator(`image[href="${path}"]`).last();const visible=await visibleTile(image);await visible.scrollIntoViewIfNeeded();const before=(await visible.boundingBox())!;await page.getByRole("button",{name:"규칙A 영지 확대",exact:true}).click();expect((await visible.boundingBox())!.width).toBeGreaterThan(before.width);
-  await expect(frame(image).locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);await expect(frame(image).locator("[data-estate-image]")).toHaveAttribute("preserveAspectRatio","xMidYMid slice");
+  const board=page.getByRole("group",{name:"규칙A 영지",exact:true}),image=board.locator(`image[data-tile-art-png="${path}"]`).last();const visible=await visibleTile(image);await visible.scrollIntoViewIfNeeded();const before=(await visible.boundingBox())!;await page.getByRole("button",{name:"규칙A 영지 확대",exact:true}).click();expect((await visible.boundingBox())!.width).toBeGreaterThan(before.width);
+  await expect(frame(image).locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);await expect(frame(image).locator("[data-estate-image]")).toHaveAttribute("preserveAspectRatio","xMidYMid meet");
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.revision)).toBe(game.revision);
   if(info.project.name==="mobile-375"&&asset==="mine")await board.screenshot({path:info.outputPath("silver-mine-mobile.png")});
  }
 });
 test("missing full PNGs restore original SVG artwork and recover after reload",async({page})=>{
- await page.route("**/tiles/{castle,mine,ship}.png",route=>route.fulfill({status:404,body:"missing fixture"}));await init(page);
+ await page.route("**/tiles/**{castle,mine,ship}.png",route=>route.fulfill({status:404,body:"missing fixture"}));await init(page);
  for(const asset of ["castle","mine","ship"]){const game=fixture(asset);await load(page,game);const path=`/tiles/${asset}.png`,fallback=page.locator(`svg[data-tile-fallback="${path}"]`);await expect.poll(()=>fallback.count()).toBeGreaterThanOrEqual(3);await expect(page.locator(`image[href="${path}"]`)).toHaveCount(0);
   for(const svg of await fallback.all()){if(await svg.getAttribute("data-estate-art")){await expect(svg.locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);}else{await expect(svg.locator('[data-tile-frame="svg"]')).toHaveCount(1);await expect(svg.locator("polygon").first()).toHaveAttribute("points","50,3 94,28 94,80 50,106 6,80 6,28");}expect(await svg.locator("path").count()).toBeGreaterThan(2);}
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.revision)).toBe(game.revision);
  }
- await page.unroute("**/tiles/{castle,mine,ship}.png");await page.reload();await expect(page.locator('image[href="/tiles/ship.png"]').first()).toBeAttached();await expect(page.locator('svg[data-tile-fallback="/tiles/ship.png"]')).toHaveCount(0);
+ await page.unroute("**/tiles/**{castle,mine,ship}.png");await page.reload();await expect(page.locator('image[href="/tiles/ship.png"]').first()).toBeAttached();await expect(page.locator('svg[data-tile-fallback="/tiles/ship.png"]')).toHaveCount(0);
 });

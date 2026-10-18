@@ -6,6 +6,7 @@ import type { Tile } from "../../src/game/types";
 async function load(page:Page){
  let game=setup();
  for(const face of [{type:"castle"},{type:"mine"},{type:"ship"},{type:"building",building:"market"},{type:"building",building:"crane"},{type:"livestock",species:"cattle",count:3},{type:"livestock",species:"geese",count:2},{type:"monastery",number:27},{type:"monastery",number:28}])game=placed(game,0,{...face,back:"black"} as Omit<Tile,"id">);
+ const player=game.players[0],ship=player.duchy.cells.find(c=>c.tileId&&game.tiles[c.tileId].type==="ship")!,neighbor=player.duchy.cells.find(c=>!c.tileId&&c.terrain==="ship"&&Math.max(Math.abs(c.coord.q-ship.coord.q),Math.abs(c.coord.r-ship.coord.r),Math.abs(c.coord.q+c.coord.r-ship.coord.q-ship.coord.r))===1)!;expect(neighbor).toBeTruthy();game=placed(game,0,{type:"ship",back:"black"},neighbor.id);
  const saved=serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game,logs:["TEST FIXTURE · estate geometry"],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.clock.install();await page.addInitScript(value=>{if(!localStorage.getItem("burgundy-expanded:local-v1"))localStorage.setItem("burgundy-expanded:local-v1",value);},saved);await page.goto("/");await expect(page.getByRole("group",{name:"규칙A 영지",exact:true})).toBeVisible();return game;
 }
@@ -29,7 +30,27 @@ test("adjacent estate cells share two exact corners and every tile shares the ce
    const path=root.querySelector("[data-estate-grid]")!.getAttribute("d")!;const tiles=[...root.querySelectorAll<SVGGElement>("[data-estate-tile]")];for(const tile of tiles){const cell=tile.closest("[data-estate-cell]")!,outer=cell.querySelector("polygon")!.getAttribute("points"),clip=tile.querySelector("clipPath polygon")!.getAttribute("points");if(outer!==clip)failures.push("clip");const svg=tile.querySelector<SVGSVGElement>("svg[data-tile-art]")!,b=cell.querySelector<SVGPolygonElement>("polygon")!.getBBox();if(Math.abs(svg.width.baseVal.value-b.width)>.0001||Math.abs(svg.height.baseVal.value-b.height)>.0001||Math.abs(svg.x.baseVal.value-b.x)>.0001||Math.abs(svg.y.baseVal.value-b.y)>.0001)failures.push("viewport size");if(tile.querySelector("[data-tile-frame]"))failures.push("nested frame");}
    let checked=0;const rect=root.parentElement!.getBoundingClientRect(),matrix=(root as SVGSVGElement).getScreenCTM()!;for(const c of cells){const p=new DOMPoint(c.center[0],c.center[1]).matrixTransform(matrix);if(p.x<=Math.max(0,rect.left)||p.x>=Math.min(innerWidth,rect.right)||p.y<=Math.max(0,rect.top)||p.y>=Math.min(innerHeight,rect.bottom))continue;const hit=document.elementFromPoint(p.x,p.y);if(hit?.closest(".direct-toolbar,.board-touch-tools,.topbar"))continue;checked++;if(hit?.closest<SVGGElement>("[data-estate-cell]")?.dataset.estateCell!==c.id)failures.push("hit target");}
    return {cells:cells.length,pairs,edges:(path.match(/M/g)||[]).length,failures,tiles:tiles.length,checked};});
-  expect(geometry).toMatchObject({cells:37,pairs:90,edges:132,failures:[],tiles:10});expect(geometry.checked).toBeGreaterThan(0);
+  expect(geometry).toMatchObject({cells:37,pairs:90,edges:132,failures:[],tiles:11});expect(geometry.checked).toBeGreaterThan(0);
  }
  const ids=await page.locator("clipPath[id^=estate-clip]").evaluateAll(els=>els.map(e=>e.id));expect(new Set(ids).size).toBe(ids.length);
+});
+
+
+test("normalized estate PNGs share one exact opaque hex mask without border padding",async({page})=>{
+ await load(page);
+ const assets=await page.evaluate(async()=>{
+  const results:{size:number[];outside:number;holes:number;alpha:number[]}[]=[];
+  for(const name of ["castle","mine","ship"]){
+   const image=new Image();image.src=`/tiles/estate/${name}.png`;await image.decode();
+   const canvas=document.createElement("canvas");canvas.width=canvas.height=1024;const context=canvas.getContext("2d")!;context.drawImage(image,0,0);const rgba=context.getImageData(0,0,1024,1024).data;
+   let outside=0,holes=0;const alpha=[];
+   for(let y=0;y<1024;y++)for(let x=0;x<1024;x++){const dx=Math.abs(x+.5-512),dy=Math.abs(y+.5-512),a=rgba[(y*1024+x)*4+3];if((dx>Math.sqrt(3)*256||dy+dx/Math.sqrt(3)>512)&&a)outside++;if(dx<Math.sqrt(3)*256-3&&dy+dx/Math.sqrt(3)<509&&a<255)holes++;alpha.push(a);}
+   results.push({size:[image.naturalWidth,image.naturalHeight],outside,holes,alpha});
+  }
+  return {sizes:results.map(r=>r.size),outside:results.map(r=>r.outside),holes:results.map(r=>r.holes),same:results.every(r=>r.alpha.every((a,i)=>a===results[0].alpha[i]))};
+ });
+ expect(assets).toEqual({sizes:[[1024,1024],[1024,1024],[1024,1024]],outside:[0,0,0],holes:[0,0,0],same:true});
+ const board=page.getByRole("group",{name:"규칙A 영지",exact:true});
+ const images=board.locator('image[data-estate-image="normalized"]');expect(await images.count()).toBeGreaterThanOrEqual(4);
+ const specs=await images.evaluateAll(els=>els.map(el=>["x","y","width","height","preserveAspectRatio"].map(a=>el.getAttribute(a)).join("|")));expect(new Set(specs).size).toBe(1);
 });
