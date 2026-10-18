@@ -11,7 +11,8 @@
 - 검증: 관련PC17/17·코어286/286·보드33/33·TypeScript·ESLint·프로덕션빌드통과. 초기실패는새fixture의12개를11개로센기대값과보간alpha5/2/2픽셀의프레임침범이었으며 기대값/3px보간여유를고쳐재검증했다. 최종5종모두프레임안쪽에수용된다. 수도원27/28 누락fallback까지확대재검사1/1도통과했다. QA스타일제거Node타입을수정한뒤타입/린트/빌드재실행통과. 빈칸의기존opacity.78은유지했다.
 - 화면: .local-data/qa/uniform-original-vs-svg.png 원본/수정비교와uniform-pairs-{100,160,200}.png(동종/혼합/수도원/빈칸)을직접확인했다. 실제영지3배율은estate-after-desktop-1280-*.png. 체크무늬없음/번호·아이콘·깃발·뱃머리확인. 일부사진주변은원본추출장면색gradient로연결되며그림을생성하지않는다.
 - 선폭: 한쪽림은1.829045653 SVG단위,짝의합3.658091306. QA검정마스크의100/160/200% 공유변커버리지는성/광산/선박모두각각5/7/8화면픽셀로같다(AA포함). core<128은2/4/8픽셀;이는분수좌표의AA이며실제틈/외곽좌표오차는없다. 원자료uniform-rim-widths.json.
-- 다음: 수도원fallback/최종검사확인→민감정보/원본보존/비공개main확인→이번관련파일만Commit/Push·원격해시확인. 기존수도원원본2개와기존estate파생/정규화스크립트는삭제/변경하지않는다. 모바일정밀QA는보류.
+- 백업 완료: 원본해시/파생메타데이터/민감정보·비공개main/권한을검사하고 이번21개파일을de41b5c로Commit/Push했다. 원격main 전체해시 일치를확인했다. 기존수도원원본2개는미커밋그대로보존했고 기존estate파생/정규화스크립트도삭제/변경하지않았다.
+- 다음 재개: 새요청관련파일만확인한다. 이번5종공통프레임은구현/PC검증/백업완료다. 모바일정밀QA와다른타일종류로프레임확대는별도범위다. 분수좌표안티앨리어싱은남으며중앙그림과프레임사이좁은영역은추출한장면색gradient로연결한다. 전체프로젝트완료로보지않는다.
 
 - 변경파일: src/app/{tile-frame.tsx,tile-art.tsx,estate-geometry.ts,estate-tile.tsx,game-screen.tsx,online/room-screen.tsx,game-screen.css,globals.css}; scripts/extract-tile-illustrations.py; public/tiles/illustrations/{castle,mine,ship,monastery-27,monastery-28}.png·manifest.json; tests/browser/{tile-frame,estate-geometry,tile-png}.spec.ts; docs/TODO.md·PROGRESS.md·history/progress-hex-diagnosis-2026-10-19.md.
 - 주의: 기존 수도원원본2개의 미커밋변경은 보존하므로 원격체크아웃의 원본과 파생manifest의 원본해시가 다를 수 있다. 재추출 시 해시보호장치가 중단하며 현재로컬원본 또는 사용자지정원본이 필요하다. 배포는 이미 생성한분리PNG만사용하므로5종표시에는영향없다.
