@@ -10,7 +10,7 @@ export const terrainPaint: Record<TileType, string> = {
 const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 
 /** Shared SVG tile frame; selected illustrations use the project-provided transparent PNGs. */
-export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElement>) {
+export function TileArt({ tile, estate=false, ...props }: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
   const framedSource = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? `/tiles/${tile.type}.png` : null;
@@ -20,8 +20,12 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
   useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
   const illustration=failedIllustration===candidate?null:candidate;
   const fullTile=!!framedSource&&!!illustration;
-  return <svg viewBox="0 0 100 110" aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?candidate:undefined} {...props}>
-    {!fullTile&&<g data-tile-frame="svg"><polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
+  const estateHeight=200/Math.sqrt(3),offset=(estateHeight-110)/2;
+  // Presentation-only viewports around the pictured hex body, excluding transparent/checkered margins.
+  const crop=tile.type==="castle"?{view:"40 105 523 552",width:603,height:724}:tile.type==="mine"?{view:"40 98 542 560",width:622,height:724}:tile.type==="ship"?{view:"41 111 558 546",width:640,height:724}:null;
+  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} viewBox={estate?`0 0 100 ${estateHeight}`:"0 0 100 110"} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?candidate:undefined} {...props}>
+    <g transform={estate?`translate(0 ${offset})`:undefined}>
+    {!fullTile&&!estate&&<g data-tile-frame="svg"><polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
     <polygon points="50,8 89,31 89,77 50,100 11,77 11,31" fill="none" stroke="#fff7bf" strokeOpacity=".45"/>
     <path d="M11 65Q32 41 60 61T89 60V77L50 100 11 77Z" fill={tile.type === "ship" ? "#44a9b9" : "#b6bf69"} opacity=".6"/></g>}
     {!illustration && tile.type === "castle" && <g stroke="#554b35" strokeWidth="1.2">
@@ -85,9 +89,10 @@ export function TileArt({ tile, ...props }: { tile: Tile } & SVGProps<SVGSVGElem
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
       <circle cx="73" cy="29" r="15" fill="#fff0b1" stroke="#8a7135"/><text x="73" y="34" textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
-    {illustration && <image data-tile-art-png={illustration} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?0:17} y={fullTile?0:22} width={fullTile?100:66} height={fullTile?110:66} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
+    {illustration && (estate&&fullTile&&crop?<svg data-estate-image="cover" x="0" y={-offset} width="100" height={estateHeight} viewBox={crop.view} preserveAspectRatio="xMidYMid slice" overflow="hidden"><image data-tile-art-png={illustration} href={illustration} data-tile-image-mode="full" width={crop.width} height={crop.height} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/></svg>:<image data-tile-art-png={illustration} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?0:17} y={fullTile?0:22} width={fullTile?100:66} height={fullTile?110:66} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>)}
     {tile.type === "livestock" && <g><circle cx="76" cy="82" r="10" fill="#f2e6b5" stroke="#687348"/><text x="76" y="86" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
+    </g>
   </svg>;
 }
 
