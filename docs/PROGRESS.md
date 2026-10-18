@@ -9,5 +9,5 @@
 - 수정 전375/1280의160% 동일 테스트 영지 스크린샷을 .local-data/qa/estate-before-*-160.png에 보존했다. 수정 후100/160/200% 및390px 화면은 estate-after-*.png에 기록한다.160% 전후 비교에서 틈 제거/성의 셀 전체 채움을 확인했다.
 - 검증: core286/286·boards33/33·TypeScript·ESLint·Turbopack 프로덕션 빌드 통과. 375/1280의 새 기하/실제 중심 hit-test도2/2 통과했다. 최종375/390/768/1280 관련 브라우저52/52 통과. 기하·PNG 7종/누락 대체·드래그/터치 배치·방패 교체/저장·온라인 동기화를 검사했다. 전체 브라우저/실기기 검증은 이번 결과로 표시하지 않는다.
 - 테스트 보완: SVG float32 허용오차, 잉크 bbox와 실제 viewport 구분, SVG XPath 네임스페이스, 저장 fixture 복원 대기, 터치 검사 전 스크롤을 수정했다. 초기 실패는 이 검증 코드에 있었으며 제품 코드를 억지로 바꾸지 않았다. 샌드박스의 localhost 소켓/임시 파일 교체 제한은 허용된 권한으로 재검사했다. 기존 서버는 중복 실행/중단하지 않았다.
-- 백업 준비: 민감정보/diff 검사 및 비공개 저장소·Push 권한·main/원격 동기화 확인 완료. 이번10개 파일만 Commit/Push 후 원격 해시를 확인한다. 미완료 항목/다음 재개점은 TODO의 기존 보류 작업이다.
+- 백업 완료: 민감정보/diff 검사 및 비공개 저장소·Push 권한 확인 후 이번10개 파일을 e5b5db4로 origin/main에 Commit/Push했다. 원격 main의 전체 해시 일치를 확인했다. 작업 트리의 관계없는 변경/데이터는 건드리지 않았다. 미완료 항목/다음 재개점은 TODO의 기존 보류 작업이다.
 - 변경: src/app/{estate-geometry.ts,estate-tile.tsx,game-screen.tsx,online/room-screen.tsx,tile-art.tsx}, tests/browser/{estate-geometry.spec.ts,tile-png.spec.ts}, docs/TODO.md·PROGRESS.md·직전 기록 보관. 기존 방50개/저장과 보류 모드는 유지한다. 실제 기기/iOS 검증은 별도 미완료다.
