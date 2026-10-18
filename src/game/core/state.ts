@@ -1,3 +1,4 @@
+import { validShieldLayout } from "../shields";
 import type { EngineIssue, ValidationResult } from "../interfaces";
 import type { GameState, PlayerState, Tile } from "../types";
 
@@ -20,7 +21,7 @@ export function validateCoreState(state: GameState): ValidationResult {
   try {
     if (state.config.ruleset !== "special-edition-base" || state.config.mode !== "competitive" ||
       state.config.playerCount < 2 || state.config.playerCount > 4 || state.players.length !== state.config.playerCount) issue("Core requires 2-4 competitive players");
-    if (state.config.extensions.some(e => !["geese","border-posts","additional-hexes"].includes(e.id) || !e.options || Object.keys(e.options).length) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).length || state.players.some(p => p.controller !== "human")) {
+    if (state.config.extensions.some(e => !["geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
       issues.push({ code: "unsupported-extension", message: "Core does not resolve extensions or automated players" });
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||

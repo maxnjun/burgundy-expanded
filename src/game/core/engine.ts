@@ -1,3 +1,4 @@
+import { acquireShieldPreview, shieldAcquireIssue, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -46,7 +47,10 @@ function actionIssue(state: GameState, action: GameAction): EngineResult<never> 
     if (state.dice.players[player.id].some(d => !d.used)) return failure("illegal-action", "Both dice actions must be resolved before ending the turn");
     return null;
   }
-  if (action.type === "extension") return failure("unsupported-extension", "Extensions are outside this core subset");
+  if (action.type === "extension") {
+    if(action.extensionId!=="shields" || !state.config.extensions.some(e=>e.id==="shields"))return failure("unsupported-extension", "Extensions are outside this core subset");
+    const issue=shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
+  }
   if (action.type === "resolve-choice") return failure("illegal-action", "No pending choice");
   if (action.type === "use-monastery-six") {
     if (!monasteryNumbers(state, player).includes(6) || player.workers < 2 || state.turn.monasterySixUsed) return failure("illegal-action", "Monastery 6 requires two workers once per turn");
@@ -133,7 +137,10 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   let pages = [6];
   let payload: JsonValue = { actionType: action.type };
   try {
-    if (action.type === "buy-workers") {
+    if (action.type === "extension") {
+      draft=structuredClone(acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
+      pages=[17];payload={actionType:"shield-acquire-preview",...action.payload as object};
+    } else if (action.type === "buy-workers") {
       player.silver--;player.workers+=2;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
     } else if (action.type === "resolve-choice") {
       draft = structuredClone(resolveTileChoice(draft, action.optionId)) as Draft;

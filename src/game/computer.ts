@@ -9,6 +9,7 @@ import { resolvePlacement } from "./core/placement";
  * Returns an engine-generated legal action without changing state or rolling future dice.
  */
 export function chooseComputerAction(state: GameState, playerId = state.turn.activePlayerId ?? orderedPlayers(state)[0]): EngineResult<GameAction> {
+  if(state.config.extensions.some(e=>e.id==="shields"))return {ok:false,issues:[{code:"unsupported-extension",message:"Shield UI preview is local-only; abilities are not implemented"}]};
   const options = listCoreActionOptions(state, playerId);
   if (!options.ok) return options;
   const player = state.players.find(p => p.id === playerId)!;
