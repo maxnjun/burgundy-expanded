@@ -5,7 +5,7 @@ import { areAxialNeighbors } from "../boards/axial";
 import { deriveRegions } from "../boards/regions";
 import { validateBoardDefinition } from "../boards/validation";
 import { monasteryNumbers } from "./state";
-import { borderPostScore } from "./border-posts";
+import { fortressLineScore, PHASE_COMPLETION_POINTS } from "./fortress-lines";
 
 export function supportsPlacement(tile: Tile): boolean {
   return tile.type !== "monastery" || (Number.isInteger(tile.number) && tile.number >= 1 && tile.number <= 29);
@@ -67,7 +67,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   if (region.every(c => c.tileId !== null)) {
     completedRegionIds.push(cell.regionId);
     score("region-size", [0, 1, 3, 6, 10, 15, 21, 28, 36, 45][region.length+(hasShield(state,player.id,17)?1:0)], [4, 9]);
-    score("phase-bonus", { A: 10, B: 8, C: 6, D: 4, E: 2 }[state.turn.phase], [4, 9]);
+    score("phase-bonus", PHASE_COMPLETION_POINTS[state.turn.phase], [4, 9]);
   }
   let bonusTiles = [...state.market.bonusTiles];
   const bonuses = [...player.bonuses];
@@ -77,6 +77,6 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
     if (bonus) { bonuses.push(bonus); bonusTiles = bonusTiles.filter(b => b.id !== bonus.id); score("color-bonus", bonus.points*(hasShield(state,player.id,7)?2:1), [9,18]); }
   }
   const updated = { ...player, silver, workers, bonuses, storage: player.storage.map(id => id === tileId ? null : id), duchy: { ...player.duchy, cells, completedRegionIds, completedColors } };
-  entries.push(...borderPostScore(state, player, updated));
+  entries.push(...fortressLineScore(state, player, updated));
   return { player: { ...updated, victoryPoints: player.victoryPoints + entries.reduce((n, e) => n + e.points, 0) }, entries, bonusTiles };
 }

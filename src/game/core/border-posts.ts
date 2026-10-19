@@ -2,7 +2,9 @@ import { hasShield } from "../shields";
 import type { GameState, PlayerState, ScoreEntry } from "../types";
 import { areAxialNeighbors } from "../boards/axial";
 
-/** Common player-board overlay: user-marked diagram #23 and rulebook p.14.
+/** @deprecated Historical connection-rule utility retained for legacy regression only.
+ * Current placement uses fortress-lines.ts (user-confirmed straight lines).
+ * Common player-board overlay: user-marked diagram #23 and rulebook p.14.
  * The bottom post touches either of the two bottom middle hexes.
  */
 export const BORDER_POSTS = [

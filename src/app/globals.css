@@ -19,3 +19,5 @@
 .online-shields{display:flex;flex-wrap:wrap;gap:8px}.online-shields button{display:grid;justify-items:center;min-width:48px;background:#fff5d8;border:1px solid #b6a06c;border-radius:6px;padding:4px}.online-shields small{font-size:11px}.online-shields button:disabled{opacity:.65}
 
 .online-estates [data-can-mount="true"] [data-rim-band="outer"]{fill:#a27a30}.hex-cell:focus-visible{outline:none;filter:drop-shadow(0 0 4px #a27a30)}
+
+.board-choices{padding:10px;border:1px solid #c4aa77;margin:8px 0;background:#fff7e4}.board-candidate-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.board-candidate-grid button{min-width:0;padding:6px;background:#f3edcd;border:2px solid #c7b588;border-radius:5px;color:#6a4d29}.board-candidate-grid button[aria-pressed=true]{border-color:#997221;box-shadow:0 0 0 2px #e0c076}.board-candidate-grid svg{display:block;width:100%;max-height:310px}.board-choices small{display:block;margin-top:7px}[data-fortress-line]{cursor:pointer}[data-fortress-line]:focus-visible{outline:2px solid #98671d}

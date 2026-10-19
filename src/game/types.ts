@@ -12,7 +12,7 @@ export type BuildingType = "market" | "carpenters-workshop" | "church" | "wareho
 export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29;
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 export type ExtensionId = "white-castles" | "additional-hexes" | "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
-export interface RuleSource { readonly document: "special-edition-rulebook"; readonly pages: readonly number[]; readonly section: string }
+export interface RuleSource { readonly document: "special-edition-rulebook" | "project-user-rule"; readonly pages: readonly number[]; readonly section: string }
 export interface AxialCoord { readonly q: number; readonly r: number }
 interface TileIdentity { readonly id: TileId; readonly back: "matching-color" | "black" }
 /** Tile front type is independent of its back/supply pool. PDF pp.2,5. */

@@ -1,3 +1,4 @@
+import { validFortressScores } from "./fortress-lines";
 import { validShieldLayout, hasShield, shieldLayout } from "../shields";
 import type { EngineIssue, ValidationResult } from "../interfaces";
 import type { GameState, PlayerState } from "../types";
@@ -49,6 +50,7 @@ export function validateCoreState(state: GameState): ValidationResult {
       state.dice.whiteDie === null || state.market.roundGoods.length !== 5 - state.turn.round)) issue("Inconsistent player turn");
     if (state.turn.stage === "round-setup" && (state.status !== "playing" || state.turn.activePlayerId !== null ||
       state.turn.actedPlayerIds.length || state.dice.rolledForRound || state.dice.roundGoodsDistributed)) issue("Inconsistent round setup");
+    if (!validFortressScores(state)) issue("Inconsistent fortress line scores");
     const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [];
     for (const tile of Object.values(state.tiles)) {
       if (!["castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
