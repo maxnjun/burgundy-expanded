@@ -1,3 +1,4 @@
+import {pendingTradeReward,settleTradeReward} from "../custom-trade-routes";
 import { validShieldChoice, resolveShieldChoice, castleShieldOptions, resolveCastleShield } from "./shield-effects";
 import { rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, DieAdjustment, DieValue, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
@@ -13,10 +14,10 @@ const tileName = (state: GameState, id: string): string => {
     return tile.type === "inn" ? "여관" : tile.type === "building" ? buildings[tile.building] : tile.type === "monastery" ? `수도원 ${tile.number}` : tile.type === "livestock" ? `가축 ${tile.count}마리` : tile.type === "castle" ? "성" : tile.type === "mine" ? "광산" : "선박";
 };
 const isKind = (s: unknown): s is Kind => typeof s === "string" && Object.hasOwn(names, s);
-export function immediateOptions(state: GameState, player: PlayerState, kind: Kind): PendingChoice["options"] {
+export function immediateOptions(state: GameState, player: PlayerState, kind: Kind,tradeReward=false): PendingChoice["options"] {
     if (kind === "white-castle") {
         const white = state.dice.whiteDie;
-        if (white === null || !state.config.extensions.some(e=>e.id==="white-castles")) return [];
+        if (white === null || !state.config.extensions.some(e=>e.id==="white-castles") && !tradeReward) return [];
         // Generate ordinary intents, then constrain them to the current white die.
         // The parent benefit is consumed before executing; player dice and white die stay unchanged.
         return immediateOptions(state, player, "castle").flatMap(option => {
@@ -87,7 +88,9 @@ export function validImmediateChoice(state: GameState): boolean {
         const payload = effect.payload as {
             kind: unknown;
             tileId: unknown;
+            tradeSlotId?:string;
         };
+        if(payload?.tradeSlotId){return isKind(payload.kind)&&effect.id===payload.tradeSlotId&&pendingTradeReward(state,player.id,payload.tradeSlotId)===payload.kind&&JSON.stringify(choice.options)===JSON.stringify(immediateOptions(state,player,payload.kind,true));}
         if (!payload || !isKind(payload.kind) || typeof payload.tileId !== "string" || !player.duchy.cells.some(c => c.tileId === payload.tileId))
             return false;
         const tile = state.tiles[payload.tileId];
@@ -110,7 +113,9 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
     const option = state.turn.pendingChoice!.options.find(o => o.id === optionId);
     if (!option)
         throw new Error("Unknown effect option");
-    const cleared = { ...state, turn: { ...state.turn, pendingChoice: null, pendingEffects: [] } };
+    const tradeSlot=(state.turn.pendingEffects[0].payload as {tradeSlotId?:string})?.tradeSlotId;
+    const consumed=tradeSlot?settleTradeReward(state,state.turn.activePlayerId!,tradeSlot,option.id==="skip"):state;
+    const cleared = { ...consumed, turn: { ...consumed.turn, pendingChoice: null, pendingEffects: [] } };
     if (option.id === "skip")
         return cleared;
     if(option.id.startsWith("castle-shield:"))return resolveCastleShield(cleared,(option.payload as unknown as {shield:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}).shield);
@@ -141,6 +146,6 @@ export function refreshPendingChoice(state: GameState): GameState {
         kind: unknown;
     };
     if (isKind(payload.kind))
-        return { ...state, turn: { ...state.turn, pendingChoice: { ...state.turn.pendingChoice, options: immediateOptions(state, state.players.find(p => p.id === effect.playerId)!, payload.kind) } } };
+        return { ...state, turn: { ...state.turn, pendingChoice: { ...state.turn.pendingChoice, options: immediateOptions(state, state.players.find(p => p.id === effect.playerId)!, payload.kind,!!(effect.payload as {tradeSlotId?:string})?.tradeSlotId) } } };
     return refreshShipChoice(state);
 }

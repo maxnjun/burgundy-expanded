@@ -18,7 +18,7 @@ interface StoredRoom { draft?:BoardDraft;version:1;id:string;createdAt:number;up
 export interface RoomView {
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
   shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
-  finalScores:GameState["finalScores"];
+  finalScores:GameState["finalScores"];tradeRoutes?:GameState["tradeRoutes"];
   id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
   depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];inns?:GameState["market"]["inns"];dice:GameState["dice"];
@@ -61,8 +61,9 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false){return this.serial("create",async()=>{
     if(boardRange!==null&&!["base","fortress","all"].includes(boardRange as string))throw new RoomError(400,"영지 범위를 확인하세요.");
+    if(typeof tradeRoutes!=="boolean")throw new RoomError(400,"무역로 설정은 참/거짓이어야 합니다.");
     if(typeof inns!=="boolean")throw new RoomError(400,"여관 설정은 참/거짓이어야 합니다.");
     if(typeof whiteCastles!=="boolean")throw new RoomError(400,"흰 성 설정은 참/거짓이어야 합니다.");
 
@@ -70,7 +71,7 @@ export class RoomStore {
     await mkdir(this.directory,{recursive:true});
     if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
     const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,inns,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,inns,tradeRoutes,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -107,7 +108,7 @@ export class RoomStore {
     const nextRevision=room.game.revision+1;
     if(draftReady(room.draft)){
       const g=room.game;
-      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
+      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,tradeRoutes:g.config.extensions.some(e=>e.id==="trade-routes"),inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
       room.logs=["양쪽 영지 선택 완료 · 게임 준비 완료",...room.logs].slice(0,60);
     }
     room.game={...room.game,revision:nextRevision};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
@@ -122,7 +123,7 @@ export class RoomStore {
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    return {boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 

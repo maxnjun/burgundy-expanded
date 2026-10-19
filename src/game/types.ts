@@ -164,6 +164,7 @@ export interface ScoreBreakdown {
   readonly total: number;
 }
 export interface GameState {
+  readonly tradeRoutes?: import("./custom-trade-routes").CustomTradeState;
   readonly schemaVersion: "0.2.1";
   readonly revision: number;
   readonly config: GameConfig;

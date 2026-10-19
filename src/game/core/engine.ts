@@ -4,6 +4,7 @@ import type { EngineIssue, EngineResult, Transition, ValidationResult } from "..
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
 import { monasteryNumbers, orderedPlayers, validateCoreState } from "./state";
+import {advanceCustomTrade} from "./trade-effects";
 import { placementIssue } from "./placement";
 import { advancePhase } from "./phases";
 import { prepareTileEffect, resolveTileChoice, validPendingChoice, refreshPendingChoice } from "./effects";
@@ -190,7 +191,9 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       die.value = adjustedDie(die.value, action.adjustment.steps); die.used = true;
       const before = { workers: player.workers, silver: player.silver, points: player.victoryPoints };
       player.workers -= action.adjustment.workersSpent;
+      const soldIds=action.intent.kind==="sell-goods"?player.goods.find(g=>g.type===(action.intent as {goodsType:number}).goodsType)!.tiles.map(g=>g.id):[];
       draft = structuredClone(executeIntent(draft, player.id, action.intent)) as Draft;
+      if(action.intent.kind==="sell-goods")draft=structuredClone(advanceCustomTrade(draft,player.id,action.intent.goodsType,soldIds)) as Draft;
       player = draft.players.find(p => p.id === action.playerId)!;
       if (action.intent.kind === "place-tile") draft = structuredClone(prepareTileEffect(draft, player.id, action.intent.tileId)) as Draft;
       pages = action.intent.kind === "sell-goods" || action.intent.kind === "take-workers" ? [6,10,11] : action.intent.kind === "take-tile" ? [6,7,9] : [7,8,9,11];

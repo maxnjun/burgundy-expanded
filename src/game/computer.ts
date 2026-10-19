@@ -6,6 +6,7 @@ import { shieldLayout, hasShield } from "./shields";
 import { monasteryNumbers } from "./core/state";
 import { goodsSaleReward } from "./core/intents";
 import { shieldChoiceValue, shieldExtensionValue } from "./computer-shields";
+import {customTradeSpaces} from "./custom-trade-routes";
 import { resolvePlacement } from "./core/placement";
 
 /** A project heuristic opponent, NOT the official Chateauma or solo rules.
@@ -29,7 +30,7 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
       const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; adjustment?: { workersSpent: number }; goodsIds?: string[] } | null;
       return payload?.intent ? intentValue(state, player, payload.intent) - (payload.adjustment?.workersSpent ?? 0)*2 : action.optionId === "skip" ? -200 : 10 + (payload?.goodsIds?.length ?? 0)*3;
     }
-    if (action.type === "use-die") return intentValue(state, player, action.intent) - action.adjustment.workersSpent * 2;
+    if (action.type === "use-die") return intentValue(state, player, action.intent, true) - action.adjustment.workersSpent * 2;
     if (action.type === "buy-black-tile" || action.type === "use-monastery-six") {
       if (action.discardTileId || !player.storage.includes(null)) return -180;
       return acquisitionValue(state, player, state.tiles[action.tileId]) - (action.type === "buy-black-tile" ? 8 : 5);
@@ -57,12 +58,12 @@ function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): nu
   return (tile.type === "inn" ? 24 : 15) + Math.min(possible.length,3) - same*9 + (tile.type === "castle" ? 4 : tile.type === "mine" ? 3 : 0);
 }
 
-function intentValue(state: GameState, player: PlayerState, intent: ActionIntent): number {
+function intentValue(state: GameState, player: PlayerState, intent: ActionIntent,direct=false): number {
   if (intent.kind === "place-tile") {
     const placed = resolvePlacement(state,player,intent.tileId,intent.cellId);
     return 35 + placed.entries.reduce((sum,e)=>sum+e.points,0)*2 + (placed.player.silver-player.silver)*3 + (placed.player.workers-player.workers);
   }
-  if (intent.kind === "sell-goods") {const reward=goodsSaleReward(state,player,player.goods.find(g=>g.type===intent.goodsType)?.tiles.length??0);return 8+reward.points*2+reward.silver*2;}
+  if (intent.kind === "sell-goods") {const reward=goodsSaleReward(state,player,player.goods.find(g=>g.type===intent.goodsType)?.tiles.length??0);const route=state.tradeRoutes?.routes[player.id],next=route?customTradeSpaces(route)[route.sales.length]:null;const bonus=direct&&next?.goodsType===intent.goodsType?({warehouse:8,"carpenters-workshop":9,church:9,market:9,"boarding-house":8,bank:6,"town-hall":10,watchtower:8,"white-castle":12}[next.bonusId]??0):0;return 8+reward.points*2+reward.silver*2+bonus;}
   if (intent.kind === "take-workers") {const fees=shieldLayout(state)?.mounted.filter(m=>m.playerId===player.id).length??0;return hasShield(state,player.id,3)&&player.workers+player.silver<fees?20:player.workers < 2 ? 12 : player.workers < 5 ? 2 : -10;}
   return intent.discardTileId ? -150 : acquisitionValue(state,player,state.tiles[intent.tileId]);
 }

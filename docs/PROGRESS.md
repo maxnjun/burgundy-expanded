@@ -1,3 +1,18 @@
+# 현재 체크포인트 — 사용자 커스텀 무역로
+
+2026-10-19 · 사용자 고정 데이터 구현, 최종 검사 통과, 백업 진행 중. 전체 프로젝트 완료 아님.
+- 기준 main/de8a95a. 기존 문서2개의 여관 기록 변경과 수도원 원본PNG2개는 보존하고 이번 커밋에서 제외한다. 여관/그림/프레임/공용 배치·배경은 변경하지 않았다.
+- 완료: 사용자12장/36칸, 직접 주사위 판매1회=1칸, 9보상 기존 선택 엔진 재사용, 모든 보상/후속 판매의 재진행 차단, 서버 RNG배분/검증/재접속, 저장 검증, AI평가, 접힌 현재1장/전체 펼치기/자동 전환/뒷면/완료 표시. 공식 자료 추가 조사 없음. 상세 규칙/36칸: rules/custom-trade-routes.md.
+- 검사: 신규 코어21+온라인1/22 통과, 전체 npm run test:core 364/364, npm run test:boards33/33, npx tsc --noEmit·npm run lint·npm run build 통과. AI2/3/4인25라운드+확장 동시활성/중간저장 포함. 신규 PC브라우저5/5 통과; 기존 PC회귀19/19도 통과하여 이번 PC합계24/24.
+- 화면: .local-data/qa/custom-trade-{collapsed,expanded,sale,mismatch,next-card,complete,online}.png 생성. 펼친 전체·판매보상·경로완료·온라인 실제 스크린샷 직접 확인했다. 기존 공급/영지 SVG 좌표 변경 없음. 모바일 정밀QA는 보류.
+- 수정/오류: 테스트 p선언을 const로 수정해 lint 통과. 온라인 브라우저의 접근성 이름을 실제 온라인 행동 종류로 수정해 통과. 샌드박스 전체코어의 임시파일 rename EPERM은 동일명령 일반권한 재실행에서364개 통과. 테스트를 삭제/완화하지 않음.
+- 파일: game/custom-trade-routes.ts, core/trade-effects.ts, 기존 effects/engine/state/practice/types/computer, app/trade-route-panel.tsx/game-screen.tsx/css/online/room-screen.tsx, server/rooms.ts/room-http.ts, core/custom-trade*.test.ts/run.mjs, browser/custom-trade*.spec.ts, fixtures/custom-trade.ts, rules/custom-trade-routes.md 및 관련 규칙/체크포인트 문서.
+- 다음: 최종 docs결과 반영 완료→이번 작업만 구간 스테이징/민감정보 검사→비공개main 정상 Push/원격 해시 확인. 이미 구현한 기능이나 여관을 재작업하지 않는다.
+- 백업: 아직 미실행. 기존 .gitignore 제외 .local-data 스크린샷/로그는 로컬 산출물로 유지한다. 기존 문서 변경은 prefix패치로 분리하고 PNG2개를 스테이징하지 않는다.
+
+---
+이전 체크포인트 (당시 상태를 보존)
+
 # 현재 체크포인트 — 무역로 확장
 
 2026-10-19 · 기초 모듈/테스트 완료, **실제 게임 확장은 미완료·자료 대기**.

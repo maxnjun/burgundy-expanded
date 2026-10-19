@@ -1,3 +1,4 @@
+import {setupCustomTrade} from "./custom-trade-routes";
 import { supplyInn } from "./inns";
 import { whiteCastleTiles } from "./white-castles";
 import { createShieldLayout } from "./shields";
@@ -33,7 +34,7 @@ export function practiceBoard(variant = 0): BoardDefinition {
   return board;
 }
 
-export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly tradeRoutes?:boolean; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
 
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
@@ -200,7 +201,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
   const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing",
     config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,
       players: players.map(p => ({ id: p.id, name: p.name, color: p.color, seat: p.seat, boardId: p.duchy.boardId, startingCastleCellId: p.duchy.startingCastleCellId, controller: "human" })),
-      startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
+      startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
     players, tiles, market: { numberedDepots, blackDepot, supplyPools: [{ id: "practice:authored-reserve", remainingTileIds }], removedTileIds,
       bonusTiles: (["castle", "ship", "mine", "livestock", "building", "monastery"] as const).flatMap(color => (["first", "second"] as const).map(rank => ({ id: `bonus:${color}:${rank}`, color, rank, points: count + (rank === "first" ? 3 : 0) }))),
       phaseGoods: { ...phaseGoods, A: [] }, roundGoods },
@@ -212,7 +213,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules);
     Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:config.shieldRules?{rules:true}:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
   }
-  const ready = supplyInn(state, "A");
+  const ready = setupCustomTrade(supplyInn(state, "A"));
   const valid = validateCoreState(ready);
   if (!valid.valid) throw new Error(valid.issues.map(i => i.message).join(", "));
   return ready;

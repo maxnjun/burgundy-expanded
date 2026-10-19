@@ -34,7 +34,7 @@ export async function respond(task:()=>Promise<unknown>){
 
 /** Shared handlers allow integration tests to inject an isolated store, never live rooms. */
 export function roomHandlers(store:RoomStore=rooms){return {
- create:(request:Request)=>respond(async()=>{const data=await body(request);return store.create(data.name,data.shieldRules===undefined?false:data.shieldRules,data.whiteCastles===undefined?false:data.whiteCastles,data.boardRange??null,data.inns===undefined?false:data.inns);}),
+ create:(request:Request)=>respond(async()=>{const data=await body(request);return store.create(data.name,data.shieldRules===undefined?false:data.shieldRules,data.whiteCastles===undefined?false:data.whiteCastles,data.boardRange??null,data.inns===undefined?false:data.inns,data.tradeRoutes===undefined?false:data.tradeRoutes);}),
  view:(request:Request,id:string)=>respond(async()=>store.view(id,token(request))),
  join:(request:Request,id:string)=>respond(async()=>store.joinRoom(id,(await body(request)).name)),
  act:(request:Request,id:string)=>respond(async()=>{const data=await body(request);return (data.action as {type?:string})?.type==="choose-board"?store.chooseBoard(id,token(request),data.revision,data.action):store.act(id,token(request),data.revision,data.action);}),
