@@ -1,6 +1,6 @@
 # 현재 개발 체크포인트
 
-2026-10-19 · 요새23–30 줄 완성 + 랜덤 후보2개 구현·검증 완료, 백업 준비. 전체 프로젝트 미완료.
+2026-10-19 · 요새23–30 줄 완성 + 랜덤 후보2개 구현·검증·백업 완료. 전체 프로젝트 미완료.
 - 기준 main/79cfdd0. 기존 미커밋 수도원27/28 원본2개 보존·백업 제외. 공용 보드·이미지·프레임·기존37칸 데이터는 변경하지 않았다. 공식 자료 조사 없이 사용자 빨간 선/설명을 프로젝트 규칙으로 기록했다.
 - 요새: 보드23–30 각각 r=-2의5칸, q=-2/r=-1..3의5칸, q+r=2/r=-1..3의5칸을 명시. 외곽(70,138)/(310,590)/(550,138), 줄 강조/미완성·기존완성·획득 표시. 1–22 미적용,23–30 자동 적용. 세 실제 줄은 겹치지 않으며 일반 동시 판정은 교차 TEST FIXTURE로 검증했다.
 - 점수: placement가 줄별 새 완성 때 공통 단계10/8/6/4/2점, 고유fortress ledger ID로 중복/재전송/단계 재지급 방지. 일반 구역/색상 점수 독립. AI 기존 배치평가에 자동 반영,2·3·4인25라운드 완주. 온라인 서버 계산과 양쪽 공개 요새 기록·로그·재접속 검증.
@@ -12,4 +12,5 @@
 - 화면: fortress-{23..30}-{100,160,200}.png 및 fortress-{23..30}-awarded.png(총32장) 생성. 최종 overview100/160/200와 원본28번 전후를 직접 확인. 아이콘/모든37칸 polygon 분리축 검사 통과, PNG누락/정상교체·타일클릭 비간섭 확인. board-draft-local.png 실제 후보 미리보기도 직접 확인. 고정 안내바는 QA 캡처 시만 숨겨 영지 전체를 기록한다.
 - 실패/해결: 참가 직후 이전revision으로 선택한 온라인 테스트는 최신 참가 상태를 받은 뒤 요청하도록 보완(서버409 거부는 정상). PNG 지연/깨진이미지 표시를 사전로드/fallback으로 해결. 복원 전 준비 화면 클릭 경합은 saveReady 잠금으로 해결. 실패 검사를 완료로 처리하지 않았으며 관련 재검증은 통과했다.
 - 파일: src/game/{board-draft.ts,boards/fortress-lines.ts,core/{fortress-lines,border-posts,placement,state}.ts,types.ts}; src/app/{board-choices.tsx,fortress-markers.tsx,game-screen.tsx,online/room-screen.tsx,globals.css}; src/server/{rooms,room-http}.ts; tests/{fixtures/fortress.ts,core/{fortress,fortress-online,board-draft}.test.ts,core/run.mjs,browser/{fortress,fortress-online,board-draft}.spec.ts}; docs/{TODO.md,PROGRESS.md,rules/fortress-lines-and-board-draft.md,history/progress-common-layout-2026-10-19.md}.
-- 다음: 최종 검사 결과와안전한 diff/민감정보·비공개main을 확인하고 해당 파일만 Commit/Push·원격해시 확인. 모바일 정밀QA·실제PNG 제공·기존3/4인 연습 공급 제한은 남아 있다. 전체 프로젝트 완료로 취급하지 않는다.
+- 백업 완료: 대상26파일 민감정보 패턴0건·diff 검사·비공개main·권한·원격선행0/0 확인 후 926653557e7694b9542457643236894119a6d41f를 Commit/Push하고 원격 전체해시 일치 확인. 기존 PNG2개는 미커밋 그대로 남았다. 이 결과 기록은 별도 문서 체크포인트로 백업한다.
+- 다음: 이번 요새·랜덤 후보 범위는 완료. 모바일 정밀QA·실제PNG 제공·기존3/4인 연습 공급 제한은 남아 있다. 전체 프로젝트 완료로 취급하지 않는다.
