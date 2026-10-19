@@ -1,3 +1,5 @@
+import {vineIntents,vineValues,keyOccupant} from "../vineyards";
+import {refreshVineChoice,validVineChoice,resolveVineChoice,validVineBenefit} from "./vineyard-effects";
 import {pendingTradeReward,settleTradeReward} from "../custom-trade-routes";
 import { validShieldChoice, resolveShieldChoice, castleShieldOptions, resolveCastleShield } from "./shield-effects";
 import { rewardShieldWorkerGain } from "../shields";
@@ -17,13 +19,14 @@ const isKind = (s: unknown): s is Kind => typeof s === "string" && Object.hasOwn
 export function immediateOptions(state: GameState, player: PlayerState, kind: Kind,tradeReward=false): PendingChoice["options"] {
     if (kind === "white-castle") {
         const white = state.dice.whiteDie;
-        if (white === null || !state.config.extensions.some(e=>e.id==="white-castles") && !tradeReward) return [];
+        if(white===null)return [{id:"skip",label:"흰 주사위 기록 없음 · 추가 행동 사용하지 않기",payload:null}];
+        if (!state.config.extensions.some(e=>e.id==="white-castles") && !tradeReward) return [];
         // Generate ordinary intents, then constrain them to the current white die.
         // The parent benefit is consumed before executing; player dice and white die stay unchanged.
         return immediateOptions(state, player, "castle").flatMap(option => {
             const intent = (option.payload as unknown as { intent?: ActionIntent })?.intent;
             if (!intent) return [];
-            const value = intent.kind === "take-tile" ? intent.depot : intent.kind === "sell-goods" ? intent.goodsType : intent.kind === "place-tile" ? player.duchy.cells.find(c => c.id === intent.cellId)!.number : white;
+            const value = intent.kind==="vineyard"?[...vineValues(state,intent)].sort((a,b)=>Math.min((a-white+6)%6,(white-a+6)%6)-Math.min((b-white+6)%6,(white-b+6)%6))[0]:intent.kind === "take-tile" ? intent.depot : intent.kind === "sell-goods" ? intent.goodsType : intent.kind === "place-tile" ? player.duchy.cells.find(c => c.id === intent.cellId)!.number : white;
             const clockwise = (value - white + 6) % 6;
             const steps: (1 | -1)[] = clockwise <= 3 ? Array(clockwise).fill(1) : Array(6 - clockwise).fill(-1);
             const adjustment = planAdjustment(state, player, intent, steps);
@@ -55,11 +58,12 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
         for (const slot of depot.slots)
             if (slot.tileId && allowed.includes(state.tiles[slot.tileId].type))
                 for (let storageSlot = 0; storageSlot < player.storage.length; storageSlot++) {
-                    const occupant = player.storage[storageSlot];
-                    const intent: ActionIntent = { kind: "take-tile", depot: depot.number, tileId: slot.tileId, storageSlot, ...(occupant && !player.storage.includes(null) ? { discardTileId: occupant } : {}) };
+                    const occupant = keyOccupant(player,storageSlot);
+                    const intent: ActionIntent = { kind: "take-tile", depot: depot.number, tileId: slot.tileId, storageSlot, ...(occupant && !player.storage.some((_,i)=>!keyOccupant(player,i)) ? { discardTileId: occupant } : {}) };
                     if (!intentIssue(state, player, intent))
                         intents.push({ intent, label: `${depot.number}번 공급처 ${tileName(state, slot.tileId)} 획득 · 보관${storageSlot + 1}${occupant ? " 교체" : ""}` });
                 }
+    if(kind==="castle")for(const intent of vineIntents(state,player))intents.push({intent,label:`포도 ${intent.command==="take"?"획득":"배치"} ${intent.slotId??intent.tileId}${intent.flipped?" · 뒤집기":""}`});
     const options = intents.map(({ intent, label }) => ({ id: JSON.stringify(intent), label, payload: { intent } as unknown as JsonValue }));
     if (kind !== "castle")
         options.push({ id: "skip", label: "건물 효과 사용하지 않기", payload: null });
@@ -88,8 +92,9 @@ export function validImmediateChoice(state: GameState): boolean {
         const payload = effect.payload as {
             kind: unknown;
             tileId: unknown;
-            tradeSlotId?:string;
+            tradeSlotId?:string;vineRewardId?:string;
         };
+        if(payload?.vineRewardId)return isKind(payload.kind)&&validVineBenefit(state,effect,payload.kind)&&JSON.stringify(choice.options)===JSON.stringify(immediateOptions(state,player,payload.kind));
         if(payload?.tradeSlotId){return isKind(payload.kind)&&effect.id===payload.tradeSlotId&&pendingTradeReward(state,player.id,payload.tradeSlotId)===payload.kind&&JSON.stringify(choice.options)===JSON.stringify(immediateOptions(state,player,payload.kind,true));}
         if (!payload || !isKind(payload.kind) || typeof payload.tileId !== "string" || !player.duchy.cells.some(c => c.tileId === payload.tileId))
             return false;
@@ -102,9 +107,10 @@ export function validImmediateChoice(state: GameState): boolean {
         return false;
     }
 }
-export const validPendingChoice = (state: GameState): boolean => validShipChoice(state) || validImmediateChoice(state) || validShieldChoice(state);
+export const validPendingChoice = (state: GameState): boolean => validVineChoice(state) || validShipChoice(state) || validImmediateChoice(state) || validShieldChoice(state);
 /** Resolving consumes the parent benefit before scheduling a child: no replay, implicit dice or infinite queue. */
 export function resolveTileChoice(state: GameState, optionId: string): GameState {
+    if(validVineChoice(state))return resolveVineChoice(state,optionId);
     if(validShieldChoice(state))return resolveShieldChoice(state,optionId);
     if (validShipChoice(state))
         return resolveShipChoice(state, optionId);
@@ -139,6 +145,7 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
 }
 /** Purchases during a benefit can change storage/candidate lists; regenerate trusted options. */
 export function refreshPendingChoice(state: GameState): GameState {
+    if((state.turn.pendingEffects[0]?.payload as {vineChoice?:string}|null)?.vineChoice)return refreshVineChoice(state);
     const effect = state.turn.pendingEffects[0];
     if (!effect || !state.turn.pendingChoice)
         return state;

@@ -42,6 +42,7 @@ export interface DuchyBoard {
 }
 export interface BonusTile { readonly id: string; readonly color: TileType; readonly rank: "first" | "second"; readonly points: number }
 export interface PlayerState {
+  readonly vineyardReserve?: readonly {readonly tileId:string;readonly keys:readonly [number,number]}[];
   readonly id: PlayerId;
   readonly name: string;
   readonly color?: PlayerColor;
@@ -83,6 +84,7 @@ export interface DiceState {
 /** Stacks are ordered top to bottom; seats are not turn order. PDF pp.5-7. */
 export interface TurnOrderSpace { readonly position: number; readonly players: readonly PlayerId[] }
 export type ActionIntent =
+  | import("./vineyards").VineIntent
   | { readonly kind: "take-tile"; readonly depot: DieValue; readonly tileId: TileId; readonly storageSlot: number; readonly discardTileId?: TileId }
   | { readonly kind: "place-tile"; readonly tileId: TileId; readonly cellId: CellId }
   | { readonly kind: "sell-goods"; readonly goodsType: DieValue }
@@ -164,6 +166,7 @@ export interface ScoreBreakdown {
   readonly total: number;
 }
 export interface GameState {
+  readonly vineyards?: import("./vineyards").VineyardState;
   readonly tradeRoutes?: import("./custom-trade-routes").CustomTradeState;
   readonly schemaVersion: "0.2.1";
   readonly revision: number;

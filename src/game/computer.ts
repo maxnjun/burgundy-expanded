@@ -1,3 +1,4 @@
+import {vineScore,type VineIntent} from "./vineyards";
 import type { ActionIntent, GameAction, GameState, PlayerState, Tile } from "./types";
 import type { EngineResult } from "./interfaces";
 import { listCoreActionOptions, orderedPlayers } from "./core";
@@ -25,6 +26,7 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if (action.type === "end-turn") return -100;
     if (action.type === "buy-workers") return player.workers<2?10:-190;
     if(action.type==="extension"&&action.extensionId==="shields")return shieldExtensionValue(state,player,action);
+    if(action.type==="extension"&&action.extensionId==="vineyards")return (action.payload as unknown as VineIntent).discardIds?.length?-180:16;
     if (action.type === "resolve-choice") {
       const special=shieldChoiceValue(state,player,action.optionId);if(special!==null)return special;
       const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; adjustment?: { workersSpent: number }; goodsIds?: string[] } | null;
@@ -59,6 +61,7 @@ function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): nu
 }
 
 function intentValue(state: GameState, player: PlayerState, intent: ActionIntent,direct=false): number {
+  if(intent.kind==="vineyard"){if(intent.command==="take")return intent.discardIds?.length?-160:25;const v=state.vineyards!,own=v.players[player.id],score=vineScore({...v,players:{...v.players,[player.id]:{...own,placed:[...own.placed,{slotId:intent.slotId!,tileId:intent.tileId,flipped:intent.flipped!,used:[]}]}}},player.id);return 48+score-vineScore(v,player.id);}
   if (intent.kind === "place-tile") {
     const placed = resolvePlacement(state,player,intent.tileId,intent.cellId);
     return 35 + placed.entries.reduce((sum,e)=>sum+e.points,0)*2 + (placed.player.silver-player.silver)*3 + (placed.player.workers-player.workers);

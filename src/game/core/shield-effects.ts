@@ -1,3 +1,4 @@
+import {keyOccupant,storedWeight,compactVineStorage,discardStored,VINE_TILES} from "../vineyards";
 import type { GameState, JsonValue, PendingChoice, PlayerState } from "../types";
 import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldTurnKey, type ShieldAcquireAction } from "../shields";
 import { placementIssue } from "./placement";
@@ -6,6 +7,7 @@ import { prepareTileEffect, refreshPendingChoice } from "./effects";
 import { orderedPlayers } from "./state";
 
 function tileLabel(state:GameState,id:string):string {
+  if(VINE_TILES[id])return `포도 ${id} (2칸)`;
   const t=state.tiles[id];
   if(t.type==="inn")return "여관";
   if(t.type==="livestock")return `${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]} ${t.count}마리`;
@@ -41,7 +43,7 @@ function phaseOptions(state:GameState,player:PlayerState):PendingChoice["options
 }
 function optionsFor(state:GameState,player:PlayerState,window:Window):PendingChoice["options"] {
   if(window.kind==="shield-phase")return phaseOptions(state,player);
-  if(window.kind==="shield-storage")return player.storage.flatMap((id,i)=>id?[{id:`discard:${i}:${id}`,label:`초과 보관 타일 ${i+1} 폐기 · ${tileLabel(state,id)}`,payload:json({tileId:id,index:i})}]:[]);
+  if(window.kind==="shield-storage")return [...player.storage.flatMap((id,i)=>id?[{id:`discard:${i}:${id}`,label:`초과 보관 타일 ${i+1} 폐기 · ${tileLabel(state,id)}`,payload:json({tileId:id,index:i})}]:[]),...(player.vineyardReserve??[]).map(r=>({id:`discard:vine:${r.tileId}`,label:`초과 포도 ${r.tileId} 폐기 (2칸)`,payload:json({tileId:r.tileId})}))];
   return [{id:"shield5:skip",label:"방패5 추가 상품 가져오지 않기",payload:null},...([1,2,3,4,5,6] as const).filter(type=>player.goods.length<3||player.goods.some(g=>g.type===type)).map(type=>({id:`shield5:${type}`,label:`방패5 · ${type}번 상품 전 공급처에서 수령`,payload:json({goodsType:type})}))];
 }
 function prepare(state:GameState,playerId:string,window:Window):GameState {
@@ -54,7 +56,7 @@ export function validShieldChoice(state:GameState):boolean {
     const w=windowOf(state),choice=state.turn.pendingChoice,e=state.turn.pendingEffects[0],p=state.players.find(p=>p.id===state.turn.activePlayerId);
     if(!w||!choice||!p||!shieldLayout(state)?.effectsActive||state.turn.pendingEffects.length!==1||e.id!==choice.id||e.playerId!==p.id||choice.playerId!==p.id||choice.source.section!==source.section)return false;
     if(w.kind==="shield-five"&&(!hasShield(state,p.id,5)||!p.duchy.cells.some(c=>c.tileId===w.tileId&&state.tiles[w.tileId]?.type==="ship")))return false;
-    if(w.kind==="shield-storage"&&(hasShield(state,p.id,4)||p.storage.filter(Boolean).length<=3))return false;
+    if(w.kind==="shield-storage"&&(hasShield(state,p.id,4)||storedWeight(p)<=3))return false;
     if(w.kind==="shield-phase"&&(state.turn.stage!=="phase-end"||!shieldLayout(state)?.rules?.phase||!phaseOptions(state,p).length))return false;
     return JSON.stringify(choice.options)===JSON.stringify(optionsFor(state,p,w));
   }catch{return false;}
@@ -67,15 +69,15 @@ export function settleShieldState(input:GameState):GameState {
   if(!shieldLayout(input)?.effectsActive)return input;
   let state=input;
   const players=state.players.map(p=>{
-    if(hasShield(state,p.id,4))return p.storage.includes(null)?p:{...p,storage:[...p.storage,null]};
-    if(p.storage.length>3&&p.storage.filter(Boolean).length<=3){const ids=p.storage.filter((id):id is string=>id!==null);return {...p,storage:[...ids,...Array(3-ids.length).fill(null)]};}
+    if(hasShield(state,p.id,4))return p.storage.some((_,i)=>!keyOccupant(p,i))?p:{...p,storage:[...p.storage,null]};
+    if(p.storage.length>3&&storedWeight(p)<=3)return compactVineStorage(p);
     return p;
   });state={...state,players};
   if(state.turn.pendingChoice){
     const w=windowOf(state),player=state.players.find(p=>p.id===state.turn.pendingChoice!.playerId);
     return w&&player?{...state,turn:{...state.turn,pendingChoice:{...state.turn.pendingChoice,options:optionsFor(state,player,w)}}}:refreshPendingChoice(state);
   }
-  const overflow=state.players.find(p=>!hasShield(state,p.id,4)&&p.storage.filter(Boolean).length>3);
+  const overflow=state.players.find(p=>!hasShield(state,p.id,4)&&storedWeight(p)>3);
   if(overflow)return prepare(state,overflow.id,{kind:"shield-storage"});
   const layout=shieldLayout(state)!,flow=layout.rules?.phase;
   if(state.turn.stage!=="phase-end"||!flow)return state;
@@ -104,8 +106,8 @@ export function resolveShieldChoice(state:GameState,optionId:string):GameState {
   const w=windowOf(state)!,playerId=state.turn.activePlayerId!,payload=option.payload as Record<string,unknown>|null;
   let next:GameState={...state,turn:{...state.turn,pendingChoice:null,pendingEffects:[]}};
   if(w.kind==="shield-storage"){
-    const id=payload!.tileId as string,index=payload!.index as number;
-    next={...next,market:{...next.market,removedTileIds:[...next.market.removedTileIds,id]},players:next.players.map(p=>p.id===playerId?{...p,storage:p.storage.map((s,i)=>i===index?null:s)}:p)};
+    const id=payload!.tileId as string;
+    next=discardStored(next,playerId,[id]);
   }else if(w.kind==="shield-five"){
     if(payload){const type=payload.goodsType as 1|2|3|4|5|6;const taken=next.market.numberedDepots.flatMap(d=>d.goods.filter(g=>g.type===type));
       next={...next,market:{...next.market,numberedDepots:next.market.numberedDepots.map(d=>({...d,goods:d.goods.filter(g=>g.type!==type)}))},players:next.players.map(p=>p.id===playerId?{...p,goods:taken.length?[...p.goods.filter(g=>g.type!==type),{type,tiles:[...(p.goods.find(g=>g.type===type)?.tiles??[]),...taken]}]:p.goods}:p)};

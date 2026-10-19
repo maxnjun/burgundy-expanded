@@ -1,3 +1,4 @@
+import {keyOccupant,discardStored,vinePlacementIssue,vineTakeIssue,vineValues,executeVine} from "../vineyards";
 import { hasShield, rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, DieValue, GameState, PlayerState } from "../types";
 import { placementIssue, resolvePlacement } from "./placement";
@@ -9,21 +10,22 @@ type Mutable<T, D extends unknown[] = [
         0
     ]>;
 } : T;
-export function destinationIssue(player: Pick<PlayerState, "storage">, action: {
+export function destinationIssue(player: Pick<PlayerState, "storage" | "vineyardReserve">, action: {
     storageSlot: number;
     discardTileId?: string;
 }): string | null {
     if (!Number.isInteger(action.storageSlot) || action.storageSlot < 0 || action.storageSlot >= player.storage.length)
         return "Invalid tile storage slot";
-    const occupant = player.storage[action.storageSlot];
+    const occupant = keyOccupant(player as PlayerState,action.storageSlot);
     if (occupant === null)
         return action.discardTileId === undefined ? null : "Cannot discard from an empty slot";
-    if (player.storage.includes(null))
+    if (player.storage.some((_,i)=>!keyOccupant(player as PlayerState,i)))
         return "Use an empty storage slot before discarding";
     return action.discardTileId === occupant ? null : "Explicit discard required";
 }
 export function intentIssue(state: GameState, player: PlayerState, intent: ActionIntent, value?: DieValue): string | null {
     switch (intent.kind) {
+        case "vineyard": return (value!==undefined&&!vineValues(state,intent).includes(value))?"Vineyard die mismatch":intent.command==="take"?vineTakeIssue(state,player,intent):vinePlacementIssue(state,player,intent);
         case "take-workers": return null;
         case "sell-goods": return (value === undefined || intent.goodsType === value) && player.goods.some(g => g.type === intent.goodsType) ? null : "Goods stack or die mismatch";
         case "take-tile": return (value === undefined || intent.depot === value) && state.market.numberedDepots.find(d => d.number === intent.depot)?.slots.some(s => s.tileId === intent.tileId) ? destinationIssue(player, intent) : "Depot or die mismatch";
@@ -41,9 +43,11 @@ export function goodsSaleReward(state: GameState, player: PlayerState, tileCount
 }
 /** No dice or effect scheduling here: shared by ordinary actions and immediate tile benefits. */
 export function executeIntent(state: GameState, playerId: string, intent: ActionIntent): GameState {
-    const draft = structuredClone(state) as Mutable<GameState>;
+    if(intent.kind==="vineyard"){if(intentIssue(state,state.players.find(p=>p.id===playerId)!,intent))throw new Error("Invalid vineyard intent");return executeVine(state,playerId,intent); }
+    const prepared=intent.kind==="take-tile"&&intent.discardTileId?discardStored(state,playerId,[intent.discardTileId]):state;
+    const draft = structuredClone(prepared) as Mutable<GameState>;
     let player = draft.players.find(p => p.id === playerId)!;
-    if (intentIssue(state, player, intent))
+    if (intentIssue(state, state.players.find(p=>p.id===playerId)!, intent))
         throw new Error("Invalid immediate intent");
     const monks = monasteryNumbers(state, player);
     switch (intent.kind) {
@@ -66,8 +70,7 @@ export function executeIntent(state: GameState, playerId: string, intent: Action
         }
         case "take-tile": {
             draft.market.numberedDepots.find(d => d.number === intent.depot)!.slots.find(s => s.tileId === intent.tileId)!.tileId = null;
-            if (intent.discardTileId)
-                draft.market.removedTileIds.push(intent.discardTileId);
+
             player.storage[intent.storageSlot] = intent.tileId;
             break;
         }

@@ -1,3 +1,4 @@
+import {validVineyards} from "../vineyards";
 import {validCustomTrade} from "../custom-trade-routes";
 import { validInns } from "../inns";
 import { validFortressScores } from "./fortress-lines";
@@ -26,7 +27,7 @@ export function validateCoreState(state: GameState): ValidationResult {
   try {
     if (state.config.ruleset !== "special-edition-base" || state.config.mode !== "competitive" ||
       state.config.playerCount < 2 || state.config.playerCount > 4 || state.players.length !== state.config.playerCount) issue("Core requires 2-4 competitive players");
-    if (state.config.extensions.some(e => !["trade-routes","inns","white-castles","geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
+    if (state.config.extensions.some(e => !["vineyards","trade-routes","inns","white-castles","geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
       issues.push({ code: "unsupported-extension", message: "Core does not resolve extensions or automated players" });
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
@@ -52,6 +53,7 @@ export function validateCoreState(state: GameState): ValidationResult {
       state.dice.whiteDie === null || state.market.roundGoods.length !== 5 - state.turn.round)) issue("Inconsistent player turn");
     if (state.turn.stage === "round-setup" && (state.status !== "playing" || state.turn.activePlayerId !== null ||
       state.turn.actedPlayerIds.length || state.dice.rolledForRound || state.dice.roundGoodsDistributed)) issue("Inconsistent round setup");
+    if(!validVineyards(state))issue("Invalid vineyard conservation, reservations or effects");
     if(!validCustomTrade(state))issue("Invalid custom trade routes or pending reward");
     if (!validInns(state)) issue("Invalid inn supply or duplicate inn in region");
     if (!validFortressScores(state)) issue("Inconsistent fortress line scores");

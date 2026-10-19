@@ -1,3 +1,19 @@
+# 현재 구현 체크포인트 — 포도밭 프로젝트 복원판 v0.1
+
+2026-10-20 · 구현/검증 완료 단계, 최종 검사 완료·백업 정리 중. 기준 main/156c6e6. 전체 프로젝트 완료 아님. 기존 문서2개 여관 기록/수도원PNG2개 미커밋 보존.
+- 구현:game/vineyards.ts(24칸/12쌍/3층2·4·6·51장·공급/축소·보관2칸·배치·점수/검증),core/vineyard-effects.ts(2보너스 순서·자식스택·층 토큰·무료획득),기존 core/types/practice/computer/computer-shields/direct-actions·server/rooms/room-http 연결.
+- UI:app/vineyard-board.tsx/vineyards.css. 개인 영지 오른쪽 항상 펼침, 기존 영지 좌표 유지. 공용 옆 공급/상점/토큰, 주사위 직접 선택·뒤집기·2칸 예약·폐기 확인. 로컬2~4인/AI/온라인2인, 서버 보유 주머니 순서는 비공개. PNG/원본/타일프레임 변경 없음.
+- 검사:전체 코어401/401(기존364+신규37),보드33/33,PC 고유28개(기존23+신규5).최신 온라인 포도 폐기/취소/배치/재접속 및 기존 방패3 포함8/8. 최종 저장 검증/출처 메타 강화 후 관련37/37·TypeScript/ESLint/프로덕션 빌드 재통과.
+- AI:게임 로직 수정 후 VINEYARD_SIMULATIONS=30으로2/3/4인각30게임,총90게임25라운드+중간저장 통과(232초).관련36개 전체통과.최종 저장 불변식/출처 강화는별도관련37개 재통과,정책/진행로직변경없음.장기검증을 모바일/온라인90게임으로표현하지않는다.
+- 화면:.local-data/qa/vineyards-{empty-estate,planted-estate,common-board,supply,online,online-placed}.png.빈/배치/공용/온라인 원본 스크린샷 직접 확인,24칸/12쌍/55공유변·층2/4/6·오른쪽/공용옆 배치 검사.시각 CSS/기하/규칙 분리.모바일정밀QA는후속.
+- 수정:장기3인seed5 방패15→단계종료 흰 성에서 whiteDie가 null이 되어선택0개→흰눈금을 단계보너스끝까지유지(없는과거기록은임의복원없이사용안함).장기4인포도discard AI type조회오류→포도별도가치.방패4상실2칸정리·인원변경축소초기화·온라인폐기확인/취소.테스트삭제/완화없음.
+- 파일:위소스와 tests/core/vineyards.test.ts/vineyard-online.test.ts/run.mjs,tests/fixtures/vineyards.ts,tests/browser/vineyards.spec.ts,docs/rules/vineyards.md/design/vineyards-proposal.md/TODO/PROGRESS.상세규칙/한계는 rules/vineyards.md.
+- 남은범위:모바일정밀QA·첫버전시각사용자피드백·AI토큰/장기연결전략고도화.공식전수검증완료아님.새확장/온라인3~4/공식솔로/팀전은보류유지.
+- 다음:이번변경diff/비밀검사·문서기존구간분리→비공개main 정상커밋/Push/원격해시확인.백업은아직미실행.개발서버는유지한다.
+
+---
+이전 체크포인트 보존
+
 # 최신 체크포인트 — 포도밭 패턴 기반 설계
 
 2026-10-20 · 사용자의 '특징을 찾아 나머지 설계' 요청으로 design/vineyards-proposal.md 작성. 게임 구현 요청으로 해석하지 않았다. 기준 main/a206423.

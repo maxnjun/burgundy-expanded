@@ -28,6 +28,6 @@ export function automaticAction(game:GameState,actions:readonly GameAction[]):Ga
  if(game.status!=="playing"||game.turn.pendingChoice||game.turn.pendingEffects.length)return null;
  const playerId=game.turn.activePlayerId??orderedPlayers(game)[0];
  if(game.turn.stage==="round-setup"||game.turn.stage==="phase-end")return actions.find(a=>a.playerId===playerId&&(a.type==="roll-round"||a.type==="advance-phase"))??null;
- if(actions.some(a=>a.type==="buy-black-tile"||a.type==="use-monastery-six"||a.type==="buy-workers"))return null;
+ if(actions.some(a=>(a.type==="extension"&&a.extensionId==="vineyards")||a.type==="buy-black-tile"||a.type==="use-monastery-six"||a.type==="buy-workers"))return null;
  return actions.find(a=>a.type==="end-turn")??null;
 }

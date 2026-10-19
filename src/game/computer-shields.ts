@@ -1,3 +1,4 @@
+import {VINE_TILES} from "./vineyards";
 import { shieldLayout, type ShieldAcquireAction } from "./shields";
 import { directCost } from "./direct-actions";
 import { monasteryNumbers } from "./core/state";
@@ -25,7 +26,7 @@ export function shieldChoiceValue(state:GameState,p:PlayerState,optionId:string)
  const option=state.turn.pendingChoice!.options.find(o=>o.id===optionId)!,payload=option.payload as {shieldNumber?:number;pay?:string;tileId?:string;cellId?:string;index?:number;goodsType?:number;shield?:{slotId:string;replaceShieldNumber:number|null}}|null;
  if(payload?.pay&&payload.shieldNumber){const worth=shieldComputerValue(state,p,payload.shieldNumber);return payload.pay==="remove"?-worth:worth-(payload.pay==="worker"?(p.workers>p.silver?1:4):(p.silver>1?2:5));}
  if(payload?.tileId&&payload.cellId){const result=resolvePlacement(state,{...p,storage:[...p.storage,payload.tileId]},payload.tileId,payload.cellId);return 35+result.entries.reduce((n,e)=>n+e.points,0)*2+(result.player.silver-p.silver)*3+(result.player.workers-p.workers);}
- if(optionId.startsWith("discard:")&&payload?.tileId)return -((state.tiles[payload.tileId].type==="castle"?8:4));
+ if(optionId.startsWith("discard:")&&payload?.tileId)return -((VINE_TILES[payload.tileId]?6:state.tiles[payload.tileId]?.type==="castle"?8:4));
  if(optionId.startsWith("shield5:")&&payload?.goodsType)return 10+state.market.numberedDepots.reduce((n,d)=>n+d.goods.filter(g=>g.type===payload.goodsType).length,0)*4;
  if(payload?.shield){const n=shieldLayout(state)!.slots.find(s=>s.id===payload.shield!.slotId)!.shieldNumber!;return 25+shieldComputerValue(state,p,n)-(payload.shield.replaceShieldNumber?shieldComputerValue(state,p,payload.shield.replaceShieldNumber):0);}
  return null;
