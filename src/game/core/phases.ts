@@ -31,9 +31,8 @@ export function finalScore(state: GameState, player: PlayerState): EngineResult<
     if (n === 26) points = (player.bonuses.length + state.scoreLedger[player.id].filter(e => e.id === `border:${player.id}:all`).length) * 3;
     if (n >= 15) add("monastery", points*(hasShield(state,player.id,10)?2:1), `monastery-${n}`);
   }
-  // A crane may count as ONE chosen building for16~23. All these bonuses are4 points.
-  // Monk29 is outside the enabled catalog, so no unsupported29 interpretation is applied.
-  if(monks.some(n=>n>=16&&n<=23))add("monastery",placed.filter(t=>t.type==="building"&&t.building==="crane").length*4*(hasShield(state,player.id,10)?2:1),"crane-building");
+  // PDF p.13: each crane counts once for a chosen building, including monastery29.
+  if(monks.some(n=>(n>=16&&n<=23)||n===29))add("monastery",placed.filter(t=>t.type==="building"&&t.building==="crane").length*4*(hasShield(state,player.id,10)?2:1),"crane-building");
   if(shieldLayout(state)?.effectsActive)for(const m of shieldLayout(state)!.mounted.filter(m=>m.playerId===player.id))add("extension",(m.shieldNumber<=6?12:m.shieldNumber<=12?8:4)*(hasShield(state,player.id,13)?2:1),`shield-${m.shieldNumber}`);
   const earned = state.scoreLedger[player.id];
   const finalAdditionsTotal = additions.reduce((n, e) => n + e.points, 0);

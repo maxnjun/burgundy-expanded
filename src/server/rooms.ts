@@ -56,12 +56,14 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false){return this.serial("create",async()=>{
+    if(typeof whiteCastles!=="boolean")throw new RoomError(400,"흰 성 설정은 참/거짓이어야 합니다.");
+
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     await mkdir(this.directory,{recursive:true});
     if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
     const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -97,7 +99,7 @@ export class RoomStore {
   }
 }
 
-const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]}${t.count}`:({castle:"성",mine:"광산",ship:"선박"})[t.type];};
+const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]}${t.count}`:({castle:"성",mine:"광산",ship:"선박"})[t.type];};
 export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="roll-round")return "라운드 주사위 굴리기";
   if(a.type==="end-turn")return "차례 종료";

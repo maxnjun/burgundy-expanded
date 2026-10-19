@@ -1,19 +1,37 @@
 import { validShieldChoice, resolveShieldChoice, castleShieldOptions, resolveCastleShield } from "./shield-effects";
 import { rewardShieldWorkerGain } from "../shields";
-import type { ActionIntent, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
+import type { ActionIntent, DieAdjustment, DieValue, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
+import { adjustmentValid, planAdjustment } from "./modifiers";
 import { executeIntent, intentIssue } from "./intents";
 import { prepareShipChoice, resolveShipChoice, validShipChoice, refreshShipChoice } from "./ship";
 import { prioritizeMonastery27 } from "./monasteries";
-type Kind = "castle" | "town-hall" | "market" | "carpenters-workshop" | "church" | "warehouse" | "crane";
-const names: Record<Kind, string> = { crane:"기중기 · 건물 효과 선택", castle: "성 · 자유 추가 행동", "town-hall": "시청 · 보관 타일 추가 배치", market: "시장 · 선박/가축 획득", "carpenters-workshop": "목공소 · 건물 획득", church: "교회 · 성/광산/수도원 획득", warehouse: "창고 · 상품 판매" };
+type Kind = "castle" | "white-castle" | "town-hall" | "market" | "carpenters-workshop" | "church" | "warehouse" | "crane";
+const names: Record<Kind, string> = { "white-castle": "흰 성 · 흰 주사위 추가 행동", crane:"기중기 · 건물 효과 선택", castle: "성 · 자유 추가 행동", "town-hall": "시청 · 보관 타일 추가 배치", market: "시장 · 선박/가축 획득", "carpenters-workshop": "목공소 · 건물 획득", church: "교회 · 성/광산/수도원 획득", warehouse: "창고 · 상품 판매" };
 const tileName = (state: GameState, id: string): string => {
     const tile = state.tiles[id];
-    const buildings = { crane: "기중기", market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "boarding-house": "숙소", bank: "은행", "town-hall": "시청", watchtower: "감시탑" };
+    const buildings = { "white-castle": "흰 성", crane: "기중기", market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "boarding-house": "숙소", bank: "은행", "town-hall": "시청", watchtower: "감시탑" };
     return tile.type === "building" ? buildings[tile.building] : tile.type === "monastery" ? `수도원 ${tile.number}` : tile.type === "livestock" ? `가축 ${tile.count}마리` : tile.type === "castle" ? "성" : tile.type === "mine" ? "광산" : "선박";
 };
 const isKind = (s: unknown): s is Kind => typeof s === "string" && Object.hasOwn(names, s);
 export function immediateOptions(state: GameState, player: PlayerState, kind: Kind): PendingChoice["options"] {
-    if(kind==="crane")return [...(["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower"] as const).map(building=>({id:`crane:${building}`,label:({market:"시장","carpenters-workshop":"목공소",church:"교회",warehouse:"창고","boarding-house":"숙소",bank:"은행","town-hall":"시청",watchtower:"감시탑"})[building],payload:{building}})),{id:"skip",label:"기중기 효과 사용하지 않기",payload:null}];
+    if (kind === "white-castle") {
+        const white = state.dice.whiteDie;
+        if (white === null || !state.config.extensions.some(e=>e.id==="white-castles")) return [];
+        // Generate ordinary intents, then constrain them to the current white die.
+        // The parent benefit is consumed before executing; player dice and white die stay unchanged.
+        return immediateOptions(state, player, "castle").flatMap(option => {
+            const intent = (option.payload as unknown as { intent?: ActionIntent })?.intent;
+            if (!intent) return [];
+            const value = intent.kind === "take-tile" ? intent.depot : intent.kind === "sell-goods" ? intent.goodsType : intent.kind === "place-tile" ? player.duchy.cells.find(c => c.id === intent.cellId)!.number : white;
+            const clockwise = (value - white + 6) % 6;
+            const steps: (1 | -1)[] = clockwise <= 3 ? Array(clockwise).fill(1) : Array(6 - clockwise).fill(-1);
+            const adjustment = planAdjustment(state, player, intent, steps);
+            if (!adjustmentValid(state, player, intent, adjustment) || intentIssue(state, player, intent, value as DieValue)) return [];
+            const payload = { intent, adjustment };
+            return [{ id: JSON.stringify(payload), label: `흰 주사위 ${white} → ${value} · 일꾼 ${adjustment.workersSpent} · ${option.label}`, payload: payload as unknown as JsonValue }];
+        }).concat([{ id: "skip", label: "흰 성 추가 행동 사용하지 않기", payload: null }]);
+    }
+    if(kind==="crane")return [...([...(["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower"] as const), ...(state.config.extensions.some(e=>e.id==="white-castles") ? ["white-castle" as const] : [])]).map(building=>({id:`crane:${building}`,label:({"white-castle":"흰 성",market:"시장","carpenters-workshop":"목공소",church:"교회",warehouse:"창고","boarding-house":"숙소",bank:"은행","town-hall":"시청",watchtower:"감시탑"})[building],payload:{building}})),{id:"skip",label:"기중기 효과 사용하지 않기",payload:null}];
     const intents: {
         intent: ActionIntent;
         label: string;
@@ -56,7 +74,7 @@ export function prepareTileEffect(state: GameState, playerId: string, tileId: st
         return state;
     const player = state.players.find(p => p.id === playerId)!;
     const id = `core:${state.revision + 1}:benefit:${tileId}`;
-    const source = { document: "special-edition-rulebook" as const, pages: kind==="crane"?[13]:[7, 8, 9], section: names[kind] };
+    const source = { document: "special-edition-rulebook" as const, pages: kind==="white-castle"?[14]:kind==="crane"?[13]:[7, 8, 9], section: names[kind] };
     const options = immediateOptions(state, player, kind);
     // Keep even a skip-only window: a black purchase during a town-hall effect can create a new target.
     return { ...state, turn: { ...state.turn, pendingEffects: [{ id, playerId, kind: "tile-benefit", source, payload: { kind, tileId } }], pendingChoice: { id, playerId, source, options } } };
@@ -106,10 +124,12 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
         const effect=state.turn.pendingEffects[0],tileId=(effect.payload as {tileId:string}).tileId;
         return {...cleared,turn:{...cleared.turn,pendingEffects:[{...effect,payload:{kind:building,tileId}}],pendingChoice:{...state.turn.pendingChoice!,source:{...effect.source,section:names[building]},options:immediateOptions(cleared,cleared.players.find(p=>p.id===playerId)!,building)}}};
     }
-    const { intent } = option.payload as unknown as {
+    const { intent, adjustment } = option.payload as unknown as {
         intent: ActionIntent;
+        adjustment?: DieAdjustment;
     };
-    const next = executeIntent(cleared, state.turn.activePlayerId!, intent);
+    const paid = adjustment ? { ...cleared, players: cleared.players.map(p => p.id === state.turn.activePlayerId ? { ...p, workers: p.workers - adjustment.workersSpent } : p) } : cleared;
+    const next = executeIntent(paid, state.turn.activePlayerId!, intent);
     return intent.kind === "place-tile" ? prepareTileEffect(next, state.turn.activePlayerId!, intent.tileId) : next;
 }
 /** Purchases during a benefit can change storage/candidate lists; regenerate trusted options. */

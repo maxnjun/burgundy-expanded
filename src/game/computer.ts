@@ -26,8 +26,8 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if(action.type==="extension"&&action.extensionId==="shields")return shieldExtensionValue(state,player,action);
     if (action.type === "resolve-choice") {
       const special=shieldChoiceValue(state,player,action.optionId);if(special!==null)return special;
-      const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; goodsIds?: string[] } | null;
-      return payload?.intent ? intentValue(state, player, payload.intent) : action.optionId === "skip" ? -200 : 10 + (payload?.goodsIds?.length ?? 0)*3;
+      const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; adjustment?: { workersSpent: number }; goodsIds?: string[] } | null;
+      return payload?.intent ? intentValue(state, player, payload.intent) - (payload.adjustment?.workersSpent ?? 0)*2 : action.optionId === "skip" ? -200 : 10 + (payload?.goodsIds?.length ?? 0)*3;
     }
     if (action.type === "use-die") return intentValue(state, player, action.intent) - action.adjustment.workersSpent * 2;
     if (action.type === "buy-black-tile" || action.type === "use-monastery-six") {

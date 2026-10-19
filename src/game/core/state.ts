@@ -23,7 +23,7 @@ export function validateCoreState(state: GameState): ValidationResult {
   try {
     if (state.config.ruleset !== "special-edition-base" || state.config.mode !== "competitive" ||
       state.config.playerCount < 2 || state.config.playerCount > 4 || state.players.length !== state.config.playerCount) issue("Core requires 2-4 competitive players");
-    if (state.config.extensions.some(e => !["geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
+    if (state.config.extensions.some(e => !["white-castles","geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
       issues.push({ code: "unsupported-extension", message: "Core does not resolve extensions or automated players" });
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
@@ -52,8 +52,8 @@ export function validateCoreState(state: GameState): ValidationResult {
     const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [];
     for (const tile of Object.values(state.tiles)) {
       if (!["castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
-        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 28 || (tile.number > 26 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
-        (tile.type === "building" && (!["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane"].includes(tile.building) || (tile.building==="crane" && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
+        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29 || (tile.number === 29 && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.number > 26 && tile.number < 29 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
+        (tile.type === "building" && (!["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane","white-castle"].includes(tile.building) || (tile.building==="white-castle" && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.building==="crane" && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "livestock" && (![2,3,4].includes(tile.count) || !["cattle","sheep","pigs","chickens","geese"].includes(tile.species) || (tile.species === "geese" && (tile.count !== 2 || tile.back !== "black" || !state.config.extensions.some(e=>e.id==="geese")))))) issue("Invalid base-game tile definition");
     }
     const goods = (tiles: readonly { id: string; type: number }[]) => {

@@ -146,11 +146,11 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       draft=structuredClone(action.command==="choose-monastery-target"||action.command==="change-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
       pages=[17,18];payload={actionType:action.command,extensionId:"shields",...action.payload as object};
     } else if (action.type === "buy-workers") {
-      player.silver--;player.workers+=2;draft=structuredClone(rewardShieldWorkerGain(draft,player.id,2)) as Draft;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
+      player.silver--;player.workers+=2;draft=structuredClone(refreshPendingChoice(rewardShieldWorkerGain(draft,player.id,2))) as Draft;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
     } else if (action.type === "resolve-choice") {
       draft = structuredClone(resolveTileChoice(draft, action.optionId)) as Draft;
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
-      pages = [7];
+      pages = (state.turn.pendingEffects[0]?.payload as {kind?:string}|null)?.kind === "white-castle" ? [14] : [7];
     } else if (action.type === "roll-round") {
       for (const p of [...draft.players].sort((a, b) => a.seat - b.seat)) for (const die of draft.dice.players[p.id]) {
         const roll = drawDie(draft.random);

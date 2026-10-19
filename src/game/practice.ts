@@ -1,3 +1,4 @@
+import { whiteCastleTiles } from "./white-castles";
 import { createShieldLayout } from "./shields";
 import { officialMarketRecipe } from "./market-recipes";
 import { createProjectBaseTiles } from "./tile-catalog";
@@ -31,7 +32,7 @@ export function practiceBoard(variant = 0): BoardDefinition {
   return board;
 }
 
-export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
 
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
@@ -118,6 +119,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     // Replace authored exercise batches with one finite, user-approved project set.
     for (const id of Object.keys(tiles)) delete tiles[id];
     const catalog = createProjectBaseTiles();
+    if (config.whiteCastles) catalog.push(...whiteCastleTiles());
     if (config.additionalHexes) catalog.push(
       {id:"project-extra:27",type:"monastery",number:27,back:"matching-color"},
       {id:"project-extra:28",type:"monastery",number:28,back:"matching-color"},
@@ -179,11 +181,25 @@ export function createPracticeSession(config: PracticeConfig): GameState {
       {id:"project-extra:crane",type:"building",building:"crane",back:"black"},
     ] as const) {tiles[tile.id]=tile;remainingTileIds.push(tile.id);}
   }
+  if (config.whiteCastles && !(useOfficialSlots && count === 2)) {
+    for (const tile of whiteCastleTiles()) { tiles[tile.id] = tile; remainingTileIds.push(tile.id); }
+    // Mix into the respective supplies BEFORE phase A, including authored 3–4 seat setups.
+    remainingTileIds.push(...numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[])), ...blackDepot);
+    const draw = (back: Tile["back"], type?: TileType) => {
+      const eligible = remainingTileIds.filter(id=>tiles[id].back===back&&(!type||tiles[id].type===type));
+      if (!eligible.length) throw new Error("흰 성 확장의 초기 공급이 부족합니다.");
+      const id = eligible[randomIndex(eligible.length)];
+      remainingTileIds.splice(remainingTileIds.indexOf(id),1);
+      return id;
+    };
+    for (const depot of numberedDepots) for (const slot of depot.slots) slot.tileId=draw("matching-color",slot.requiredType);
+    blackDepot=blackDepot.map(()=>draw("black"));
+  }
   const roundGoods = phaseGoods.A;
   const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing",
     config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,
       players: players.map(p => ({ id: p.id, name: p.name, color: p.color, seat: p.seat, boardId: p.duchy.boardId, startingCastleCellId: p.duchy.startingCastleCellId, controller: "human" })),
-      startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
+      startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
     players, tiles, market: { numberedDepots, blackDepot, supplyPools: [{ id: "practice:authored-reserve", remainingTileIds }], removedTileIds,
       bonusTiles: (["castle", "ship", "mine", "livestock", "building", "monastery"] as const).flatMap(color => (["first", "second"] as const).map(rank => ({ id: `bonus:${color}:${rank}`, color, rank, points: count + (rank === "first" ? 3 : 0) }))),
       phaseGoods: { ...phaseGoods, A: [] }, roundGoods },
