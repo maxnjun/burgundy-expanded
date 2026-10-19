@@ -14,6 +14,10 @@ for (const [count,shields] of [[2,false],[4,false],[2,true],[4,true]] as const) 
  await expect(board.locator('.supply-art-tile')).toHaveCount(game.market.numberedDepots.reduce((n,d)=>n+d.slots.filter(s=>s.tileId).length,0)+game.market.blackDepot.filter(Boolean).length);
  await board.screenshot({path:`.local-data/qa/common-${process.env.LAYOUT_BEFORE?'before':'after'}-${count}${shields?'-shields':''}.png`});
  if(process.env.LAYOUT_BEFORE)return;
+ await expect(board.locator('[data-board-decoration]')).toHaveAttribute('pointer-events','none');
+ await expect(board.locator('[data-board-decoration] [role="button"]')).toHaveCount(0);
+ await expect(board.locator('[data-board-decoration] image')).toHaveCount(0);
+ await expect(board.locator('[data-tile-shadow]')).toHaveCount(await board.locator('.supply-art-tile').count());
  await expect(board.locator('[data-goods-space]')).toHaveCount(6);
  await expect(board.locator('[data-black-depot] > rect')).toHaveCount(0);
  const targets=board.locator('.supply-art-tile');

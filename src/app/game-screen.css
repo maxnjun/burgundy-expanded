@@ -67,3 +67,14 @@
 .common-board-panel .direct-cost{pointer-events:none;transform:translate(0,-16px)}
 .common-board-panel [data-black-depot] .direct-cost{transform:translate(0,-18px)}
 @media(min-width:951px){.common-board-panel{width:560px}.common-board-panel.with-shields{width:650px}}
+
+/* Parchment theme: paint only; market geometry and pointer targets stay unchanged. */
+.common-board-panel{border-color:#a07c49;background:#f2e3bd;box-shadow:0 4px 14px #51351f38,inset 0 0 0 1px #efd6a0}
+.common-board-toolbar{background:linear-gradient(115deg,#38291e,#62472b 65%,#443020);color:#f8e9bd;border-bottom-color:#c7a467;box-shadow:inset 0 1px #f1d79b66}
+.common-board-toolbar span{color:#e0cba2}
+.common-board-toolbar button{background:linear-gradient(#fff4d5,#e2c68e);border-color:#b9955c;color:#47321e;box-shadow:inset 0 1px #fff8e4}
+.common-board-actions,.common-board-panel .board-touch-tools{background:linear-gradient(90deg,#ead5a9,#fcf1d5,#ead5a9);border-color:#b69a68;color:#5a4129}
+.common-board-note{background:#eddbb4;color:#60492e;border-top-color:#b39763}
+.common-board-svg [data-goods-space]{fill:#fff4d7;fill-opacity:.85;stroke:#a98a56}
+.common-board-svg [data-board-decoration]{pointer-events:none}
+.common-board-svg [data-region-score-panel]>rect{fill:#42301f;stroke:#c5a367;stroke-width:1.5}

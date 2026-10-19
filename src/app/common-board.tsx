@@ -3,6 +3,7 @@
 import { shieldLayout } from "../game/shields";
 import { ShieldArt, shieldLabel } from "./shield-art";
 import { BoardViewport } from "./board-viewport";
+import { CommonBoardBackdrop } from "./common-board-backdrop";
 import { directCost } from "../game/direct-actions";
 import type { GameAction, GameState, TileType } from "../game/types";
 import { GoodsArt, terrainPaint, TileArt } from "./tile-art";
@@ -40,6 +41,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
 }) {
   const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
     <title>{`${label}${game.tiles[id].back==="black" ? " · 검은 뒷면" : ""}`}</title>
+    <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
     <TileArt tile={game.tiles[id]} x={x-width/2} y={y-width/Math.sqrt(3)} width={width} height={width*2/Math.sqrt(3)}/>
     <polygon data-supply-hit="true" points={hex(x,y,width)} fill="transparent"/>
     {showCosts&&<g className="direct-cost" aria-hidden="true"><rect x={x-width*.48} y={y+width*.52} width={width*.96} height="14" rx="5"/><text x={x} y={y+width*.52+10} textAnchor="middle">{actionFor(id)?game.market.blackDepot.includes(id)?"銀 2":`일꾼 ${directCost(game,actionFor(id)!)}`:"불가"}</text></g>}
@@ -55,7 +57,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
     <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.75} onClick={()=>onZoom(Math.max(.75,+(zoom-.25).toFixed(2)))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(Math.min(2,zoom+.25))}>+</button></div></div>
     <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드 · 주사위 선택 후 대상을 누르세요</span></div>
     <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={shields?"-70 0 780 740":"0 0 640 740"} style={{width:`${zoom*100}%`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
-      <rect x={shields?-68:2} y="2" width={shields?776:636} height={736} rx="4" fill="#f0edc9" stroke="#b5a171" strokeWidth="3"/>
+      <CommonBoardBackdrop withShields={!!shields}/>
       <path d="M6 122H634M218 6V122M365 6V122" stroke="#c6ba8f" strokeWidth="1.5"/>
 
       <text x="22" y="24" className="common-small">단계 · 지역 완성 추가 점수</text>
@@ -84,7 +86,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <text x="310" y="303" textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
         {game.market.blackDepot.map((id,i)=>{const [x,y]=blackCenter(i,blackCount);return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}
       </g>
-      <g transform="translate(0 55)"><g><rect x="16" y="573" width="190" height="96" rx="22" fill="#514636" stroke="#c2ab74"/><text x="111" y="592" textAnchor="middle" fill="#f9edbd" fontSize="12">지역 완성 · 칸 수 / 점수</text>{[1,3,6,10,15,21,28,36].map((v,i)=><g key={v}><text x={40+(i%4)*47} y={610+Math.floor(i/4)*32} textAnchor="middle" fontSize="9" fill="#e9dcb4">{i+1}칸</text><path d={`M${28+(i%4)*47} ${614+Math.floor(i/4)*32}h24v12l-12 5-12-5z`} fill="#a54431"/><text x={40+(i%4)*47} y={624+Math.floor(i/4)*32} textAnchor="middle" fontSize="11" fill="#fff1cb">{v}</text></g>)}</g>
+      <g transform="translate(0 55)"><g data-region-score-panel="true"><rect x="16" y="573" width="190" height="96" rx="22" fill="#514636" stroke="#c2ab74"/><text x="111" y="592" textAnchor="middle" fill="#f9edbd" fontSize="12">지역 완성 · 칸 수 / 점수</text>{[1,3,6,10,15,21,28,36].map((v,i)=><g key={v}><text x={40+(i%4)*47} y={610+Math.floor(i/4)*32} textAnchor="middle" fontSize="9" fill="#e9dcb4">{i+1}칸</text><path d={`M${28+(i%4)*47} ${614+Math.floor(i/4)*32}h24v12l-12 5-12-5z`} fill="#a54431"/><text x={40+(i%4)*47} y={624+Math.floor(i/4)*32} textAnchor="middle" fontSize="11" fill="#fff1cb">{v}</text></g>)}</g>
       <g data-color-bonuses="true"><text x="529" y="574" textAnchor="middle" className="common-small">지형 전체 완성 · 1위 / 2위</text>
       {(["castle","mine","ship","livestock","building","monastery"] as const).map((type,i)=><g key={type}>
         <rect x={435+(i%2)*94} y={583+Math.floor(i/2)*29} width="86" height="25" rx="9" fill={terrainPaint[type]} stroke="#877c4f"/>
