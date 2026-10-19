@@ -45,7 +45,8 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
 }
 
 function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): number {
-  const possible = player.duchy.cells.filter(c => c.tileId === null && c.terrain === tile.type &&
+  const possible = player.duchy.cells.filter(c => c.tileId === null && (tile.type === "inn" || c.terrain === tile.type) &&
+    (tile.type !== "inn" || !player.duchy.cells.some(n=>n.regionId===c.regionId&&n.tileId&&state.tiles[n.tileId]?.type==="inn")) &&
     (hasShield(state,player.id,18)||player.duchy.cells.some(n => n.tileId !== null && areAxialNeighbors(c.coord,n.coord))) &&
     (tile.type !== "building" || monasteryNumbers(state,player).includes(1) || !player.duchy.cells.some(n => {
       const placed = n.tileId ? state.tiles[n.tileId] : null;
@@ -53,7 +54,7 @@ function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): nu
     })));
   if (!possible.length) return -30;
   const same = player.storage.filter(id => id && state.tiles[id].type === tile.type).length;
-  return 15 + Math.min(possible.length,3) - same*9 + (tile.type === "castle" ? 4 : tile.type === "mine" ? 3 : 0);
+  return (tile.type === "inn" ? 24 : 15) + Math.min(possible.length,3) - same*9 + (tile.type === "castle" ? 4 : tile.type === "mine" ? 3 : 0);
 }
 
 function intentValue(state: GameState, player: PlayerState, intent: ActionIntent): number {

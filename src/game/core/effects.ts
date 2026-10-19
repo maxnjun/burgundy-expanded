@@ -10,7 +10,7 @@ const names: Record<Kind, string> = { "white-castle": "흰 성 · 흰 주사위 
 const tileName = (state: GameState, id: string): string => {
     const tile = state.tiles[id];
     const buildings = { "white-castle": "흰 성", crane: "기중기", market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "boarding-house": "숙소", bank: "은행", "town-hall": "시청", watchtower: "감시탑" };
-    return tile.type === "building" ? buildings[tile.building] : tile.type === "monastery" ? `수도원 ${tile.number}` : tile.type === "livestock" ? `가축 ${tile.count}마리` : tile.type === "castle" ? "성" : tile.type === "mine" ? "광산" : "선박";
+    return tile.type === "inn" ? "여관" : tile.type === "building" ? buildings[tile.building] : tile.type === "monastery" ? `수도원 ${tile.number}` : tile.type === "livestock" ? `가축 ${tile.count}마리` : tile.type === "castle" ? "성" : tile.type === "mine" ? "광산" : "선박";
 };
 const isKind = (s: unknown): s is Kind => typeof s === "string" && Object.hasOwn(names, s);
 export function immediateOptions(state: GameState, player: PlayerState, kind: Kind): PendingChoice["options"] {

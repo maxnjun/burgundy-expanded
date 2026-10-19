@@ -7,6 +7,7 @@ import { orderedPlayers } from "./state";
 
 function tileLabel(state:GameState,id:string):string {
   const t=state.tiles[id];
+  if(t.type==="inn")return "여관";
   if(t.type==="livestock")return `${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]} ${t.count}마리`;
   if(t.type==="building")return ({"white-castle":"흰 성",market:"시장","carpenters-workshop":"목공소",church:"교회",warehouse:"창고","boarding-house":"숙소",bank:"은행","town-hall":"시청",watchtower:"감시탑",crane:"기중기"})[t.building];
   return t.type==="monastery"?`수도원 ${t.number}`:({castle:"성",ship:"선박",mine:"광산"})[t.type];

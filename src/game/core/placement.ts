@@ -1,3 +1,4 @@
+import { regionSizePoints } from "../inns";
 import { hasShield } from "../shields";
 import type { EngineIssue } from "../interfaces";
 import type { DieValue, GameState, PlayerState, ScoreEntry, Tile } from "../types";
@@ -16,7 +17,7 @@ export function placementIssue(state: GameState, player: PlayerState, tileId: st
   const fail = (message: string, code: EngineIssue["code"] = "illegal-action"): EngineIssue => ({ code, message });
   const tile = state.tiles[tileId], cell = player.duchy.cells.find(c => c.id === cellId);
   if (!player.storage.includes(tileId) || !tile) return fail("Place a tile from your own storage");
-  if (!cell || cell.tileId !== null || cell.terrain !== tile.type || cell.number !== value) return fail("Placement needs an empty matching terrain and die number");
+  if (!cell || cell.tileId !== null || (tile.type !== "inn" && cell.terrain !== tile.type) || cell.number !== value) return fail("Placement needs an empty matching terrain and die number");
   if (!supportsPlacement(tile)) return fail("This tile's choice or additional action resolver is not implemented", "unresolved-rule");
   if (!hasShield(state,player.id,18) && !player.duchy.cells.some(c => c.tileId !== null && areAxialNeighbors(c.coord, cell.coord))) return fail("Placement must share an edge with an occupied cell");
   const cells = player.duchy.cells;
@@ -27,6 +28,7 @@ export function placementIssue(state: GameState, player: PlayerState, tileId: st
     expectedCellCount: cells.length, cells, regions, startingCastle: { policy: "any-castle", allowedCellIds: cells.filter(c => c.terrain === "castle").map(c => c.id), recommendedCellId: null }, verification: { status: "draft" } });
   if (!result.valid) return fail("Injected board geometry or regions are inconsistent", "invalid-config");
   const region = cells.filter(c => c.regionId === cell.regionId);
+  if(tile.type === "inn" && region.some(c=>c.tileId && state.tiles[c.tileId]?.type === "inn"))return fail("이 구역에는 이미 여관이 있습니다.");
   if (region.length > 8) return fail("Base scoring supports regions of size 1-8 only", "unresolved-rule");
   if (player.duchy.completedRegionIds.includes(cell.regionId) || player.duchy.completedColors.includes(cell.terrain)) return fail("Empty target belongs to an already completed region/color", "invalid-config");
   if (tile.type === "building" && !monasteryNumbers(state, player).includes(1) && region.some(c => {
@@ -45,7 +47,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   const entries: ScoreEntry[] = [];
   const score = (category: ScoreEntry["category"], points: number, pages: number[]) => entries.push({
     id: `core:${state.revision + 1}:${category}`, category, points, tileId, regionId: cell.regionId,
-    source: { document: "special-edition-rulebook", pages, section: "Tile placement scoring" },
+    source: category==="region-size" && cells.some(c=>c.regionId===cell.regionId&&c.tileId&&state.tiles[c.tileId]?.type==="inn") ? {document:"project-user-rule",pages:[],section:"Inn region scoring size +1"} : { document: "special-edition-rulebook", pages, section: "Tile placement scoring" },
   });
   let silver = player.silver, workers = player.workers;
   if (tile.type === "building") {
@@ -66,7 +68,7 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   const region = cells.filter(c => c.regionId === cell.regionId);
   if (region.every(c => c.tileId !== null)) {
     completedRegionIds.push(cell.regionId);
-    score("region-size", [0, 1, 3, 6, 10, 15, 21, 28, 36, 45][region.length+(hasShield(state,player.id,17)?1:0)], [4, 9]);
+    score("region-size", regionSizePoints(region.length+(region.some(c=>c.tileId&&state.tiles[c.tileId]?.type==="inn")?1:0)+(hasShield(state,player.id,17)?1:0)), [4, 9]);
     score("phase-bonus", PHASE_COMPLETION_POINTS[state.turn.phase], [4, 9]);
   }
   let bonusTiles = [...state.market.bonusTiles];

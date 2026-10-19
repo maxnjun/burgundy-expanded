@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { coreFixture, type TestState } from "./fixture";
 import { applyCoreAction, validateCoreAction, listCoreActionOptions } from "../../src/game/core";
-import type { GameAction, Tile } from "../../src/game/types";
+import type { GameAction, BaseTile as Tile } from "../../src/game/types";
 
 /** TEST FIXTURE ONLY: connected injected geometry, no official board identity. */
 function setup(tile: Tile = { id: "placed", type: "mine", back: "matching-color" }, size = 2): TestState {

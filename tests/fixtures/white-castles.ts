@@ -1,5 +1,5 @@
 import { coreFixture, type TestState } from "../core/fixture";
-import type { GameAction, GameState, Tile } from "../../src/game/types";
+import type { GameAction, GameState, BaseTile as Tile } from "../../src/game/types";
 import { applyCoreAction } from "../../src/game/core";
 import { createPracticeSession } from "../../src/game/practice";
 import { prepareTileEffect } from "../../src/game/core/effects";

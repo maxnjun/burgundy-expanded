@@ -52,7 +52,7 @@ export function parseSavedGame(text: string): SavedGame {
     typeof game.dice.rolledForRound !== "boolean" || typeof game.dice.roundGoodsDistributed !== "boolean" ||
     ((game.turn.pendingChoice !== null || game.turn.pendingEffects.length > 0) && !validPendingChoice(game))) return reject();
   for (const tile of Object.values(game.tiles)) {
-    if (!terrains.includes(tile.type) || !["black", "matching-color"].includes(tile.back) ||
+    if (!(tile.type==="inn" || terrains.includes(tile.type)) || !["black", "matching-color"].includes(tile.back) ||
       (tile.type === "building" && !buildings.includes(tile.building)) ||
       (tile.type === "livestock" && (!["cattle", "sheep", "pigs", "chickens", "geese"].includes(tile.species) || ![2,3,4].includes(tile.count))) ||
       (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29))) return reject();
@@ -66,7 +66,7 @@ export function parseSavedGame(text: string): SavedGame {
     for (const cell of player.duchy.cells) {
       const original = board.cells.find(c => c.id === cell.id);
       if (!original || original.coord.q !== cell.coord.q || original.coord.r !== cell.coord.r || original.number !== cell.number || original.terrain !== cell.terrain || original.regionId !== cell.regionId ||
-        (cell.tileId !== null && game.tiles[cell.tileId]?.type !== cell.terrain)) return reject();
+        (cell.tileId !== null && game.tiles[cell.tileId]?.type !== "inn" && game.tiles[cell.tileId]?.type !== cell.terrain)) return reject();
     }
     if (!validateBoardDefinition({ ...board, cells: player.duchy.cells, regions: deriveRegions(player.duchy.cells) }).valid) return reject();
     const config = game.config.players.find(p => p.id === player.id);

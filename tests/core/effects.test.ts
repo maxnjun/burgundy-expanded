@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { coreFixture, type TestState } from "./fixture";
-import type { GameAction, GameState, Tile, ActionIntent, MonasteryNumber } from "../../src/game/types";
+import type { GameAction, GameState, BaseTile as Tile, ActionIntent, MonasteryNumber } from "../../src/game/types";
 import { applyCoreAction, validateCoreAction, orderedPlayers } from "../../src/game/core";
 import { deriveRegions } from "../../src/game/boards/regions";
 import { adjustmentValid, planAdjustment } from "../../src/game/core/modifiers";

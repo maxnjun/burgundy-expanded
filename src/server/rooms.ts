@@ -21,7 +21,7 @@ export interface RoomView {
   finalScores:GameState["finalScores"];
   id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
-  depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];dice:GameState["dice"];
+  depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];inns?:GameState["market"]["inns"];dice:GameState["dice"];
   actions:readonly {action:GameAction;label:string;group:string}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
 }
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
@@ -61,15 +61,16 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false){return this.serial("create",async()=>{
     if(boardRange!==null&&!["base","fortress","all"].includes(boardRange as string))throw new RoomError(400,"영지 범위를 확인하세요.");
+    if(typeof inns!=="boolean")throw new RoomError(400,"여관 설정은 참/거짓이어야 합니다.");
     if(typeof whiteCastles!=="boolean")throw new RoomError(400,"흰 성 설정은 참/거짓이어야 합니다.");
 
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     await mkdir(this.directory,{recursive:true});
     if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
     const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,inns,officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -106,7 +107,7 @@ export class RoomStore {
     const nextRevision=room.game.revision+1;
     if(draftReady(room.draft)){
       const g=room.game;
-      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
+      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
       room.logs=["양쪽 영지 선택 완료 · 게임 준비 완료",...room.logs].slice(0,60);
     }
     room.game={...room.game,revision:nextRevision};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
@@ -115,17 +116,17 @@ export class RoomStore {
     const s=room.game,visible=new Set<string>();
     for(const p of s.players){for(const c of p.duchy.cells)if(c.tileId)visible.add(c.tileId);for(const id of p.storage)if(id)visible.add(id);}
     for(const d of s.market.numberedDepots)for(const slot of d.slots)if(slot.tileId)visible.add(slot.tileId);
-    for(const id of s.market.blackDepot)if(id)visible.add(id);
+    for(const id of [...s.market.blackDepot,...(s.market.inns?.stack??[])])if(id)visible.add(id);
     const ending=checkCoreGameEnd(s);
     const legal=room.tokens[1]&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    return {boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 
-const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]}${t.count}`:({castle:"성",mine:"광산",ship:"선박"})[t.type];};
+const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
 export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="roll-round")return "라운드 주사위 굴리기";
   if(a.type==="end-turn")return "차례 종료";

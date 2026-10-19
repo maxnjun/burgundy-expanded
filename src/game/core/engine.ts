@@ -65,7 +65,7 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
   }
   if (action.type === "buy-black-tile") {
     if (state.turn.blackPurchaseUsed || player.silver < 2) return failure("illegal-action", "Black purchase requires two silver and is limited to once per turn");
-    if (!state.market.blackDepot.includes(action.tileId)) return failure("illegal-action", "Tile is not in the black depot");
+    if (!state.market.blackDepot.includes(action.tileId) && state.market.inns?.stack.at(-1)!==action.tileId) return failure("illegal-action", "Tile is not in the black depot");
     const issue = tileDestination(player, action);
     return issue ? failure("illegal-action", issue) : null;
   }
@@ -179,7 +179,8 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
     } else if (action.type === "buy-black-tile") {
       pages = [10];
       player.silver -= 2;
-      draft.market.blackDepot[draft.market.blackDepot.indexOf(action.tileId)] = null;
+      if(draft.market.inns?.stack.includes(action.tileId))draft.market.inns.stack=draft.market.inns.stack.filter(id=>id!==action.tileId);
+      else draft.market.blackDepot[draft.market.blackDepot.indexOf(action.tileId)] = null;
       storeTile(draft, player, action);
       draft.turn.blackPurchaseUsed = true;
       draft = structuredClone(refreshPendingChoice(draft)) as Draft;
@@ -205,7 +206,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
     const valid = validateCoreState(draft);
     if (!valid.valid) return { ok: false, issues: valid.issues };
     return { ok: true, value: { state: draft, events: [{ type: `core:${action.type}`, playerId: action.playerId,
-      source: source(pages, "Core supported transition"), payload }] } };
+      source: (action.type==="buy-black-tile"&&state.tiles[action.tileId]?.type==="inn") || (action.type==="use-die"&&action.intent.kind==="place-tile"&&state.tiles[action.intent.tileId]?.type==="inn") ? {document:"project-user-rule",pages:[],section:"Inn purchase or joker placement"} : source(pages, "Core supported transition"), payload }] } };
   } catch (error) {
     return failure("invalid-config", error instanceof Error ? error.message : "Transition failed");
   }
@@ -245,7 +246,7 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   }
   const destinations = player.storage.map((tileId, storageSlot) => ({ storageSlot,
     ...(tileId !== null && !player.storage.includes(null) ? { discardTileId: tileId } : {}) }));
-  for (const tileId of state.market.blackDepot) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });
+  for (const tileId of [...state.market.blackDepot,...(state.market.inns?.stack.slice(-1)??[])]) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });
   for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId && state.tiles[slot.tileId].type === "building") for (const dest of destinations) candidates.push({type:"use-monastery-six",playerId,depot:depot.number,tileId:slot.tileId,...dest});
   for (const die of state.dice.players[playerId]) for (let value = 1; value <= 6; value++) {
     const clockwise = (value - die.value + 6) % 6;

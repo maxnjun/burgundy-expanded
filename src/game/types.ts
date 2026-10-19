@@ -11,12 +11,13 @@ export type TileType = "castle" | "ship" | "mine" | "livestock" | "building" | "
 export type BuildingType = "market" | "carpenters-workshop" | "church" | "warehouse" | "boarding-house" | "bank" | "town-hall" | "watchtower" | "crane" | "white-castle";
 export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29;
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
-export type ExtensionId = "white-castles" | "additional-hexes" | "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
+export type ExtensionId = "inns" | "white-castles" | "additional-hexes" | "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
 export interface RuleSource { readonly document: "special-edition-rulebook" | "project-user-rule"; readonly pages: readonly number[]; readonly section: string }
 export interface AxialCoord { readonly q: number; readonly r: number }
 interface TileIdentity { readonly id: TileId; readonly back: "matching-color" | "black" }
 /** Tile front type is independent of its back/supply pool. PDF pp.2,5. */
-export type Tile = TileIdentity & (
+export type Tile = BaseTile | (TileIdentity & { readonly type: "inn" });
+export type BaseTile = TileIdentity & (
   | { readonly type: "castle" | "ship" | "mine" }
   | { readonly type: "building"; readonly building: BuildingType }
   | { readonly type: "livestock"; readonly species: "cattle" | "sheep" | "pigs" | "chickens" | "geese"; readonly count: 2 | 3 | 4 }
@@ -63,6 +64,7 @@ export interface MarketSlot {
   readonly tileId: TileId | null;
 }
 export interface MarketState {
+  readonly inns?: { readonly suppliedPhases: readonly Phase[]; readonly stack: readonly TileId[] };
   readonly numberedDepots: readonly { readonly number: DieValue; readonly slots: readonly MarketSlot[]; readonly goods: readonly GoodsTile[] }[];
   readonly blackDepot: readonly (TileId | null)[];
   readonly supplyPools: readonly { readonly id: string; readonly remainingTileIds: readonly TileId[] }[];

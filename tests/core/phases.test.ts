@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createPracticeSession } from "../../src/game/practice";
 import { applyCoreAction, checkCoreGameEnd, finalScore, orderedPlayers, validateCoreState } from "../../src/game/core";
-import type { GameAction, GameState, MonasteryNumber, Tile } from "../../src/game/types";
+import type { GameAction, GameState, MonasteryNumber, BaseTile as Tile } from "../../src/game/types";
 import { parseSavedGame, serializeSavedGame } from "../../src/game/save";
 import { coreFixture, type TestState } from "./fixture";
 

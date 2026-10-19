@@ -1,5 +1,6 @@
 "use client";
 
+import { InnStack } from "./inn-stack";
 import { shieldLayout } from "../game/shields";
 import { ShieldArt, shieldLabel } from "./shield-art";
 import { BoardViewport } from "./board-viewport";
@@ -82,6 +83,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <text x={x} y={y+39} textAnchor="middle" className="common-small">상품 {depot.goods.length}개</text>
         {depot.slots.map((slot,i)=>{const [tx,ty]=slotCenter(depot.number,i,depot.slots.length);return slot.tileId ? selected(slot.tileId,tx,ty,depot.slots.length>2?50:tileWidth,`${depot.number}번 공급처 ${titleFor(slot.tileId)}`) : <g key={slot.id}><polygon points={hex(tx,ty,depot.slots.length>2?50:tileWidth)} fill={terrainPaint[slot.requiredType]} fillOpacity=".45" stroke="#b4ac85" strokeDasharray="3 3"/><title>{`${terrainNames[slot.requiredType]} 빈 공급 칸`}</title></g>;})}
       </g>;})}
+      <InnStack game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/>
       <g data-black-depot="true">
         <text x="310" y="303" textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
         {game.market.blackDepot.map((id,i)=>{const [x,y]=blackCenter(i,blackCount);return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}

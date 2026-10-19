@@ -1,3 +1,4 @@
+import { supplyInn } from "../inns";
 import { startShieldPhase } from "./shield-effects";
 import { hasShield, shieldLayout, setShieldLayout, rewardShieldWorkerGain } from "../shields";
 import type { EngineResult, GameEndResult, Transition } from "../interfaces";
@@ -125,6 +126,7 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     for (const depot of draft.market.numberedDepots) for (const slot of depot.slots) slot.tileId = draw("matching-color", slot.requiredType);
     draft.market.blackDepot = draft.market.blackDepot.map(() => draw("black"));
     draft.market.roundGoods = draft.market.phaseGoods[phase]; draft.market.phaseGoods[phase] = [];
+    draft = structuredClone(supplyInn(draft, phase)) as Mutable<GameState>;
     draft.turn.phase = phase; draft.turn.round = 1; draft.turn.stage = "round-setup";
     draft.turn.actedPlayerIds = []; draft.turn.blackPurchaseUsed = false; draft.turn.monasterySixUsed = false;
     draft.dice.rolledForRound = false; draft.dice.roundGoodsDistributed = false; draft.dice.whiteDie = null;

@@ -78,3 +78,4 @@
 .common-board-svg [data-goods-space]{fill:#fff4d7;fill-opacity:.85;stroke:#a98a56}
 .common-board-svg [data-board-decoration]{pointer-events:none}
 .common-board-svg [data-region-score-panel]>rect{fill:#42301f;stroke:#c5a367;stroke-width:1.5}
+.inn-stack[aria-disabled="false"]{cursor:pointer}.inn-stack:focus-visible{outline:none}.inn-stack:focus-visible [data-inn-hit],.inn-stack[aria-disabled="false"]:hover [data-inn-hit]{stroke:#fff0a1;stroke-width:2;fill:#ffe09918}

@@ -1,3 +1,4 @@
+import { validInns } from "../inns";
 import { validFortressScores } from "./fortress-lines";
 import { validShieldLayout, hasShield, shieldLayout } from "../shields";
 import type { EngineIssue, ValidationResult } from "../interfaces";
@@ -24,7 +25,7 @@ export function validateCoreState(state: GameState): ValidationResult {
   try {
     if (state.config.ruleset !== "special-edition-base" || state.config.mode !== "competitive" ||
       state.config.playerCount < 2 || state.config.playerCount > 4 || state.players.length !== state.config.playerCount) issue("Core requires 2-4 competitive players");
-    if (state.config.extensions.some(e => !["white-castles","geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
+    if (state.config.extensions.some(e => !["inns","white-castles","geese","border-posts","additional-hexes","shields"].includes(e.id) || !e.options || (e.id!=="shields" && Object.keys(e.options).length)) || new Set(state.config.extensions.map(e=>e.id)).size !== state.config.extensions.length || Object.keys(state.extensionStates).some(id=>id!=="shields") || !validShieldLayout(state) || state.players.some(p => p.controller !== "human")) {
       issues.push({ code: "unsupported-extension", message: "Core does not resolve extensions or automated players" });
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
@@ -50,10 +51,11 @@ export function validateCoreState(state: GameState): ValidationResult {
       state.dice.whiteDie === null || state.market.roundGoods.length !== 5 - state.turn.round)) issue("Inconsistent player turn");
     if (state.turn.stage === "round-setup" && (state.status !== "playing" || state.turn.activePlayerId !== null ||
       state.turn.actedPlayerIds.length || state.dice.rolledForRound || state.dice.roundGoodsDistributed)) issue("Inconsistent round setup");
+    if (!validInns(state)) issue("Invalid inn supply or duplicate inn in region");
     if (!validFortressScores(state)) issue("Inconsistent fortress line scores");
     const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [];
     for (const tile of Object.values(state.tiles)) {
-      if (!["castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
+      if (!["inn","castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
         (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29 || (tile.number === 29 && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.number > 26 && tile.number < 29 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "building" && (!["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane","white-castle"].includes(tile.building) || (tile.building==="white-castle" && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.building==="crane" && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "livestock" && (![2,3,4].includes(tile.count) || !["cattle","sheep","pigs","chickens","geese"].includes(tile.species) || (tile.species === "geese" && (tile.count !== 2 || tile.back !== "black" || !state.config.extensions.some(e=>e.id==="geese")))))) issue("Invalid base-game tile definition");
@@ -98,7 +100,7 @@ export function validateCoreState(state: GameState): ValidationResult {
       tileLocations.push(...depot.slots.flatMap(s => s.tileId === null ? [] : [s.tileId]));
       goods(depot.goods);
     }
-    tileLocations.push(...state.market.blackDepot.filter((id): id is string => id !== null), ...state.market.removedTileIds,
+    tileLocations.push(...(state.market.inns?.stack ?? []), ...state.market.blackDepot.filter((id): id is string => id !== null), ...state.market.removedTileIds,
       ...state.market.supplyPools.flatMap(pool => pool.remainingTileIds));
     if (state.market.blackDepot.some(id => id !== null && state.tiles[id]?.back !== "black")) issue("Black depot requires black-backed tiles");
     for (const phase of ["A", "B", "C", "D", "E"] as const) goods(state.market.phaseGoods[phase]);

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, type SVGProps } from "react";
-import type { Tile, TileType } from "../game/types";
+import type { BaseTile, Tile, TileType } from "../game/types";
 import { ESTATE_ART_HEIGHT } from "./estate-geometry";
 import illustrations from "../../public/tiles/illustrations/manifest.json";
 import { TileFrame } from "./tile-frame";
+import { InnArt } from "./inn-art";
 
 export const terrainPaint: Record<TileType, string> = {
   castle: "#247654", ship: "#277f9b", mine: "#8f9188",
@@ -13,7 +14,10 @@ export const terrainPaint: Record<TileType, string> = {
 const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 
 /** Shared tile artwork: five isolated PNGs use the same mathematical inward bevel. */
-export function TileArt({ tile, estate=false, ...props }: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
+export function TileArt(props: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
+  return props.tile.type === "inn" ? <InnArt {...props}/> : <BaseTileArt {...props} tile={props.tile}/>;
+}
+function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?:boolean } & SVGProps<SVGSVGElement>) {
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
   const assetName = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? tile.type : tile.type==="monastery"&&(tile.number===27||tile.number===28)?`monastery-${tile.number}` as "monastery-27"|"monastery-28":null;

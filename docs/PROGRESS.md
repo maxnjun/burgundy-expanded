@@ -1,13 +1,14 @@
 # 현재 개발 체크포인트
 
-2026-10-19 · 공용 보드 배경 개선 구현·검증·백업 완료. 전체 프로젝트 미완료.
-- 기준 main/f4d2be9. 기존 미커밋 public/tiles/monastery-27.png·monastery-28.png 원본은 보존하고 백업 대상에서 제외한다.
-- 구현: common-board-backdrop.tsx의 비대화형 SVG 양피지 gradient/섬유 pattern/금색 이중 프레임/모서리 장식/희미한 문양. CSS 갈색·금색 도구/점수 패널, 상품 공간 색상, 필터 없는 반투명 타일 그림자.
-- 보존: 공급처6개/상품6공간/검은 마름모/방패 좌표·viewBox·타일 이미지/공통 프레임·GameAction·규칙·저장 구조 불변. 전체 배경 PNG를 삽입하지 않았다.
-- 여관 제한: src에 여관 타일·스택·페이즈 보충 상태가 없고 TODO도 미구현이다. 기존 구현을 유지했다는 주장은 할 수 없다. 배경 요청 범위에서 여관 기능/위치를 임의 생성하지 않았으며 별도 구현이 필요하다.
-- 검사: 코어311/311(정상 권한 재실행), TypeScript·전체 ESLint·프로덕션 빌드 통과. PC 공용보드4개+기존 직접 조작10개 최종14/14 통과(1.5분): 클릭·은화구매·저장복원·확대·장식 비간섭·방패 장착·실제25라운드 완주 검증.
-- 화면: .local-data/qa/common-before-{2,4}[-shields].png와 common-after-{2,4}[-shields].png, common-costs-*.png 생성. 변경 전2인/변경 후2인·4인방패를 직접 확인, 기존 위치와 클릭 영역 유지. 모바일 정밀QA는 요청대로 보류.
-- 발생/수정: 새 CSS SVG drop-shadow 필터 적용 시 Edge 페이지 load 지연 재현. CSS 필터 제외 시 정상 복구, 최종은 반투명 polygon 그림자를 사용한다. 첫 코어 실행은 샌드박스 temp rename EPERM이므로 실패로 기록, 정상 권한 재실행311개 통과. 기존 개발 서버 유지, 임시 프로덕션 QA 서버3001은 종료했다.
-- 파일: src/app/{common-board-backdrop.tsx,common-board.tsx,game-screen.css}, tests/browser/common-layout.spec.ts, docs/{TODO.md,PROGRESS.md,history/progress-fortress-draft-complete-2026-10-19.md}.
-- 백업: 대상7파일 민감정보 패턴0건, 비공개main/Push권한/원격선행0/0 확인. 구현 fcb473234df9f1efb75db948a0173e0d48fa67a1 Push 후 원격 main 전체해시 일치 확인. 수도원 원본2개는 미커밋 그대로 보존. 이번 결과 문서는 별도 체크포인트로 백업한다.
-- 다음: 이번 배경 범위 완료. 여관 독립 스택/페이즈 보충은 별도 후속 구현, 모바일 정밀QA는 최종 단계에 수행한다. 이전 요새/랜덤 상세는 history 체크포인트에 보존했다.
+2026-10-19 · 여관 확장 통합 구현/검증 마무리, 비공개main 백업 대기. 전체 프로젝트 미완료.
+- 기준 main/09e9d80. 기존 미커밋 public/tiles/monastery-27.png·monastery-28.png 원본은 보존/백업 제외. 기존 개발 서버 유지.
+- 규칙: 사용자 지시문/추가 답변만 적용, 공식 추가조사 없음. 은화2·주사위 없이 검은 구매와 턴당1회 제한 공유. 독립 inn 타입/옵션, A–E 각1개·최대5·이월·중복공급방지·top1개 구매. 포도밭은 그림 장식.
+- 조커: 원래37칸/6색/숫자/지역/연결 불변, 모든색 배치·같은지역1개·고유타일 효과 없음. 실제 지역 완성 시 점수크기+1, 방패17 합산 최대크기10=55를 명시. 단계/색상/요새 점수 독립. source는 project-user-rule. 보관함 교체는 기존 확인 경로 유지.
+- 모드: 로컬2–4인 새게임 옵션, AI가 합법 구매/배치/점수평가, 온라인2인 생성 옵션/서버 계산/공개 스택/좌석·리비전검증/양쪽 동기화/재접속. 랜덤영지 시작 시 옵션 보존. 과거 저장은 여관 추가 없이 그대로, 잘못된 공급·중복지역·예약풀 혼입은 거부.
+- 이미지: public/tiles/originals/inn-user-original.png 원본 SHA256 동일 보존, public/tiles/inn.png 투명 파생(RGBA1312×1199, 4모서리alpha0). alpha>128 bbox(95,2)-(1208,1199)를 InnArt가 실제 육각형 마스크로 정규화, 금색 원래 rim 사용·추가 프레임 없음·실패 SVG fallback. 상세 해시/처리/규칙은 rules/inns.md.
+- 화면: 기존 검은 마름모/상품/공급 좌표 유지. INN_STACK 중심(215,398)/폭40/층(-1.4,+1.8), 실제 PNG1–5개·투명 그림자·cost/count 배지. union hit path로 노출된 아래층도 같은 구매 대상. PNG 공용/보관/영지/온라인 공통, 다른 타일 원본/프레임 불변.
+- 검사: 전체코어335/335(기존311+신규24)·보드33/33 통과. AI2/3/4인25라운드+흰성/수도원29/기중기/방패/요새·저장, 온라인서버 위조/재전송거부/재접속 포함. PC신규9/9(로컬2/3/4인 준비UI 포함, 관련 분리 실행)·기존19/19(직접UI25라운드·공용·방패온라인3·흰성2) 통과. 최종 로그 관련2/2 재통과. TypeScript·전체ESLint·프로덕션 빌드 통과, 마지막 배지/온라인viewBox·로그까지 관련 재검사/타입/린트/빌드 재통과.
+- 화면 산출: .local-data/qa/inn-stack-{1..5}-{100,160,200}.png와 detail-* / acquired-*, inn-storage.png, inn-estate.png, inn-completed-estate.png(실제 구역 크기2→3:6점+단계10=16점), inn-four-seats.png, inn-online-purchased.png. 1–5 상세·200%·4인 전체·구역완성 직접 확인. 타일/상품과 스택/배지 다각형 비겹침·실제 중심 클릭 검사. 확대 화면의 가로이동은 기존 방식 유지.
+- 수정/실패: 합성 구역 테스트의 regionId 중복을 고쳤고 기존 assert는 완화하지 않음. 새 보관 테스트의 aria이름을 실제 UI로 수정. 4인 공급에서는 처음 오른쪽 배지가 검은 타일과 겹쳐 정밀 검사 실패→왼쪽 빈공간으로 이동하고 온라인viewBox도 확대. lint prefer-const1건 수정. 수정 후 여관PC8/8·추가 로컬준비1/1 및 온라인1/1·최종 타입/린트/빌드 통과.
+- 파일: src/game/{types,inns,practice,save,computer}.ts, core/{state,engine,placement,phases,effects,shield-effects}.ts; src/server/{rooms,room-http}.ts; src/app/{inn-art,inn-stack,common-board,game-screen,tile-art,tile-frame}.tsx, online/room-screen.tsx, game-screen.css; tests/core/{inns,inn-online}.test.ts 및 run.mjs; 기존 effects/phases/placement/white-castles fixture는 BaseTile 타입만 좁힘(assert 유지); tests/browser/{inns,inn-online}.spec.ts; 위 PNG2개와 docs/{TODO,PROGRESS,rules/inns,history/progress-parchment-complete-2026-10-19}.md.
+- 다음: diff/비밀검사→이번 변경만 private main Commit/Push/원격 전체해시 확인. 모바일 정밀QA는 사용자 요청대로 최종 단계로 보류. 여관 관련 남은 규칙 기능은 없음.

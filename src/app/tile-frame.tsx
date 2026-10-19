@@ -4,7 +4,7 @@ import { useId } from "react";
 import { ESTATE_ART_HEIGHT } from "./estate-geometry";
 
 export const TILE_FRAME_INSET=2.2;
-export function hasTileFrame(tile:Tile){return tile.type==="castle"||tile.type==="mine"||tile.type==="ship"||(tile.type==="monastery"&&(tile.number===27||tile.number===28));}
+export function hasTileFrame(tile:Tile){return tile.type==="inn"||tile.type==="castle"||tile.type==="mine"||tile.type==="ship"||(tile.type==="monastery"&&(tile.number===27||tile.number===28));}
 export function tileHexPoints(inset=0){const half=50-inset,radius=2*half/Math.sqrt(3),cy=ESTATE_ART_HEIGHT/2;return [[50+half,cy-radius/2],[50+half,cy+radius/2],[50,cy+radius],[50-half,cy+radius/2],[50-half,cy-radius/2],[50,cy-radius]].map(p=>p.join(",")).join(" ");}
 function ring(outer:number,inner:number){return `M${tileHexPoints(outer).replaceAll(" ","L")}ZM${tileHexPoints(inner).replaceAll(" ","L")}Z`;}
 export type TilePalette={dark:string;base:string;light:string};
