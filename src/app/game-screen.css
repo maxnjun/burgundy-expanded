@@ -56,3 +56,14 @@
 [data-shields-active] .live-storage{flex-wrap:wrap;justify-content:flex-start}.shield-rule-tools{display:grid;gap:12px;margin:10px 0}.shield-rule-tools select{max-width:100%;min-height:44px}.shield-rule-tools button{min-height:44px;margin:4px}.choice-panel>div{max-height:420px;overflow:auto}
 
 [data-shields-active] .estate-keyspaces{flex-wrap:wrap}[data-shields-active] .estate-keyspaces button{flex-shrink:0}
+
+/* Reference-board layout: one SVG coordinate space for goods, tiles and hit targets. */
+.common-board-panel>.live-board-scroll{max-height:none;overflow:auto}
+.common-board-panel .board-touch-tools{padding:5px 9px;background:#f8f2d9}
+.common-board-panel .board-touch-tools button{font-size:10px;padding:4px 7px}
+.common-board-panel .board-touch-tools span{font-size:9px}
+.direct-input .common-board-panel .common-board-scroll{overflow:visible;max-height:none}
+.common-board-panel [data-supply-hit]{pointer-events:all}
+.common-board-panel .direct-cost{pointer-events:none;transform:translate(0,-16px)}
+.common-board-panel [data-black-depot] .direct-cost{transform:translate(0,-18px)}
+@media(min-width:951px){.common-board-panel{width:560px}.common-board-panel.with-shields{width:650px}}

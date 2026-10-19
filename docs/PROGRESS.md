@@ -1,16 +1,14 @@
 # 현재 개발 체크포인트
 
-2026-10-19 · 흰 성/수도원29 구현·검증·백업 완료. 전체 프로젝트 미완료.
-- 시작 main/9fa5d24. 기존 미커밋 수도원27/28 원본2개는 보존·백업 제외. 이미지·SVG·좌표는 변경하지 않았다.
-- 공식 PDF12–14와 공식 아크릴 라벨5–6을 확인했다. 흰 성은 베이지 건물6+검정2, 수도원29 노랑1. 선택 확장 white-castles로 A단계부터 공급에 혼합한다. 3·4인 공급 전체는 기존 연습 구성이라는 제한을 유지한다.
-- 완료: 획득/보관/건물 배치·중복 건물 제한, 흰 주사위 현재 눈의 추가 행동과 자동 최소 일꾼 보정(실제 흰/개인 주사위 불변), 연쇄 선택, 수도원29 배치 흰 성당4점, 기중기 즉시 흰 성 선택과 종료 건물1개 간주(중복 보너스 방지), 방패10 배율.
-- 로컬2–4·일반AI·온라인2인 옵션과 서버 검증 연결. 기존 save 버전 유지/확장 미사용 저장 그대로 호환, 추가 행동 대기/실행 후 복원 검증. 수도원28 구매로 가능한 추가 행동이 바뀌면 선택 목록 갱신한다.
-- 검사: 전체 코어299/299(당시 신규13 포함), 보드33/33, PC 브라우저12/12(신규2+직접 조작10; 실제25라운드 완주), TypeScript·전체ESLint·첫 프로덕션빌드 통과. 이후 A단계 공급 보완/테스트1개 추가 후 최종 관련14/14 재통과. 최종 TypeScript·관련 ESLint·프로덕션빌드도 재통과했다.
-- AI2·3·4인 각각25라운드 완료, 실제 흰 성 배치와 보너스 실행 확인. 기중기→흰 성→시청→은행, 0/1/여러 일꾼·1↔6·수도원8/12/28·29/방패10, 서버 위조/다른좌석/재실행 거부와 양쪽 재접속 상태 일치 검증.
-- 실패와 해결: 작은 엔진 fixture는 공식 저장 형식 대상이 아니므로 저장 검증을 등록 보드 fixture로 분리했다. fixture 좌표 연결·단계별 상품 분포·HTTP Content-Type 기대를 수정했다. 샌드박스 임시 rename EPERM은 정상 권한의 격리 서버 테스트로 교차 검증했다. 게임 저장 검증을 완화하지 않았다.
-- 화면: .local-data/qa/white-castle-choice.png를 직접 확인(흰 주사위 눈/일꾼 비용·판매·보너스 선택). 이미지 디자인은 기존 건물/수도원 렌더러 재사용. 모바일 정밀QA와 신규 그림은 요청대로 보류.
-- 변경 파일: src/game/{white-castles.ts,types.ts,practice.ts,save.ts,tile-help.ts,computer.ts,core/{effects,engine,monasteries,phases,placement,shield-effects,state}.ts}; src/server/{rooms,room-http}.ts; src/app/{game-screen.tsx,online/room-screen.tsx}; tests/{fixtures/white-castles.ts,core/{white-castles.test.ts,white-online.test.ts,run.mjs},browser/white-castles.spec.ts}; docs/{TODO.md,PROGRESS.md,rules/sources.md,rules/white-castles.md,history/progress-tile-frame-2026-10-19.md}.
-- 백업 검사: 비공개 origin/main과 push 권한 확인, fetch 후 원격과 기준 HEAD 차이0/0, 대상27파일 민감정보 패턴0건·diff 공백 검사 통과. 기존 원본2개는 제외한다.
-- 백업 완료: 구현 커밋 c06fef38de693b951f9a245d3157d1cc82c7428c를 비공개 origin/main에 Push하고 원격 전체 해시 일치를 확인했다. 기존 미커밋 원본2개는 그대로 남았다. 이 결과 기록은 별도 문서 체크포인트 커밋으로 백업한다.
-- 다음: 흰 성은 새 게임 준비에서 선택해 사용한다. 이번 요청 범위는 완료했으며 모바일 정밀QA·새 일러스트·기존 전체 연습 공급 제한은 남아 있다. 이후 작업은 새 요청과 TODO를 기준으로 진행한다. 전체 프로젝트 완료로 취급하지 않는다.
-- 이전 시각화 기록: history/progress-tile-frame-2026-10-19.md. 기존 원본27/28의 변경을 이번 기능에 포함하지 않는다.
+2026-10-19 · BGA 참고 공용 보드 레이아웃 구현·검증 완료, 백업 진행. 전체 프로젝트 미완료.
+- 기준 main/12e1e0e. 기존 미커밋 수도원27/28 원본2개 보존·백업 제외. 타일 이미지/TileArt/공통 프레임·엔진·온라인/저장 형식은 변경하지 않았다.
+- 첨부 두 화면 직접 확인. 기준은 상하 중앙 상품2공간+네 모서리 상품4공간, 외측 일반 공급 타일, 중앙 검은1–2–1. BGA 이미지를 복제하지 않고 기존 SVG/CSS로 재구성했다.
+- 구현: 사각 상품92×92·얇은 선, 일반 타일 외측 배치·2인60폭/다수 공급50폭, 중앙 타원 제거·60폭 육각형 공유변 배열. 2인4칸은 공유변5개가 수학적으로 일치하며 빈 검은 칸도 위치를 유지한다. 3·4인 검은 타일은 axial 행으로 수량 그대로 표시한다.
+- 방패는 공급처 연결과 빈 실루엣을 유지해 측면·상하 공급처 옆 별도 슬롯에 배치했다. 하단 방패가 보너스 표와 겹친 것을 발견해 보완했다. 공급/상품/방패 ID·클릭 콜백과 행동·보충은 그대로다.
+- BoardViewport에 기본값을 유지하는 label prop만 추가하고 공용 보드의 드래그·Ctrl휠 확대·일반 스크롤을 재사용했다. 투명 육각 hit polygon과 선택 윤곽은 같은 수식이며 비용 배지는 클릭을 가로채지 않는다. PC100% 공용 패널은2인560px·방패650px 폭으로 전체를 확인할 수 있다. 확대 시 내부 스크롤/이동 유지.
+- 검사: 전체코어300/300(기본판/방패/흰 성/AI/상품/공급/저장/온라인 포함), PC 브라우저14/14(신규배치4+기존 직접조작10·실제25라운드), TypeScript·전체ESLint·프로덕션빌드 통과. 최종 하단방패 보완 후 타입/관련린트·빌드 재통과. 모바일 정밀QA·이미지 수정은 요청대로 제외.
+- 화면: .local-data/qa/common-before-{2,4}.png와common-after-{2,4}.png, common-after-{2,4}-shields.png를 직접 비교/확인했다. 전후 동일 시드/보드 상태이며 before는 HEAD의 실제 이전컴포넌트를 QA경로에 별도로 렌더링(현 소스 rollback 없음). 초기 live 캡처도 보존했으나 저장 복원 대기를 강화해 최종 비교본으로 교체했다. common-costs-*는125%/비용 표시 확인용이다.
+- 실패와 해결: rect 검사가 타일 내부 rect까지 센 것을 직계 배경으로 좁혔다. 4인 하단 타일/점수표 및 하단방패/보너스 표 겹침을 보완했다. 병렬 Playwright의 동일 test-results 경로 충돌로 trace 종료 ENOENT1건이 발생해 전용 출력 경로에서 순차 재실행14/14 통과. 게임 오류로 숨기지 않고 구분한다.
+- 변경 파일: src/app/{common-board.tsx,board-viewport.tsx,game-screen.css}; tests/browser/common-layout.spec.ts; docs/{TODO.md,PROGRESS.md,history/progress-white-castles-2026-10-19.md}.
+- 다음: 위7개 파일만 안전 검사·Commit/Push하고 원격 해시 확인. 이후 별도 작업은 사용자 요청과 TODO 기준. 이번 레이아웃 완성을 전체 프로젝트 완료로 취급하지 않는다.
+- 직전 흰 성/수도원29 기록: history/progress-white-castles-2026-10-19.md.
