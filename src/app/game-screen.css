@@ -85,3 +85,13 @@
 .common-board-panel,.common-board-panel.with-shields{width:950px;max-width:100%}
 .common-board-panel .common-board-svg{min-width:0}
 .common-board-panel .shield-depot-link{opacity:.25}
+
+/* One visual treatment for every turn-control button, including disabled ones. */
+.direct-toolbar .turn-controls,.turn-controls{display:flex;gap:6px;margin-left:auto;flex-shrink:0}
+.direct-toolbar .turn-controls button,.turn-controls button{background:#a83232;border:1px solid #752020;color:#fff3dc;border-radius:4px;min-height:34px;padding:6px 10px;font:600 11px Arial,"Malgun Gothic",sans-serif;white-space:nowrap}
+.direct-toolbar .turn-controls button:hover:not(:disabled),.turn-controls button:hover:not(:disabled){background:#bf4343}
+.direct-toolbar .turn-controls button:disabled,.turn-controls button:disabled{background:#976666;border-color:#805757;color:#eedfce;opacity:.6;cursor:not-allowed}
+.turn-controls button:focus-visible{outline:2px solid #d7aa54;outline-offset:2px}
+.shield-action-tools:empty,.shield-rule-tools:empty{display:none}
+.shield-action-tools p{font-size:12px;margin:8px 0}
+@media(max-width:700px){.direct-toolbar .turn-controls{width:100%;justify-content:flex-end}.turn-controls button{flex:1}.direct-toolbar .turn-controls button{padding:6px 8px}}

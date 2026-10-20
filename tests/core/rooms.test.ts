@@ -14,6 +14,11 @@ async function fixture(){
 test("room seat authority, private-state redaction and persisted reconnection",async()=>{
   const f=await fixture();try{
     const view=await f.store.view(f.owner.id,f.owner.token);
+    for(const type of ['undo','undo-action','undo-turn','restore-state']){
+      await assert.rejects(()=>f.store.act(f.owner.id,f.owner.token,view.revision,{type,playerId:'seat-1',state:{}}),(e:unknown)=>e instanceof RoomError&&e.status===400);
+      await assert.rejects(()=>f.store.act(f.owner.id,f.guest.token,view.revision,{type,playerId:'seat-1'}),(e:unknown)=>e instanceof RoomError&&e.status===403);
+      assert.deepEqual(await f.store.view(f.owner.id,f.owner.token),view);
+    }
     assert.equal(view.joined,true);assert.equal(view.seat,"seat-1");
     const text=JSON.stringify(view);assert.ok(!text.includes("supplyPools"));assert.ok(!text.includes("random"));assert.ok(!text.includes("token"));
     assert.ok(Object.keys(view.tiles).length<160);

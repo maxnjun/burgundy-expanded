@@ -13,7 +13,7 @@ for(const immediate of [false,true])test(`U15 ${immediate?"warehouse":"die"} sal
  const saved=serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:g,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.addInitScript(value=>{if(!localStorage.getItem("burgundy-expanded:local-v1"))localStorage.setItem("burgundy-expanded:local-v1",value);},saved);
  const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.goto("/");
- await expect(page.getByText(/사용자 확정 프로젝트 규칙: 방패9/)).toBeVisible();
+ await page.getByText("기본판 연습 · 규칙 지원 범위와 공급 안내",{exact:true}).click();await expect(page.getByText(/사용자 확정 프로젝트 규칙: 방패9/)).toBeVisible();
  if(!immediate)await page.getByRole("button",{name:/^행동 주사위 1 눈/}).click();
  const button=immediate?page.getByLabel("타일 효과 선택",{exact:true}).getByRole("button",{name:"1번 상품 3개 판매",exact:true}):page.getByRole("button",{name:"1번 상품 3개 판매",exact:true});
  await expect(button).toBeEnabled();await button.click();await expect(page.getByLabel("현재 은화",{exact:true})).toHaveText("34");await expect(page.getByLabel("현재 일꾼",{exact:true})).toHaveText("31");

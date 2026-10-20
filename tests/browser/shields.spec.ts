@@ -14,7 +14,7 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
   const saved=serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game,logs:["TEST FIXTURE · 방패 UI 검증"],view:{zoom:1,focus:false,table:count!==3,boardZooms:{}}});
   await page.addInitScript(value=>{if(!localStorage.getItem("burgundy-expanded:local-v1"))localStorage.setItem("burgundy-expanded:local-v1",value);},saved);
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.goto("/");
-  await expect(page.getByLabel("방패 배치 검증",{exact:true})).toBeVisible();
+  await expect(page.locator("[data-shield-slot]").first()).toBeVisible();
   await expect(page.locator("[data-shield-depot]")).toHaveCount(6);
   await expect(page.locator("[data-shield-slot]")).toHaveCount(count===2?6:count===3?9:12);
   const overlapping=()=>page.evaluate(()=>{
@@ -27,7 +27,7 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
     mkdirSync('.local-data/shield-overlap',{recursive:true});
     for(const zoom of [1,1.6,2]){
       await page.evaluate(z=>{const s=JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!);s.view.commonZoom=z;localStorage.setItem('burgundy-expanded:local-v1',JSON.stringify(s));},zoom);await page.reload();
-      await expect(page.getByLabel("방패 배치 검증",{exact:true})).toBeVisible();
+      await expect(page.locator("[data-shield-slot]").first()).toBeVisible();
       await expect(page.locator("[data-shield-slot]")).toHaveCount(count===2?6:count===3?9:12);
       await expect(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true})).toHaveText(`${zoom*100}%`);
       expect(await overlapping()).toBe(false);
@@ -64,7 +64,7 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
   await page.getByRole("button",{name:/^방패A .*배치됨.*배치 가능/}).first().click();
   const empty=page.locator(`[data-shield-slot="${firstSlot.id}"]`);
   await expect(empty).toHaveAttribute("data-empty","true");await expect(empty).toHaveAttribute("role","img");
-  await expect(page.getByLabel("장착 방패",{exact:true})).toContainText(`방패 ${firstSlot.shieldNumber}`);
+  await expect(page.locator(`[data-mounted-shield="${firstSlot.shieldNumber}"]`)).toHaveCount(1);
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.extensionStates.shields.slots[0].shieldNumber)).toBe(null);
   await page.reload();await expect(empty).toHaveAttribute("data-empty","true");
   expect(await empty.getAttribute("tabindex")).toBeNull();
@@ -81,7 +81,7 @@ test("shield preview can be started from setup and explicitly stays local-only",
   await expect(page.getByLabel("플레이 방식",{exact:true})).toHaveValue("local");
   await expect(page.getByLabel("플레이 방식",{exact:true})).toBeDisabled();
   await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
-  await expect(page.getByLabel("방패 배치 검증",{exact:true})).toBeVisible();
+  await expect(page.locator("[data-shield-slot]").first()).toBeVisible();
   await expect(page.locator("[data-shield-depot]")).toHaveCount(6);
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).view.computerPlayerIds)).toEqual([]);
 });

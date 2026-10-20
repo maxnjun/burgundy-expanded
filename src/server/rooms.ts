@@ -91,6 +91,7 @@ export class RoomStore {
     if(!room.tokens[1])throw new RoomError(409,"다른 플레이어의 참가를 기다리세요.");
     if(!Number.isSafeInteger(revision)||revision!==room.game.revision)throw new RoomError(409,"다른 행동이 먼저 반영되었습니다. 최신 상태에서 다시 선택하세요.");
     if(!action||typeof action!=="object"||!("playerId" in action)||action.playerId!==player.id)throw new RoomError(403,"다른 좌석의 행동은 실행할 수 없습니다.");
+    if("type" in action&&["undo","undo-turn","undo-action","restore-state"].includes(String(action.type)))throw new RoomError(400,"온라인 되돌리기는 공개 정보와 무작위 결과 보호를 위해 지원하지 않습니다.");
     const next=applyCoreAction(room.game,action as GameAction);
     if(!next.ok)throw new RoomError(400,"차례·주사위·자원·선택 조건을 확인하세요.");
     const after=next.value.state.players[seat],label=actionLabel(room.game,action as GameAction);

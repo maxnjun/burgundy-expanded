@@ -6,7 +6,7 @@ import { serializeSavedGame } from "../../src/game/save";
 
 test("fresh game rolls, adjusts workers, selects supply and preserves zoom after reload",async({page})=>{
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.goto("/");
-  await page.getByRole("button",{name:"저장 파일 내보내기",exact:true}).waitFor({state:"visible"});
+  await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();await expect(page.getByRole("button",{name:"저장 파일 내보내기",exact:true})).toBeVisible();await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();
   const die=page.getByRole("button",{name:/^행동 주사위 1 눈/});await expect(die).toBeEnabled();await die.click();
   const target=page.locator('.supply-art-tile[aria-disabled="false"]').first();await target.click();
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.players[0].storage.filter(Boolean).length)).toBe(1);
@@ -112,7 +112,7 @@ test("three and four player local practice seats each finish a round",async({pag
     await expect(page.getByRole("button",{name:/^행동 주사위 1 눈/})).toBeEnabled();
     for(let seat=0;seat<count;seat++){
       for(let die=0;die<2;die++){await page.getByRole("button",{name:new RegExp(`^행동 주사위 ${die+1} 눈`)}).click();await page.getByLabel("일꾼 자원",{exact:true}).click();}
-      const next=page.getByRole("button",{name:"추가 행동 없이 다음 차례",exact:true});if(await next.isVisible())await next.click();
+      const next=page.getByRole("button",{name:"턴 종료",exact:true});if(await next.isEnabled())await next.click();
       await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.turn.activePlayerId)).not.toBe(`seat-${seat+1}`);
 
     }
