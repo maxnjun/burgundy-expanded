@@ -1,3 +1,4 @@
+import { LIVESTOCK_NAMES } from "../game/tile-help";
 import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
 import type { ScoreEntry } from "../game/types";
@@ -131,7 +132,7 @@ export class RoomStore {
   }
 }
 
-const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${({cattle:"소",sheep:"양",pigs:"돼지",chickens:"닭",geese:"거위"})[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
+const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${LIVESTOCK_NAMES[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
 export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="roll-round")return "라운드 주사위 굴리기";
   if(a.type==="end-turn")return "차례 종료";

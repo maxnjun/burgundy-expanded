@@ -12,6 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - `src/app/tile-standard.json`과 `docs/design/tile-asset-standard.md`를 따른다. 기존 영지 좌표를 변경하지 않는다. 모든 단일 육각형 타일은 `TileArt`/`TileFrame`의 동일한 viewBox·clipPath·안쪽 테두리를 사용한다. 타입별 scale/translate·CSS polygon stroke·두 번째 외곽선을 추가하지 않는다.
 - 승인된 베이지 완성형 PNG10종은 `public/assets/tiles/beige/final/manifest.json`의 buildingType으로 연결한다. 원래 테두리가 포함되어 있으므로 같은 viewBox·바깥 hex clip(inset 0)만 사용하고 SVG backdrop/rim을 추가하지 않는다. 파일 실패 시에는 기존 SVG/안쪽 프레임으로 복구한다.
+- 승인 동물13종은 `public/assets/tiles/animals/final/manifest.json`의 species/count로 연결한다. 원본 비정규 육각형을 억지로 늘리지 않는다. 파생 그림과 원본 RGB의 공통 SVG 프레임을 분리하고 동물별 런타임 배율/이동을 추가하지 않는다. 내부 chickens/geese는 유지하고 화면 이름은 기니피그/하프물범을 쓴다. 원본ZIP/PNG 보존 및 `scripts/prepare-animal-tiles.py --check`/animal-assets 브라우저 검사를 실행한다.
 - 원본 PNG는 보존한다. 새 PNG는 알파 영역과 내부 테두리/일러스트를 확인하여 별도 파생 에셋으로 등록한다. 원본 해시가 바뀌면 기존 수동 측정 마스크를 그대로 적용하지 않는다. 그림을 손상시키는 자동 테두리 제거는 금지한다.
 - 은화/일꾼은 `public/assets/icons/silver-coin.png`, `worker.png`만 `ResourceIcon`/`ResourceGlyph`로 재사용한다. 승인 원본은 `public/assets/icons/source/resource-icons-approved.png`다. AI로 다시 그리지 않는다. 새 효과 그림도 배경/일러스트와 별도 레이어로 합성하며 숫자·화살표·아이콘 위치는 공통 effect 설정을 사용한다. 기존 합성 PNG의 자원 그림을 안전하게 분리할 수 없다면 임의로 지우거나 덮지 말고 미적용 범위를 보고한다.
 - 변경 시 `scripts/validate-tile-assets.py`, 타일 관련 브라우저 테스트와 100/160/200% 실제 스크린샷을 확인한다. 안티앨리어싱 오차와 실제 틈/중복 테두리를 구분한다. 상품 사각 타일·방패 외곽·포도 이중 타일에 단일 육각형 규격을 강제로 적용하지 않는다.

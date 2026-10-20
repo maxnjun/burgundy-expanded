@@ -10,6 +10,8 @@
 
 2026-10-21 승인 베이지 건물10종 예외: `public/assets/tiles/beige/final/manifest.json`의 buildingType 매핑을 `TileArt`에서 사용한다. 완성형 PNG에 기존 목재 테두리가 포함되므로 같은 viewBox/정사각 이미지 배치와 **바깥 clip(inset 0)**을 쓰고 추가 SVG backdrop/rim을 생략한다. 기중기도 이 완성형으로 연결하며 기존 중앙형 원본/파생은 보존한다. 로딩 실패 시 기존 SVG 그림·안쪽 clip·프레임으로 복구한다. 공용/보관/영지/온라인/무역로 모두 동일 컴포넌트와 URL을 쓰고 좌표·클릭 영역·엔진/저장은 바꾸지 않는다. 상세/검증은 `../BEIGE_TILE_IMPORT_NOTES.md`.
 
+2026-10-21 승인 동물13종: `public/assets/tiles/animals/final/manifest.json`의 species/count를 사용한다. 원본의 비정규 육각형/하단 입체 테두리는 별도 측정하며 중앙 동물/풀밭은 등방성으로 보존한다. 1024 공통 alpha 파생에 추가 PNG 테두리를 넣지 않고 기존 안쪽 SVG 프레임/원본 연두 RGB 팔레트만 사용한다. 실제 검은 동물 무늬는 보존하며 외곽 검정만 마스킹한다. chickens/geese ID·확장 규칙은 유지하고 표시 이름만 기니피그/하프물범으로 분리한다. 마릿수 배지는 상단 중앙(50,16), radius7/font11로 통일해 얼굴을 가리지 않는다. 상세는 `../ANIMAL_TILE_IMPORT_NOTES.md`.
+
 ## 수학적 규격
 
 정의: `src/app/tile-standard.json`, `estate-geometry.ts`, `tile-frame.tsx`.

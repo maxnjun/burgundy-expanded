@@ -1,4 +1,5 @@
 import type { Tile } from "./types";
+export const LIVESTOCK_NAMES = {cattle:"소",sheep:"양",pigs:"돼지",chickens:"기니피그",geese:"하프물범"} as const;
 export const MONASTERY_HELP: Readonly<Record<number, string>> = {
     29: "종료 때 자신의 영지에 배치한 흰 성(베이지색 건물)마다 4점입니다. 기중기는 해당 건물 하나로 셀 수 있습니다.",
     27: "순서 트랙에서 다른 표식과 겹치면 항상 맨 위에 놓습니다. 다른 표식이 들어와도 유지합니다.",
@@ -25,7 +26,7 @@ export function tileHelp(tile: Tile): string {
     if (tile.type === "mine")
         return "배치 즉시 자원은 받지 않으며, 각 단계 종료마다 은화 1개를 받습니다.";
     if (tile.type === "livestock")
-        return tile.species === "geese" ? "거위 2마리와 같은 목초지의 한 가축 종류를 합산합니다. 가장 높은 즉시 점수를 적용합니다. 이후 어느 가축을 놓아도 거위를 함께 계산하며, 종료 때 별도 가축 종류로 셉니다." : "이 타일의 가축 수와 같은 목초지에 있는 같은 종류 가축 수를 합산해 득점합니다. 같은 목초지의 거위도 포함합니다.";
+        return tile.species === "geese" ? "하프물범 2마리와 같은 목초지의 한 가축 종류를 합산합니다. 가장 높은 즉시 점수를 적용합니다. 이후 어느 가축을 놓아도 하프물범을 함께 계산하며, 종료 때 별도 가축 종류로 셉니다." : "이 타일의 가축 수와 같은 목초지에 있는 같은 종류 가축 수를 합산해 득점합니다. 같은 목초지의 하프물범도 포함합니다.";
     if (tile.type !== "building")
         return "";
     return { "white-castle": "건물 칸에 배치합니다. 현재 흰 주사위 눈으로 추가 행동 1회를 합니다. 일꾼 보정은 추가 행동에만 적용하며 흰 주사위는 바꾸지 않습니다.", crane: "일반 건물8종 및 활성화된 흰 성 중 원하는 효과를 즉시 선택합니다. 종료 시 보유한 수도원16~23·29에 대해 건물 한 종류로 간주합니다.", market: "번호 공급처에서 선박 또는 가축 하나를 보관합니다.", "carpenters-workshop": "번호 공급처에서 건물 하나를 보관합니다.", church: "번호 공급처에서 성·광산·수도원 중 하나를 보관합니다.", warehouse: "보유 상품 한 종류를 주사위 없이 전량 판매합니다.", "boarding-house": "일꾼 4개를 받습니다.", bank: "은화 2개를 받습니다.", "town-hall": "보관 중인 타일 하나를 주사위 없이 추가 배치하고 그 효과도 처리합니다.", watchtower: "즉시 4점을 얻습니다." }[tile.building];
