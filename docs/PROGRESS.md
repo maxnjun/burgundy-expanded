@@ -1,3 +1,12 @@
+# 최신 체크포인트 — 승인 베이지 PNG10종 실제 게임 연결 (2026-10-21)
+
+- 구현·최종 회귀·main 백업 완료. TileArt에서 final/manifest의 buildingType→file+출력해시 연결. 베이지 완성형만 바깥clip0/추가SVG backdrop·rim 없음, 실패 시 기존SVG/안쪽프레임 복구. 공용/보관/영지/온라인/무역로 공통 적용. 좌표/클릭/게임엔진/AI/저장·PNG원본/최종파일 불변.
+- 관련PC9/9(related.log)·코어413/413·보드33/33·타입/린트/빌드 exit0. 테스트를 production TileArt/실게임으로 전환, 3칸 저장고를 3·3·3·1로 나눠10종의 공급/보관/영지 URL일치·클릭·GameState불변·3배율 및404복구 검사. 이전 수동 DOM 그림 치환은 제거.
+- 직접 확인: .local-data/beige-live/game-estate-200.png 및 neighbours-200.png, 모든 건물/소품/깃발 보존·간격/중복선 이상 없음. 스크린샷은 같은 폴더에 game-estate-{100,160,200},game-supply-{1..4},game-storage-{1..4}.png. 기존 게임/규격변환 캡처는 보존. 4공유변×3배율 배경노출0px, 입력/출력/기존문서29해시 보존·소스4파일 동결 일치(asset-validation.json).
+- 변경: tile-art.tsx,beige-assets/tile-standard/tile-png 브라우저검사,AGENTS/디자인가이드/가져오기노트 및 이번 TODO/PROGRESS 접두 구간. 전체PC100/100 통과(full-pc.log,14.1분). 소스4파일 동결 해시=verified-source-hashes.json.
+- 백업: f48401ac89adc8fc6f84407472c21172f6a07370 일반Push·원격main SHA 일치. 사용자가 기존 공개 main 백업 예외를 명시 허용. 기존 문서 여관 구간/수도원PNG2개/asset-inbox는 보존·커밋 제외.
+
+---
 # 최신 체크포인트 — 승인 베이지 타일 10종 정규화 (2026-10-21)
 
 - 이번 에셋 정리/검증/본체 백업 완료(게임 기본 연결 자동치환 및 전체 프로젝트 완료 아님). manifest/README/동봉 지시문·원본10종 확인. 신규 public/assets/tiles/beige/final/에 1024 RGBA10개·동일 alpha·승인 베이지 바닥/목재 테두리 유지. 새 그림/색 보정/비등방 변형 없음.
