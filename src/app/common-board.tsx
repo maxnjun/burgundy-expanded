@@ -97,7 +97,9 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
       </g>)}
       </g></g>
       {shields && game.market.numberedDepots.map(depot=>{
-        const slots=shields.slots.filter(s=>s.depot===depot.number);const [cx,cy]=shieldCenters[depot.number-1];const [dx,dy]=shieldDepotCenters[depot.number-1];
+        const slots=shields.slots.filter(s=>s.depot===depot.number);const [baseX,cy]=shieldCenters[depot.number-1];
+        // Clear depot3 tiles horizontally without moving labels toward the score-panel heading.
+        const cx=baseX-(depot.number===4&&slots.length===2?24:0);const [dx,dy]=shieldDepotCenters[depot.number-1];
         return <g key={`shields-${depot.number}`} data-shield-depot={depot.number} aria-label={`${depot.number}번 공급처 방패 그룹`}>
           <path d={`M${cx} ${cy}L${cx+(dx===cx?0:Math.sign(dx-cx)*25)} ${cy+(dy===cy?0:Math.sign(dy-cy)*25)}`} className="shield-depot-link"/>
           {slots.map((slot,i)=>{const side=![1,4].includes(depot.number);const offset=slots.length===2?(i===0?-35:35):0;const x=cx+(side?0:offset),y=cy+(side?offset:0);const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
