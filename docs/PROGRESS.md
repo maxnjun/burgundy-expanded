@@ -1,3 +1,15 @@
+# 최신 체크포인트 — 공용 보드·포도 공급처 UI 통합 (2026-10-20)
+
+- 이번 UI 구현·검증 및 본체 백업 완료. 전체 프로젝트 완료 아님. 기준 main/d2575f4. 사용자 최신 확정:950×1030 보드 및 좌우 모서리 패널(각390×205) 고정. 이전 중간1200×1330에서면적38.7% 축소한 상태 유지.
+- 1/4 재설계:일반 타일2열(1:x462/390,y280/360;4:y860/940), 세로 방패 중심(540,320)/(540,900), 상품 중심(650,340)/(650,830). 2/3/5/6 좌표 유지. 전 그룹 방패 간격70/회색 폭72, 한개 높이104·두개172. 보드 크기·상단·검은 마름모 불변. 최종표=docs/design/common-board-layout.md.
+- 포도 원인 실측:채워진100×57 SVG/빈46×57 SPAN, 획득 시 버튼폭112→58. VINE_TILE_FRAME(원래100×57 viewBox/path) 공유, 표시140×79.796875·버튼157×142로 실물/빈칸 동일. 공급 패널260→360, 실측 높이2인407→665.09375/3인500→819.09375/4인596.5→973.09375. 2열/색상범례/고정가격·비용행, 내용 기반 높이. main 고정950+가로스크롤, 개인 포도밭 좌표/보관그림 기본100×57 보존.
+- 파일:src/app/common-board.tsx/common-board-backdrop.tsx/game-screen.css/vineyard-board.tsx/vineyards.css;browser/common-layout.spec.ts/shields.spec.ts/vineyard-supply-layout.spec.ts;설계/TODO/PROGRESS 총11개. 엔진·AI·저장형식·원본PNG·포도밭4층/총5토큰 변경 없음.
+- 기준안 검증:PC87/87(final-pc.log,10.7분), 코어406/406/보드33/33/타입·린트·빌드 통과. 이후 최신1/4·포도추가 요청 적용했으므로 이87통과를최신전체통과로표현하지않는다. 최신 관련20/20통과(followup/target.log,2.5분), 코어406/406·보드33/33·타입/린트/빌드도 followup/ 로그로 재통과. 최종전체PC90/90통과(followup/final-pc.log,11.2분,실패/skip0;기존85+신규5). 최종실행중소스/테스트해시변경0(frozen-files.json).
+- 증거:.local-data/common-expanded/followup/before/after-{2,3,4}p-{combined,board,supply-filled,supply-empty}.png 및 before/after-sizes.json. 최신4인 합동화면/2인 빈칸 직접확인(패널width360/실물·빈칸픽셀동일). 1/4전후200% 및최신160%확대직접확인완료. 이전3/6확대사진도보존.
+- 보존:기존PROGRESS/TODO 여관구간·수도원PNG2개미커밋보존/커밋제외. 원격은사용자가공개전환한maxnjun/burgundy-expanded/main,Push권한/선행0대0확인. 본체9파일만 a19a7a3a59f5d87b2fbef28729541136f2299fb4 커밋·main Push 완료/원격SHA일치. 이 문서/TODO의 이번 구간은 별도 체크포인트로 기록(최종HEAD는 git log -1 참조).
+- 다음:이번 UI 범위 미해결 오류 없음. 모바일정밀QA및사용자화면피드백은후속. 다른 확장 신규 개발은 기존 보류 원칙 유지. 모바일정밀QA유보.3000서버유지.
+
+---
 # 최신 체크포인트 — 방패 미리보기 겹침 해결 (2026-10-20)
 
 - 이번 겹침 수정 검증 및 비공개main 백업 완료. 전체 프로젝트 완료 아님. 시작 main/6bd7f27. 기존 문서2개 여관 기록/수도원 PNG2개 미커밋 보존. 포도밭4층V11/최대5토큰·게임규칙/원본PNG 변경없음.
