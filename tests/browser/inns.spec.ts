@@ -16,7 +16,8 @@ for(let n=1;n<=5;n++)test(`inn stack${n} at100/160/200 preserves supply hits and
   const {saved}=setup(n,zoom);await page.goto('/');await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),saved);await page.reload();
   const board=page.getByRole('region',{name:'공용 공급처 보드',exact:true}),stack=board.locator('[data-inn-stack]');await expect(board.getByText('여관1 ◀',{exact:true})).toBeVisible();
   await expect(stack.locator('[data-inn-layer]')).toHaveCount(n);await expect(stack.locator('[data-inn-image]')).toHaveCount(n);await expect(stack).toHaveAttribute('aria-disabled','false');
-  await expect.poll(()=>stack.locator('image').evaluateAll(els=>Promise.all(els.map(el=>new Promise<boolean>(resolve=>{const im=new Image();im.onload=()=>resolve(true);im.onerror=()=>resolve(false);im.src=el.getAttribute('href')!;}))))).toEqual(Array(n).fill(true));
+  await expect(stack.locator('[data-resource-icon="silver"]')).toHaveCount(1);
+  await expect.poll(()=>stack.locator('image').evaluateAll(els=>Promise.all(els.map(el=>new Promise<boolean>(resolve=>{const im=new Image();im.onload=()=>resolve(true);im.onerror=()=>resolve(false);im.src=el.getAttribute('href')!;}))))).toEqual(Array(n+1).fill(true));
   await board.screenshot({path:`.local-data/qa/inn-stack-${n}-${zoom*100}.png`});
   await stack.screenshot({path:`.local-data/qa/inn-stack-detail-${n}-${zoom*100}.png`});
   for(const hit of [stack.locator('[data-inn-hit]'),board.locator('[data-black-depot] [data-supply-hit]').first()]){
@@ -42,7 +43,7 @@ test('inn storage, direct placement, saved estate, missing PNG fallback and disa
  const cell=page.locator(`[data-estate-cell="${put.intent.cellId}"]`).first();await cell.click();await expect(cell.locator('[data-inn-art]')).toHaveCount(1);await cell.screenshot({path:'.local-data/qa/inn-estate.png'});await page.locator('.estate-panel').first().screenshot({path:'.local-data/qa/inn-completed-estate.png'});
  const ledger=await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.scoreLedger['seat-1']);expect(ledger.some((e:{category:string})=>e.category==='region-size')).toBe(true);
  await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-art]')).toHaveCount(1);
- await page.route('**/tiles/inn.png*',r=>r.abort());await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-fallback]')).toHaveCount(1);
+ await page.route('**/tiles/illustrations/inn.png*',r=>r.abort());await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-fallback]')).toHaveCount(1);
  const off=createPracticeSession({names:['off1','off2'],seed:'inn-off'});await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:off,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}}));await page.reload();await expect(page.locator('[data-inn-stack]')).toHaveCount(0);
 });
 test('four seat market retains distinct inn and every existing tile hit',async({page})=>{

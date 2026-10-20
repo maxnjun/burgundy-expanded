@@ -227,6 +227,51 @@
         384.0,
         385.8333333333333
       ]
+    },
+    "inn": {
+      "sourceSha256": "d2f3303b6d8b05e3facc53e1a2c38bbc8674197a0740c8ec77dd47c97b1fabb8",
+      "outputSha256": "9f7bf3b47f13b2524c0b25859041e0b921aaef22c216fef5c5fcf48b901c5941",
+      "palette": {
+        "dark": "#6c4001",
+        "base": "#fbb71e",
+        "light": "#fdc226"
+      },
+      "surface": [
+        "#fbb71e",
+        "#fbb71e",
+        "#fbb71e"
+      ],
+      "innerContour": [
+        [
+          652,
+          68
+        ],
+        [
+          1147,
+          349
+        ],
+        [
+          1147,
+          873
+        ],
+        [
+          652,
+          1152
+        ],
+        [
+          158,
+          873
+        ],
+        [
+          158,
+          349
+        ]
+      ],
+      "isotropicFitScale": 0.8500071082622216,
+      "measuredContourCenter": [
+        652.3333333333334,
+        610.6666666666666
+      ]
     }
   }
 }

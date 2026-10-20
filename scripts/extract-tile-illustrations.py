@@ -14,7 +14,8 @@ import math
 from PIL import Image, ImageDraw, ImageFilter, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
-SIZE = 1024
+STANDARD = json.loads((ROOT/'src/app/tile-standard.json').read_text())
+SIZE = STANDARD['rasterCanvas']
 NAMES = ['castle', 'mine', 'ship', 'monastery-27', 'monastery-28']
 # A changed original needs a fresh contour review; never silently crop new art.
 REVIEWED_SOURCES = {'castle': '12fb2086e791b3cd83220fb146b9100d7e1462628802ca1c5a05b0c0cb298296', 'mine': '66903b15f33fa8b9fd58fa927d344d3bbe75dfe9bb05bb0fe484090d9047dc35', 'ship': 'ec7a2fc3e7bb2a9b78692d9959fb882e9afac3ea808a23d0e90294865e4bab3f', 'monastery-27': '91f5624fa44ea8b0855a087e6bbea4a92f3a9e0c1315ae25ba53c267a7b71dbb', 'monastery-28': 'ad1b723c7b7ad4359d2c082b9b58e5c2ffcf79dab8bc885a2de945b8066cfc37'}
@@ -132,9 +133,10 @@ if __name__ == '__main__':
     # retained pixel into that inner hex, with a 3px interpolation allowance.
     apothem=math.sqrt(3)*SIZE/4
     target=ROOT/'public/tiles/illustrations';target.mkdir(exist_ok=True)
-    assets={}
+    prior=target/'manifest.json'
+    assets={k:v for k,v in (json.loads(prior.read_text())['assets'] if prior.exists() else {}).items() if k not in NAMES}
     for name,(path,image,palette,surface) in prepared.items():
-        scale=(apothem*(1-2*2.2/100)-3)/supports[name]
+        scale=(apothem*(1-2*STANDARD['frameInset']/100)-3)/supports[name]
         output=target/f'{name}.png'
         cx,cy=centers[name]
         image=image.transform((SIZE,SIZE),Image.Transform.AFFINE,
@@ -145,5 +147,5 @@ if __name__ == '__main__':
                       'outputSha256':hashlib.sha256(output.read_bytes()).hexdigest(),
                       'palette':palette,'surface':surface,'innerContour':CONTOURS[name],'isotropicFitScale':scale,'measuredContourCenter':[cx,cy]}
     (target/'manifest.json').write_text(json.dumps({'canvas':SIZE,
-        'frameInset':2.2,'mapping':'same-measured-isotropic-fit-algorithm','assets':assets},indent=2)+'\n',encoding='utf-8')
+        'frameInset':STANDARD['frameInset'],'mapping':'same-measured-isotropic-fit-algorithm','assets':assets},indent=2)+'\n',encoding='utf-8')
     print('Extracted five illustrations with common isotropic fit algorithm; originals untouched.')

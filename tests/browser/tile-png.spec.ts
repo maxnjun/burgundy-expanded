@@ -1,3 +1,4 @@
+import {tileHexPoints,TILE_FRAME_INSET} from "../../src/app/tile-frame";
 import { createHash } from "node:crypto";
 import finalTiles from "../../public/tiles/illustrations/manifest.json";
 import { test, expect, type Locator } from "@playwright/test";
@@ -28,7 +29,7 @@ test("four PNG illustrations share intact hex frames across supply storage estat
   const path=`/tiles/${asset}.png`,images=page.locator(`image[data-tile-art-png="${path}"]`);await expect.poll(()=>images.count()).toBeGreaterThanOrEqual(3);await expect(page.locator(`.estate-keyspaces image[data-tile-art-png="${path}"]`)).toHaveCount(1);await expect(page.locator(`.live-estate-svg image[data-tile-art-png="${path}"]`)).toHaveCount(1);expect(await page.locator(`.common-board-svg image[data-tile-art-png="${path}"]`).count()).toBeGreaterThanOrEqual(1);
   const resource=await page.request.get(path);expect(resource.ok()).toBe(true);expect(resource.headers()["content-type"]).toContain("image/png");expect((await resource.body()).subarray(0,8).toString("hex")).toBe("89504e470d0a1a0a");
   for(const image of await images.all()){
-   await expect(image).toHaveAttribute("preserveAspectRatio","xMidYMid meet");const svg=frame(image);if(asset.startsWith("monastery")){await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);}else if(await svg.getAttribute("data-estate-art")){await expect(svg.locator("[data-tile-frame]")).toHaveCount(0);await expect(svg.locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);}else{await expect(svg.locator("polygon").first()).toHaveAttribute("points","50,3 94,28 94,80 50,106 6,80 6,28");await expect(svg.locator("polygon").first()).toHaveAttribute("stroke","#5d5b36");}
+   await expect(image).toHaveAttribute("preserveAspectRatio","xMidYMid meet");const svg=frame(image);await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);await expect(svg).toHaveAttribute("viewBox",/^0 0 100 115\.47/);await expect(svg.locator('[data-tile-backdrop]')).toHaveAttribute("stroke","none");await expect(svg.locator('clipPath polygon')).toHaveAttribute("points",tileHexPoints(TILE_FRAME_INSET));if(await svg.getAttribute("data-estate-art"))await expect(svg.locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);
    if(asset.startsWith("monastery"))expect(await svg.locator("text").allTextContents()).not.toContain(asset.slice(10));
    if(asset==="goose")await expect(svg.locator("text")).toHaveText("2");
   }

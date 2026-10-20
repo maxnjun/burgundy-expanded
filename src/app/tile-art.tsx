@@ -1,42 +1,47 @@
 "use client";
 
-import { useEffect, useState, type SVGProps } from "react";
+import { useEffect, useId, useState, type SVGProps } from "react";
 import type { BaseTile, Tile, TileType } from "../game/types";
 import { ESTATE_ART_HEIGHT } from "./estate-geometry";
+import centerIllustrations from "../../public/tiles/illustrations/center-manifest.json";
 import illustrations from "../../public/tiles/illustrations/manifest.json";
-import { TileFrame } from "./tile-frame";
+import { TileFrame, tileHexPoints, TILE_FRAME_INSET } from "./tile-frame";
 import { InnArt } from "./inn-art";
+import { ResourceGlyph } from "./resource-icon";
+import { TileResourceEffect } from "./tile-effect";
+import standard from "./tile-standard.json";
 
 export const terrainPaint: Record<TileType, string> = {
   castle: "#247654", ship: "#277f9b", mine: "#8f9188",
   livestock: "#8eaf46", building: "#bca04f", monastery: "#d6bf32",
 };
-const edge = "50,3 94,28 94,80 50,106 6,80 6,28";
 
-/** Shared tile artwork: five isolated PNGs use the same mathematical inward bevel. */
+
+/** Every face uses the same mathematical clip, viewBox and inward bevel. */
 export function TileArt(props: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
   return props.tile.type === "inn" ? <InnArt {...props}/> : <BaseTileArt {...props} tile={props.tile}/>;
 }
 function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?:boolean } & SVGProps<SVGSVGElement>) {
+  const clipId=`tile-art-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const building = tile.type === "building" ? tile.building : null;
   const tower = building === "watchtower" || building === "church";
   const assetName = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? tile.type : tile.type==="monastery"&&(tile.number===27||tile.number===28)?`monastery-${tile.number}` as "monastery-27"|"monastery-28":null;
   const asset = assetName ? illustrations.assets[assetName] : null;
-  const framedSource = assetName ? `/tiles/${assetName}.png` : null;
-  const candidate = assetName&&asset ? `/tiles/illustrations/${assetName}.png?v=${asset.outputSha256.slice(0,12)}` : (building === "crane" ? "/tiles/crane.png" : tile.type === "livestock" && tile.species === "geese" ? "/tiles/goose.png" : null);
+  const centerName=building==="crane"?"crane":tile.type==="livestock"&&tile.species==="geese"?"goose":null;
+  const framedSource = assetName ? `/tiles/${assetName}.png` : centerName?`/tiles/${centerName}.png`:null;
+  const candidate = assetName&&asset ? `/tiles/illustrations/${assetName}.png?v=${asset.outputSha256.slice(0,12)}` : (centerName?`/tiles/illustrations/${centerName}.png?v=${centerIllustrations.assets[centerName].outputSha256.slice(0,12)}`:null);
   const [failedIllustration,setFailedIllustration]=useState<string|null>(null);
   // An SSR image may fail before hydration attaches onError. Probe again after mount.
   useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
   const illustration=failedIllustration===candidate?null:candidate;
   const fullTile=!!asset;
-  const estateHeight=ESTATE_ART_HEIGHT,offset=(estateHeight-110)/2;
+  const estateHeight=ESTATE_ART_HEIGHT,offset=(estateHeight-standard.vectorHeight)/2,centerWidth=standard.centerIllustrationWidth;
+  const palette=asset?.palette??{dark:"#5d5b36",base:terrainPaint[tile.type],light:"#fff7bf"};
   // Every isolated asset shares one square canvas and the same SVG hex geometry.
-  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} viewBox={estate||fullTile?`0 0 100 ${estateHeight}`:"0 0 100 110"} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?(framedSource??candidate):undefined} {...props}>
-    {asset&&<TileFrame palette={asset.palette} surface={asset.surface} layer="backdrop"/>}
-    <g transform={estate||fullTile?`translate(0 ${offset})`:undefined}>
-    {!fullTile&&!estate&&<g data-tile-frame="svg"><polygon points={edge} fill={terrainPaint[tile.type]} stroke="#5d5b36" strokeWidth="2"/>
-    <polygon points="50,8 89,31 89,77 50,100 11,77 11,31" fill="none" stroke="#fff7bf" strokeOpacity=".45"/>
-    <path d="M11 65Q32 41 60 61T89 60V77L50 100 11 77Z" fill={tile.type === "ship" ? "#44a9b9" : "#b6bf69"} opacity=".6"/></g>}
+  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} viewBox={`0 0 100 ${estateHeight}`} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?(framedSource??candidate):undefined} {...props}>
+    <defs><clipPath id={clipId}><polygon points={tileHexPoints(TILE_FRAME_INSET)}/></clipPath></defs>
+    <TileFrame palette={palette} surface={asset?.surface} layer="backdrop"/>
+    <g clipPath={`url(#${clipId})`}><g transform={`translate(0 ${offset})`}>
     {!illustration && tile.type === "castle" && <g stroke="#554b35" strokeWidth="1.2">
       <ellipse cx="51" cy="80" rx="32" ry="9" fill="#284e31" opacity=".6"/>
       <path d="M23 43 50 28 77 43V72L50 87 23 72Z" fill="#d6c398"/>
@@ -72,7 +77,7 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
       {building === "carpenters-workshop" && <g stroke="#76522f" strokeWidth="5"><path d="M57 81 77 72M58 87 78 78"/><path d="M62 77 68 87" stroke="#d3ae75" strokeWidth="2"/></g>}
       {building === "crane" && <g><path d="M22 84V24M17 27H80M30 27 22 43M72 28V66" fill="none" stroke="#695336" strokeWidth="4"/><path d="M62 66H82V83H62Z" fill="#bc8a47"/><path d="M62 66 82 83M82 66 62 83"/></g>}
       {building === "warehouse" && <g fill="#a57b43"><rect x="17" y="76" width="13" height="11"/><path d="M17 76 30 87M30 76 17 87"/><ellipse cx="73" cy="82" rx="7" ry="9"/><path d="M66 80H80M67 85H79"/></g>}
-      {building === "bank" && <g fill="#e8c44f"><ellipse cx="73" cy="82" rx="8" ry="3"/><ellipse cx="73" cy="78" rx="8" ry="3"/><ellipse cx="73" cy="74" rx="8" ry="3"/></g>}
+      {building === "bank" && <ResourceGlyph type="silver" x={63} y={66}/>}
       {building === "boarding-house" && <g><path d="M67 43V23H77V47" fill="#c1a17d"/><path d="M74 20Q66 12 75 7" fill="none" stroke="#f0e2c5" strokeWidth="4"/></g>}
       {building === "town-hall" && <g><path d="M48 27V12M48 13 65 18 48 22" fill="#8d3830"/><circle cx="49" cy="47" r="5" fill="#e9d791"/><path d="M49 43V47L52 49"/></g>}
     </g>}
@@ -96,13 +101,14 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
       <path d="M24 57V31L38 24 51 32V60L38 67Z" fill="#ede0b1"/>
       <path d="M20 32 38 16 55 32 38 40Z" fill="#a6753c"/>
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
-      <circle cx="73" cy="29" r="15" fill="#fff0b1" stroke="#8a7135"/><text x="73" y="34" textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
+      <circle cx={standard.effect.numberX} cy={standard.effect.numberY} r={standard.effect.numberRadius} fill="#fff0b1" stroke="#8a7135"/><text x={standard.effect.numberX} y={standard.effect.numberY+5} textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
-    {illustration && <image data-tile-art-png={framedSource??illustration} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:17} y={fullTile?-offset:22} width={fullTile?estateHeight:66} height={fullTile?estateHeight:66} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
+    {illustration && <image data-tile-art-png={framedSource??illustration} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
     {tile.type === "livestock" && <g><circle cx="76" cy="82" r="10" fill="#f2e6b5" stroke="#687348"/><text x="76" y="86" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
+    {tile.type==="monastery"&&tile.number===14&&<TileResourceEffect resource="worker" from={2} to={4}/>}
     </g>
-    {asset&&<TileFrame palette={asset.palette} layer="rim"/>}
+    </g><TileFrame palette={palette} layer="rim"/>
   </svg>;
 }
 

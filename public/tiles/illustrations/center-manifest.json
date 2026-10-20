@@ -1,0 +1,38 @@
+{
+  "canvas": 1024,
+  "mapping": "alpha-trim-center-isotropic",
+  "assets": {
+    "crane": {
+      "sourceSha256": "fa9258bf67b75b1acc6c0afbdeb54dd5fa485eea52f31514a457ebb35cc7b729",
+      "outputSha256": "a5cb705e748b77512df0bed56af5dcc18c247670623877481e72df2494648710",
+      "sourceAlphaBounds": [
+        18,
+        8,
+        726,
+        464
+      ],
+      "alphaBounds": [
+        32,
+        203,
+        992,
+        821
+      ]
+    },
+    "goose": {
+      "sourceSha256": "516afa80e3d398e7a07ba3d22cf23c53d6ee0fd62bc3d3af5db09a2a7722f91a",
+      "outputSha256": "49f296d2fd50537966b74a50fb4d6701e9805cbcb16eda43b048a6ccee415477",
+      "sourceAlphaBounds": [
+        15,
+        34,
+        614,
+        337
+      ],
+      "alphaBounds": [
+        32,
+        269,
+        992,
+        755
+      ]
+    }
+  }
+}

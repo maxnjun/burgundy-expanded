@@ -8,6 +8,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## 타일·자원 에셋 공통 규격
+
+- `src/app/tile-standard.json`과 `docs/design/tile-asset-standard.md`를 따른다. 기존 영지 좌표를 변경하지 않는다. 모든 단일 육각형 타일은 `TileArt`/`TileFrame`의 동일한 viewBox·clipPath·안쪽 테두리를 사용한다. 타입별 scale/translate·CSS polygon stroke·두 번째 외곽선을 추가하지 않는다.
+- 원본 PNG는 보존한다. 새 PNG는 알파 영역과 내부 테두리/일러스트를 확인하여 별도 파생 에셋으로 등록한다. 원본 해시가 바뀌면 기존 수동 측정 마스크를 그대로 적용하지 않는다. 그림을 손상시키는 자동 테두리 제거는 금지한다.
+- 은화/일꾼은 `public/assets/icons/silver-coin.png`, `worker.png`만 `ResourceIcon`/`ResourceGlyph`로 재사용한다. 승인 원본은 `public/assets/icons/source/resource-icons-approved.png`다. AI로 다시 그리지 않는다. 새 효과 그림도 배경/일러스트와 별도 레이어로 합성하며 숫자·화살표·아이콘 위치는 공통 effect 설정을 사용한다. 기존 합성 PNG의 자원 그림을 안전하게 분리할 수 없다면 임의로 지우거나 덮지 말고 미적용 범위를 보고한다.
+- 변경 시 `scripts/validate-tile-assets.py`, 타일 관련 브라우저 테스트와 100/160/200% 실제 스크린샷을 확인한다. 안티앨리어싱 오차와 실제 틈/중복 테두리를 구분한다. 상품 사각 타일·방패 외곽·포도 이중 타일에 단일 육각형 규격을 강제로 적용하지 않는다.
+
 ## GitHub 자동 백업 규칙
 
 사용자가 요청한 개발 작업을 완료할 때마다 아래 절차를 적용한다. 이 규칙은 Codex가 작업을 수행하는 동안 적용되는 완료 절차이며, 별도의 상시 실행 프로세스나 예약 작업을 의미하지 않는다.

@@ -1,5 +1,6 @@
 "use client";
 
+import { ResourceGlyph } from "./resource-icon";
 import { InnStack } from "./inn-stack";
 import { shieldLayout } from "../game/shields";
 import { ShieldArt, shieldLabel } from "./shield-art";
@@ -60,7 +61,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
     <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
     <TileArt tile={game.tiles[id]} x={x-width/2} y={y-width/Math.sqrt(3)} width={width} height={width*2/Math.sqrt(3)}/>
     <polygon data-supply-hit="true" points={hex(x,y,width)} fill="transparent"/>
-    {showCosts&&<g className="direct-cost" aria-hidden="true"><rect x={x-width*.48} y={y+width*.52} width={width*.96} height="14" rx="5"/><text x={x} y={y+width*.52+10} textAnchor="middle">{actionFor(id)?game.market.blackDepot.includes(id)?"銀 2":`일꾼 ${directCost(game,actionFor(id)!)}`:"불가"}</text></g>}
+    {showCosts&&<g className="direct-cost" aria-hidden="true"><rect x={x-width*.48} y={y+width*.52} width={width*.96} height="14" rx="5"/><text x={x} y={y+width*.52+10} textAnchor="middle">{actionFor(id)?game.market.blackDepot.includes(id)?"2":`일꾼 ${directCost(game,actionFor(id)!)}`:"불가"}</text>{actionFor(id)&&game.market.blackDepot.includes(id)&&<ResourceGlyph type="silver" x={x-20} y={y+width*.52+1} size={12}/>}</g>}
     <polygon className="supply-selection" points={hex(x,y,width)} fill="none"/>
   </g>;
   const shields=shieldLayout(game);

@@ -1,0 +1,45 @@
+{
+  "sourceSha256": "6cf51f85dbf48b4dceb03ca21a9620de00a1751465002013d7af09683295ae69",
+  "padding": 16,
+  "mapping": "alpha-trim-square-native-rgb",
+  "assets": {
+    "silver-coin": {
+      "canvas": [
+        774,
+        774
+      ],
+      "alphaBounds": [
+        16,
+        26,
+        758,
+        747
+      ],
+      "sourceBounds": [
+        144,
+        76,
+        886,
+        797
+      ],
+      "sha256": "6556abb727ef1998005dc4cca0bbca1ac52720efcd09dd9945b01d6080f506ad"
+    },
+    "worker": {
+      "canvas": [
+        750,
+        750
+      ],
+      "alphaBounds": [
+        71,
+        16,
+        679,
+        734
+      ],
+      "sourceBounds": [
+        966,
+        82,
+        1574,
+        800
+      ],
+      "sha256": "c0a8eb0c1648900e605980e83d6e1023b3a214b3aac785617293abf535f88b44"
+    }
+  }
+}

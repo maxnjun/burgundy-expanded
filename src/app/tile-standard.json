@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "estateRadius": 48,
+  "artWidth": 100,
+  "rasterCanvas": 1024,
+  "frameInset": 2.2,
+  "vectorHeight": 110,
+  "centerIllustrationWidth": 66,
+  "effect": { "iconSize": 20, "leftX": 24, "rightX": 56, "y": 72, "numberX": 73, "numberY": 29, "numberRadius": 15 }
+}

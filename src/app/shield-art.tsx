@@ -1,10 +1,13 @@
 import { SHIELD_ABILITIES } from "../game/shields";
+import { ResourceGlyph } from "./resource-icon";
 export function ShieldArt({number,x=0,y=0,numberSize=17}: {number:number|null;x?:number;y?:number;numberSize?:number}) {
-  return <g transform={`translate(${x} ${y})`} aria-hidden="true">
+  const resource=number===2||number===3?"worker":number===8||number===9?"silver":null;
+  return <g data-resource-shield={resource??undefined} transform={`translate(${x} ${y})`} fontFamily="Arial, sans-serif" aria-hidden="true">
     <path className="shield-outline" d="M-24-29 Q0-36 24-29 V1 Q24 19 0 31 Q-24 19-24 1Z" fill={number===null?"#c5c7c4":"#f8edcb"} stroke={number===null?"#91968e":"#a17b3e"} strokeWidth="2"/>
     <path d="M-18-24 Q0-29 18-24 V0 Q18 13 0 23 Q-18 13-18 0Z" fill={number===null?"#d8dad5":"#283e4c"} stroke={number===null?"#a8ada4":"#d3b776"}/>
-    <text y={number===null?5:-3} textAnchor="middle" fontSize={numberSize} fontWeight="bold" fill={number===null?"#6c746b":"#fff3d0"}>{number??"—"}</text>
-    {number!==null&&<text y="13" textAnchor="middle" fontSize="9" fill="#e1c888">{number<=6?"◆":number<=12?"✦":"✧"} {number<=6?12:number<=12?8:4}</text>}
+    <text y={number===null?5:resource?0:-3} textAnchor="middle" fontSize={resource?Math.min(numberSize,18):numberSize} fontWeight="bold" fill={number===null?"#6c746b":"#fff3d0"}>{number??"—"}</text>
+    {resource&&<ResourceGlyph type={resource} x={-6} y={-32} size={12}/>}
+    {number!==null&&<text y={resource?15:13} textAnchor="middle" fontSize="9" fill="#e1c888">{number<=6?"◆":number<=12?"✦":"✧"} {number<=6?12:number<=12?8:4}</text>}
   </g>;
 }
 export function shieldLabel(number:number) { return `방패 ${number} · ${SHIELD_ABILITIES[number-1]}`; }
