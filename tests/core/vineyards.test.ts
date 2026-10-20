@@ -4,7 +4,7 @@ import {mkdirSync,writeFileSync} from "node:fs";
 import {mount,placed} from "../fixtures/shields";
 import {createShieldLayout,setShieldLayout,shieldLayout} from "../../src/game/shields";
 import {settleShieldState} from "../../src/game/core/shield-effects";
-import {vineFixture} from "../fixtures/vineyards";
+import {vineFixture,layeredVineFixture} from "../fixtures/vineyards";
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createPracticeSession} from '../../src/game/practice';
@@ -17,10 +17,10 @@ export const vineStep=(g:GameState,a:GameAction)=>{const r=applyCoreAction(g,a);
 const options=(g:GameState)=>{const r=listCoreActionOptions(g,g.turn.activePlayerId??'seat-1');assert.ok(r.ok,JSON.stringify(r));return r.value.actions;};
 const saved=(game:GameState)=>parseSavedGame(serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs:[],view:{zoom:1,focus:false,boardZooms:{}}})).game;
 
-test('vineyard reconstruction has24 tessellated cells,12 adjacent pairs,2/4/6 layers and51 conserved grape tiles',()=>{
+test('vineyard reconstruction has24 tessellated cells,12 adjacent pairs,2/4/5/1 layers and51 conserved grape tiles',()=>{
  assert.equal(VINE_SLOTS.length,12);assert.equal(new Set(VINE_SLOTS.flatMap(s=>s.cells.map(c=>`${c.q},${c.r}`))).size,24);
  for(const s of VINE_SLOTS)assert.ok(vineNeighbors(...s.cells));for(let n=1;n<=6;n++)assert.equal(VINE_SLOTS.filter(s=>s.value===n).length,2);
- assert.deepEqual([1,2,3].map(l=>VINE_SLOTS.filter(s=>s.layer===l).length),[2,4,6]);assert.equal(Object.keys(VINE_TILES).length,51);
+ assert.deepEqual([1,2,3,4].map(l=>VINE_SLOTS.filter(s=>s.layer===l).length),[2,4,5,1]);assert.equal(Object.keys(VINE_TILES).length,51);
  for(const g of GRAPES){assert.equal(Object.values(VINE_TILES).flat().filter(c=>c===g).length,17);assert.equal(Object.values(VINE_TILES).filter(cs=>cs[0]===g&&cs[1]===g).length,1);}
 });
 for(const count of [2,3,4] as const)test(`vineyard${count} preparation, P01, P02, deterministic deal and old save compatibility`,()=>{
@@ -43,9 +43,9 @@ test('vine scoring counts connected hexes, one token per region, repeated tokens
 });
 function resolveAll(g:GameState):GameState {let n=0;while(g.turn.pendingChoice){assert.ok(n++<50);const list=options(g).filter(a=>a.type==='resolve-choice'),a=list.find(a=>a.type==='resolve-choice'&&a.optionId==='skip')??list.find(a=>a.type==='resolve-choice'&&a.optionId.includes('take-workers'))??list[0];g=vineStep(g,a);g=saved(g);}return g;}
 function reserveFromBag(g:GameState):GameState {const id=g.vineyards!.bag[0];return {...g,vineyards:{...g.vineyards!,bag:g.vineyards!.bag.slice(1)},players:g.players.map((p,i)=>i?p:{...p,vineyardReserve:[{tileId:id,keys:[0,1]}]}),dice:{...g.dice,players:{...g.dice.players,'seat-1':[{...g.dice.players['seat-1'][0],used:false},{...g.dice.players['seat-1'][1],used:false}]}}};}
-test('all12 placements independently claim3 layers once and every bonus resumes after save',()=>{
+test('all12 placements independently claim4 layers once and every bonus resumes after save',()=>{
  let g=vineFixture();for(const id of ['V01','V02','V04','V03','V05','V06','V08','V09','V10','V07','V11','V12']){g=reserveFromBag(g);const a=options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command==='place'&&a.intent.slotId===id);assert.ok(a,id);g=resolveAll(vineStep(g,a));}
- assert.deepEqual([...g.vineyards!.players['seat-1'].layers].sort(),[1,2,3]);assert.equal(g.vineyards!.players['seat-1'].tokens.length,4);assert.equal(g.vineyards!.players['seat-1'].placed.length,12);assert.equal(g.vineyards!.stack.length,0);assert.deepEqual(saved(g),g);
+ assert.deepEqual([...g.vineyards!.players['seat-1'].layers].sort(),[1,2,3,4]);assert.equal(g.vineyards!.players['seat-1'].tokens.length,5);assert.equal(g.vineyards!.players['seat-1'].placed.length,12);assert.equal(g.vineyards!.stack.length,0);assert.deepEqual(saved(g),g);
 });
 test('castle bonus purchases a vine then nests free placement without losing the outer bonus',()=>{
  let g=vineFixture();g=resolveAll(vineStep(reserveFromBag(g),options(reserveFromBag(g)).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command==='place'&&a.intent.slotId==='V01')!));
@@ -93,4 +93,23 @@ test('white castle uses its die and workers for a free vineyard placement, then 
 test('a vineyard warehouse sale gives normal resources without recursively advancing custom trade',()=>{
  let g=vineFixture();g=setupCustomTrade({...g,config:{...g.config,extensions:[...g.config.extensions,{id:'trade-routes',options:{}}]}});g=reserveFromBag(g);g=resolveAll(vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V01')!));g=reserveFromBag(g);g=vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V03')!);g=vineStep(g,options(g).find(a=>a.type==='resolve-choice'&&a.optionId==='vine-order:V03:0')!);
  const before=g.players[0].silver,sold=g.players[0].soldGoods.length;g=vineStep(g,options(g).find(a=>a.type==='resolve-choice'&&(g.turn.pendingChoice!.options.find(o=>o.id===a.optionId)?.payload as unknown as {intent?:{kind?:string}})?.intent?.kind==='sell-goods')!);assert.equal(g.players[0].silver,before+1);assert.ok(g.players[0].soldGoods.length>sold);assert.equal(g.tradeRoutes!.routes['seat-1'].sales.length,0);assert.deepEqual(saved(resolveAll(g)).tradeRoutes,g.tradeRoutes);
+});
+
+test('fourth single slot completes before third layer, adds only one token and survives replay/save',()=>{
+ const g=layeredVineFixture(),own=g.vineyards!.players['seat-1'];assert.equal(VINE_SLOTS.find(s=>s.id==='V07')!.layer,3);assert.deepEqual(VINE_SLOTS.filter(s=>s.layer===4).map(s=>s.id),['V11']);assert.ok(own.placed.some(p=>p.slotId==='V11'));assert.ok(own.layers.includes(4));assert.ok(!own.layers.includes(3));assert.equal(own.tokens.length,own.layers.length+1);assert.deepEqual(saved(g),g);assert.deepEqual(resolveAll(g),g);
+});
+test('validated legacy three-layer active save upgrades explicitly without inventing claimed tokens',()=>{
+ const g=layeredVineFixture(true),old={...g,vineyards:{...g.vineyards!,version:'project-vineyards-v1' as const}};const n=saved(old);assert.equal(n.vineyards!.version,'project-vineyards-v2');assert.deepEqual(n.vineyards!.pool,old.vineyards!.pool);assert.deepEqual(n.vineyards!.players,old.vineyards!.players);assert.deepEqual(saved(n),n);assert.deepEqual(saved(resolveAll(n)),resolveAll(n));
+});
+
+test('V11 horizontal top pair alone completes tier4 after its two bonuses, awards exactly one token',()=>{
+ let g=layeredVineFixture(true,4);const p=g.vineyards!.players['seat-1'];assert.equal((g.turn.pendingEffects[0].payload as {layer:number}).layer,4);assert.ok(p.placed.find(x=>x.slotId==='V11')?.used.length===2);assert.ok(!p.layers.includes(4));const before=p.tokens.length;const action=options(g).find(a=>a.type==='resolve-choice')!;g=vineStep(g,action);assert.equal(g.vineyards!.players['seat-1'].tokens.length,before+1);assert.ok(g.vineyards!.players['seat-1'].layers.includes(4));assert.equal(validateCoreAction(g,action).valid,false);assert.deepEqual(saved(g),g);
+});
+
+test('unmarked intermediate tier4 saves are rejected explicitly instead of silently moving earned rewards',()=>{
+ const g=vineFixture();const text=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,boardZooms:{}}});const raw=JSON.parse(text);delete raw.game.vineyards.topSlotId;raw.game.vineyards.players['seat-1'].layers=[4];assert.throws(()=>parseSavedGame(JSON.stringify(raw)),/최상층 위치 표시/);
+});
+
+test('unclaimed intermediate tier map adopts V11 without changing any tile, pool or token',()=>{
+ const g=vineFixture(),raw=JSON.parse(serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,boardZooms:{}}}));delete raw.game.vineyards.topSlotId;const n=parseSavedGame(JSON.stringify(raw)).game;assert.deepEqual(n,g);
 });

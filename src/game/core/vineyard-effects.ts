@@ -1,5 +1,5 @@
 import type {GameState,PendingChoice,PendingEffect,PlayerState,JsonValue} from '../types';
-import {VINE_SLOTS,VINE_BONUS_NAMES,GRAPES,GRAPE_NAMES,vineIntents,vineTakeIssue,executeVine,keyOccupant,discardStored,type VineIntent} from '../vineyards';
+import {VINE_SLOTS,vineLayers,vineSlots,VINE_BONUS_NAMES,GRAPES,GRAPE_NAMES,vineIntents,vineTakeIssue,executeVine,keyOccupant,discardStored,type VineIntent} from '../vineyards';
 import {immediateOptions} from './effects';
 import {destinationIssue} from './intents';
 import {rewardShieldWorkerGain} from '../shields';
@@ -30,7 +30,7 @@ export function resumeVineyards(s:GameState):GameState {
   if(x.used.length<2)return wrap(s,`vine-order:${pid}:${x.slotId}:${x.used.length}`,pid,{vineChoice:'order',slotId:x.slotId},orderOptions(s,pid,x.slotId));
   v={...v,stack:v.stack.slice(0,-1)};s={...s,vineyards:v};
  }
- const layer=[1,2,3].find(l=>!v.players[pid].layers.includes(l)&&!v.stack.some(f=>VINE_SLOTS.find(x=>x.id===f.slotId)!.layer===l)&&VINE_SLOTS.filter(x=>x.layer===l).every(slot=>v.players[pid].placed.some(x=>x.slotId===slot.id&&x.used.length===2)));
+ const layer=vineLayers(v).find(l=>!v.players[pid].layers.includes(l)&&!v.stack.some(f=>vineSlots(v).find(x=>x.id===f.slotId)!.layer===l)&&vineSlots(v).filter(x=>x.layer===l).every(slot=>v.players[pid].placed.some(x=>x.slotId===slot.id&&x.used.length===2)));
  if(layer)return wrap(s,`vine-layer:${pid}:${layer}`,pid,{vineChoice:'token',layer},tokenOptions(s));
  return v.stack.length?resumeVineyards(s):s;
 }
@@ -43,7 +43,7 @@ export function validVineChoice(s:GameState):boolean {
  if(!v||!p||!c||e.source.document!=='project-user-rule'||e.source.section!==source.section||c.source.document!=='project-user-rule'||e.kind!=='extension'||e.playerId!==p.id||c.playerId!==p.id||c.id!==e.id||s.turn.pendingEffects.length!==1)return false;
  let opts:PendingChoice['options'];
  if(payload?.vineChoice==='order'){const t=v.stack.at(-1);if(!t||t.slotId!==payload.slotId||t.active!==null)return false;opts=orderOptions(s,p.id,t.slotId);if(e.id!==`vine-order:${p.id}:${t.slotId}:${v.players[p.id].placed.find(x=>x.slotId===t.slotId)!.used.length}`)return false;}
- else if(payload?.vineChoice==='token'){const layer=payload.layer;if(!layer||![1,2,3].includes(layer)||v.stack.some(f=>VINE_SLOTS.find(x=>x.id===f.slotId)!.layer===layer)||v.players[p.id].layers.includes(layer)||e.id!==`vine-layer:${p.id}:${layer}`||!VINE_SLOTS.filter(x=>x.layer===layer).every(slot=>v.players[p.id].placed.some(x=>x.slotId===slot.id&&x.used.length===2)))return false;opts=tokenOptions(s);}
+ else if(payload?.vineChoice==='token'){const layer=payload.layer;if(!layer||!vineLayers(v).includes(layer)||v.stack.some(f=>vineSlots(v).find(x=>x.id===f.slotId)!.layer===layer)||v.players[p.id].layers.includes(layer)||e.id!==`vine-layer:${p.id}:${layer}`||!vineSlots(v).filter(x=>x.layer===layer).every(slot=>v.players[p.id].placed.some(x=>x.slotId===slot.id&&x.used.length===2)))return false;opts=tokenOptions(s);}
  else if(payload?.vineChoice==='black-get'&&validVineBenefit(s,e,'black-get'))opts=blackOptions(s,p);
  else if(payload?.vineChoice==='vine-get'&&validVineBenefit(s,e,'vine-get'))opts=[...vineIntents(s,p).filter(i=>i.command==='take').map(intent=>({id:JSON.stringify(intent),label:`포도 공급대 ${intent.tileId} 획득`,payload:{intent} as unknown as JsonValue})),{id:'skip',label:'효과 사용하지 않기',payload:null}];
  else return false;

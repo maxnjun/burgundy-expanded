@@ -1,4 +1,4 @@
-import {vineScore,type VineIntent} from "./vineyards";
+import {vineScore,VINE_SLOTS,VINE_TILES,GRAPES,type VineyardState,type VineIntent} from "./vineyards";
 import type { ActionIntent, GameAction, GameState, PlayerState, Tile } from "./types";
 import type { EngineResult } from "./interfaces";
 import { listCoreActionOptions, orderedPlayers } from "./core";
@@ -28,6 +28,7 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if(action.type==="extension"&&action.extensionId==="shields")return shieldExtensionValue(state,player,action);
     if(action.type==="extension"&&action.extensionId==="vineyards")return (action.payload as unknown as VineIntent).discardIds?.length?-180:16;
     if (action.type === "resolve-choice") {
+      if(action.optionId.startsWith("vine-token:")&&state.vineyards){const v=state.vineyards,g=action.optionId.slice(11) as typeof GRAPES[number],own=v.players[player.id];return 10+vineScore({...v,players:{...v.players,[player.id]:{...own,tokens:[...own.tokens,g]}}},player.id)-vineScore(v,player.id)+own.placed.reduce((n,p)=>n+VINE_TILES[p.tileId].filter(x=>x===g).length,0)*.1;}
       const special=shieldChoiceValue(state,player,action.optionId);if(special!==null)return special;
       const payload = state.turn.pendingChoice?.options.find(o => o.id === action.optionId)?.payload as { intent?: ActionIntent; adjustment?: { workersSpent: number }; goodsIds?: string[] } | null;
       return payload?.intent ? intentValue(state, player, payload.intent) - (payload.adjustment?.workersSpent ?? 0)*2 : action.optionId === "skip" ? -200 : 10 + (payload?.goodsIds?.length ?? 0)*3;
@@ -61,7 +62,7 @@ function acquisitionValue(state: GameState, player: PlayerState, tile: Tile): nu
 }
 
 function intentValue(state: GameState, player: PlayerState, intent: ActionIntent,direct=false): number {
-  if(intent.kind==="vineyard"){if(intent.command==="take")return intent.discardIds?.length?-160:25;const v=state.vineyards!,own=v.players[player.id],score=vineScore({...v,players:{...v.players,[player.id]:{...own,placed:[...own.placed,{slotId:intent.slotId!,tileId:intent.tileId,flipped:intent.flipped!,used:[]}]}}},player.id);return 48+score-vineScore(v,player.id);}
+  if(intent.kind==="vineyard"){if(intent.command==="take")return intent.discardIds?.length?-160:25;const v=state.vineyards!,own=v.players[player.id],score=vineScore({...v,players:{...v.players,[player.id]:{...own,placed:[...own.placed,{slotId:intent.slotId!,tileId:intent.tileId,flipped:intent.flipped!,used:[]}]}}},player.id);const slot=VINE_SLOTS.find(s=>s.id===intent.slotId)!,remaining=VINE_SLOTS.filter(s=>s.layer===slot.layer&&!own.placed.some(p=>p.slotId===s.id)).length;const projected={...v,players:{...v.players,[player.id]:{...own,placed:[...own.placed,{slotId:intent.slotId!,tileId:intent.tileId,flipped:intent.flipped!,used:[]}]}}};return 48+score-vineScore(v,player.id)+(!own.layers.includes(slot.layer)?(4+vineTokenPotential(projected,player.id))/remaining:0);}
   if (intent.kind === "place-tile") {
     const placed = resolvePlacement(state,player,intent.tileId,intent.cellId);
     return 35 + placed.entries.reduce((sum,e)=>sum+e.points,0)*2 + (placed.player.silver-player.silver)*3 + (placed.player.workers-player.workers);
@@ -70,3 +71,6 @@ function intentValue(state: GameState, player: PlayerState, intent: ActionIntent
   if (intent.kind === "take-workers") {const fees=shieldLayout(state)?.mounted.filter(m=>m.playerId===player.id).length??0;return hasShield(state,player.id,3)&&player.workers+player.silver<fees?20:player.workers < 2 ? 12 : player.workers < 5 ? 2 : -10;}
   return intent.discardTileId ? -150 : acquisitionValue(state,player,state.tiles[intent.tileId]);
 }
+
+/** Best marginal token value from PUBLIC current regions and remaining public pool only. */
+export function vineTokenPotential(v:VineyardState,pid:string):number {const own=v.players[pid],base=vineScore(v,pid);return Math.max(0,...GRAPES.filter(g=>v.pool[g]>0).map(g=>vineScore({...v,players:{...v.players,[pid]:{...own,tokens:[...own.tokens,g]}}},pid)-base));}

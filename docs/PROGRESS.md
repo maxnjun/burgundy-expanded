@@ -1,3 +1,16 @@
+# 진행 체크포인트 — 포도밭4층 수정 (2026-10-20)
+
+- 진행중/전체 프로젝트 완료 아님. 시작 main/9be7e63. 기존 문서2개 여관 기록/수도원 PNG2개 미커밋 보존.
+- 사용자 정정 확정:4층은 맨 위 중앙 가로2칸 V11(눈6/승점4·자유행동). V07 왼쪽 위는3층. 아래부터2/4/5/1;V01~02 /V03~06 /V07,08,09,10,12 /V11. 초기3층 및 중간V07판독 오류는 폐기. 시작1+층4=총5토큰 사용자 확인.
+- 구현:회전된 표시공식/정방향아이콘/흰측면·진한경계/층색보존. 공통층판정1~4/최대5/AI층잔여·공개토큰가치/토큰선택평가. 좌표·번호·보너스·공용공급·기존타일원본불변.
+- 저장:신규v2 topSlotId=V11. 검증된 진행v1은 보상수량 그대로 승격,완료v1은 과거점수유지. 최상층ID없는중간v2도기존보상과새층경계가일치하면표식만보완. 불일치보상이면명시안내로거절/원본보존(임의토큰재배정안함).
+- 수정:src/app/vineyard-board.tsx,vineyards.css;game/vineyards.ts,core/vineyard-effects.ts,save.ts,computer.ts;tests/core/vineyards.test.ts,fixtures/vineyards.ts,browser/vineyards.spec.ts;설계/규칙/연구문서·TODO/PROGRESS.
+- 최종검사:코어406/406(four-release-core.log),보드33/33(four-boards.log),관련42/42(four-final-save-tests.log),타입/린트/프로덕션빌드통과(four-release-*). PC전체85중83통과/2실패(11.7분;four-final-PC.log),포도밭최종7/7+100/160/200실측2/2통과(four-release-browser.log/four-zoom-browser.log). AI2/3/4인각30게임 총90게임25라운드/저장통과(443초;four-final-simulation90.log). 마지막저장표식/글자보완은AI정책·현재신규게임진행불변,최종관련/전체코어/PC재검사완료. 전체브라우저통과아님.
+- 발견오류:PC shields.spec.ts의방패미리보기3/4인공용보드겹침검사2건실패(line24 overlapping=true). 포도밭비활성상태이며이번common-board.tsx/공용CSS변경없음. 실패테스트/원본로그·스크린샷/trace보존(test-results/shields-shield-groups-{3,4}p-*)·후속별도수정필요. 전체브라우저통과라고보고하지않는다.
+- 화면:.local-data/qa/vineyards-four-{multiple,enlarged,token-choice,completed}.png 및 vineyards-empty-estate.png.직접시각확인완료(빈보드/여러배치/V11보상·확대). 검은/상점 획득 라벨은두줄로줄바꿈해칸침범방지.모바일정밀QA미실행.
+- 다음:이번파일민감검사/기존문서구간분리→비공개main커밋Push/원격해시확인.백업아직미실행.후속별도우선:방패미리보기3/4인겹침2건수정/원본실패재실행(포도밭비활성).모바일정밀QA유보.서버25180/127.0.0.1:3000유지,사용자내장브라우저탭열어둠.
+
+---
 # 현재 구현 체크포인트 — 포도밭 프로젝트 복원판 v0.1
 
 2026-10-20 · 구현/검증 완료 단계, 구현/검증 및 비공개main 백업 완료. 기준 main/156c6e6. 전체 프로젝트 완료 아님. 기존 문서2개 여관 기록/수도원PNG2개 미커밋 보존.

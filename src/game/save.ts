@@ -1,3 +1,4 @@
+import {upgradeVineyards,VINE_SLOTS} from './vineyards';
 import { shieldLayout, setShieldLayout } from "./shields";
 import type { GameState } from "./types";
 import { validateCoreState } from "./core/state";
@@ -32,9 +33,12 @@ export function parseSavedGame(text: string): SavedGame {
     (value.view.computerPaused !== undefined && typeof value.view.computerPaused !== "boolean") ||
     (value.view.commonZoom !== undefined && (!boundedZoom(value.view.commonZoom) || value.view.commonZoom < .75)) ||
     !object(value.view.boardZooms) || Object.values(value.view.boardZooms).some(z => !boundedZoom(z))) return reject();
-  const saved = value as unknown as SavedGame;
-  const game = saved.game;
+  const original = value as unknown as SavedGame;
+  let game=original.game;
+  if(game.vineyards?.version==='project-vineyards-v2'&&game.vineyards.topSlotId===undefined){const v=game.vineyards,compatible=Object.values(v.players).every(p=>p.layers.every(l=>VINE_SLOTS.filter(s=>s.layer===l).every(s=>p.placed.some(x=>x.slotId===s.id&&x.used.length===2))));if(compatible)game={...game,vineyards:{...v,topSlotId:'V11'}};}
+  const saved={...original,game};
   if (saved.view.computerPlayerIds !== undefined && (!Array.isArray(saved.view.computerPlayerIds) || saved.view.computerPlayerIds.length > 4 || new Set(saved.view.computerPlayerIds).size !== saved.view.computerPlayerIds.length || saved.view.computerPlayerIds.some(id => typeof id !== "string" || !game.players.some(p=>p.id===id)))) return reject();
+  if(game.vineyards?.version==='project-vineyards-v2'&&game.vineyards.topSlotId!=='V11')throw new Error('최상층 위치 표시가 없는 미공개 포도밭 중간 저장입니다. 원본은 보존되며 잘못 지급된 층 토큰을 임의로 재배정하지 않습니다.');
   if (!validateCoreState(game).valid || (game.extensionStates.shields && !shieldLayout(game)?.effectsActive && saved.view.computerPlayerIds?.length)) return reject();
   if(game.config.marketRecipeId!==undefined){
     if(!["se:main:2", "se:main:3-4"].includes(game.config.marketRecipeId)||(game.config.playerCount!==2&&game.config.playerCount!==3&&game.config.playerCount!==4))return reject();
@@ -88,8 +92,8 @@ export function parseSavedGame(text: string): SavedGame {
   // Only after ALL save validation succeeds: resolve the unambiguous legacy cell binding.
   // Explicit mismatched IDs were rejected above; never repair a broken ownership relation.
   const layout=shieldLayout(game);
-  if(layout?.mounted.some(m=>m.castleTileId===undefined))return {...saved,game:setShieldLayout(game,{...layout,mounted:layout.mounted.map(m=>({...m,castleTileId:m.castleTileId??game.players.find(p=>p.id===m.playerId)!.duchy.cells.find(c=>c.id===m.cellId)!.tileId!}))})};
-  return saved;
+  if(layout?.mounted.some(m=>m.castleTileId===undefined))return {...saved,game:upgradeVineyards(setShieldLayout(game,{...layout,mounted:layout.mounted.map(m=>({...m,castleTileId:m.castleTileId??game.players.find(p=>p.id===m.playerId)!.duchy.cells.find(c=>c.id===m.cellId)!.tileId!}))}))};
+  return {...saved,game:upgradeVineyards(saved.game)};
 }
 
 export function serializeSavedGame(save: SavedGame): string {

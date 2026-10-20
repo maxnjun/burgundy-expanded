@@ -4,3 +4,11 @@
 .table-view .estate-panel:has(.vineyard-personal){width:100%}.estate-vineyard-row:has(.vineyard-personal)>.estate-original-board{flex-basis:500px}
 
 .vineyard-layer-edge{fill:none;stroke:#81754c;stroke-width:1.5;stroke-linejoin:round;pointer-events:none}.vineyard-bonus{font-size:10px}
+
+.vineyard-layer-side{fill:none;stroke:#fffdf1;stroke-width:5;stroke-linejoin:round;pointer-events:none}.vineyard-layer-edge{stroke:#5e593e;stroke-width:2}
+
+.vineyard-personal{--vine-layer-4:#7f9d76}.vineyard-cell.layer-4{fill:var(--vine-layer-4)}
+
+.vineyard-cell.planted.layer-1{fill:var(--vine-layer-1)}.vineyard-cell.planted.layer-2{fill:var(--vine-layer-2)}.vineyard-cell.planted.layer-3{fill:var(--vine-layer-3)}.vineyard-cell.planted.layer-4{fill:var(--vine-layer-4)}
+
+@media(min-width:761px){.vineyard-personal{flex-basis:360px;width:360px}}.vineyard-bonus{font-size:11px}
