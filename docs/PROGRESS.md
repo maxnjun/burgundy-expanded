@@ -1,3 +1,15 @@
+# 최신 체크포인트 — 공용 보드 하단 UI 정리 (2026-10-20)
+
+- 이번 하단 UI 정리 완료(전체 프로젝트 완료 아님). 기존 950×1030 viewBox·모든 공급처/방패/패널 좌표와 디자인 유지. 외곽950px에 테두리5px×2가 포함되므로 SVG 표시 기준만950→940px로 맞춤(100% 기준). 이전10px 가로 넘침을 제거하며 overflow 숨김/잘라내기 없음. 좁은 화면·확대 시 기존 auto 스크롤/드래그 유지.
+- 하단 common-board-note 삭제, 동일 설명은 상단 common-board-actions의 기본 닫힘 details ‘조작 도움말’로 이동. 게임 오류/선택/진행 메시지는 변경 없음.
+- 모바일 추가 원인:포도확장 없는 단독 보드의 익명 부모div가 내용 최소폭950px로 페이지를 넓힘. common-board-row를 붙여 width950/max-width100%/min-width0으로 제한,스크롤은 내부에 유지. 375px 실측 panel355/client345/scroll940/page375. 초기 모바일 실행은 이 문제 진단 후 중단했으며 통과 수에 포함하지 않는다.
+- 소스:src/app/common-board.tsx,game-screen.css,game-screen.tsx(부모 클래스만). 테스트:browser/common-layout.spec.ts(PC두스크롤영역넘침0/모바일스크롤/도움말토글/125%스크롤),shields.spec.ts 및 vineyard-supply-layout.spec.ts(940×배율 명시 검사,기존 클릭/겹침/공급검사 유지).
+- 실측/직접확인:.local-data/footer-cleanup/after-4p-combined.png. SVG940/내부 client940·scroll940,하단문구없음/도움말닫힘. before-4p.png 보존. 포도패널/실물/빈칸 치수 동일(screenshots.log).
+- 최종 이번 타입/린트/빌드 통과(types-final.log/lint-final.log/build-final.log),관련PC13/13(2.6분,desktop-final.log) 및 모바일375/390의12/12(1.8분,mobile-final.log)통과. PC100% 두스크롤영역넘침0·100/160/200%클릭/겹침·모바일125%스크롤/도움말/구매검증. 직전 전체90/코어406/보드33은 이전 체크포인트 결과이며 이번 실행으로 간주하지 않는다.
+- 백업:공개origin/main/선행0대0·권한·diff·민감패턴0건 확인,본체6파일만 cc84ae093c57183c7ca8a72f3a65da21d2ed7bce 커밋/Push 완료·원격SHA일치. 이번 문서2개 접두 구간은 별도 체크포인트. 기존 문서 여관 변경·수도원 PNG2개 보존/제외.
+- 다음:이번 범위 미해결 오류 없음. 모바일 정밀QA는 기존 후속 계획 유지,로컬3000 유지.
+
+---
 # 최신 체크포인트 — 최종 공용 보드 중앙축·네 패널 (2026-10-20)
 
 - 이번 UI 작업 구현·검증·본체 백업 완료(전체 프로젝트 완료 아님). 보드950×1030·양피지 유지. 1번 방패(475,160)→가로 타일y290→상품(475,390),4번 상품(475,690)→가로 타일y790→방패(475,920). 2/3/4인 실제 공급 수량 그대로. 중앙축x475/플레이 중심y540.
