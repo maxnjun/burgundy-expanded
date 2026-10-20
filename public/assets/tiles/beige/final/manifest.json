@@ -1,0 +1,496 @@
+{
+  "canvas": 1024,
+  "geometry": "pointy-regular-hex",
+  "center": [
+    512.0,
+    512.0
+  ],
+  "radius": 512.0,
+  "viewBox": [
+    0,
+    0,
+    100,
+    115.47005383792516
+  ],
+  "imageRect": [
+    -7.735026918962582,
+    0,
+    115.47005383792516,
+    115.47005383792516
+  ],
+  "renderMode": "full-face-with-approved-baked-border-no-additional-svg-rim",
+  "registration": "measured-inscribed-hex-isotropic-with-4-source-pixel-matte-guard",
+  "protectedInnerFraction": 0.92,
+  "assets": [
+    {
+      "id": "market",
+      "nameKo": "시장",
+      "buildingType": "market",
+      "source": "asset-inbox/beige-approved/originals/market.png",
+      "sourceSha256": "59fd555bd5fa58544a16c07e13e53546a669c817e7ec6ae75e9d31a032482a4f",
+      "file": "market.png",
+      "outputSha256": "6473cdde166f16fc6427bb60b553811791023f9e55559e9b2b5b49ed89b9ace5",
+      "measuredSourceCenter": [
+        626.8962898608569,
+        619.6192024202502
+      ],
+      "measuredSourceVertices": [
+        [
+          628.1171497751267,
+          14.644084273217842
+        ],
+        [
+          1153.6653681002335,
+          328.89117628521876
+        ],
+        [
+          1153.8064232263164,
+          911.6074101461617
+        ],
+        [
+          625.5664286668211,
+          1225.7435350794617
+        ],
+        [
+          100.30551994305983,
+          911.3748264974122
+        ],
+        [
+          99.91684945358412,
+          325.4541822400289
+        ]
+      ],
+      "registeredSourceRadius": 591.0931039547562,
+      "isotropicScale": 0.86619180053772,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "carpenter_workshop",
+      "nameKo": "목수작업장",
+      "buildingType": "carpenters-workshop",
+      "source": "asset-inbox/beige-approved/originals/carpenter_workshop.png",
+      "sourceSha256": "9d2950b5bbc019db3d60d777d3bde80c1979704c4c946a7b8ee0b77d370f851a",
+      "file": "carpenter-workshop.png",
+      "outputSha256": "0628f257cc8faa6a5a0c88990e3100c9f305a125de82c1986ba6d172e2b3d6be",
+      "measuredSourceCenter": [
+        626.2082949661543,
+        624.6510740131725
+      ],
+      "measuredSourceVertices": [
+        [
+          626.7189999588811,
+          21.8153354160053
+        ],
+        [
+          1160.6869358464282,
+          337.839296382332
+        ],
+        [
+          1161.1877910771611,
+          910.3745055309472
+        ],
+        [
+          624.6560429144556,
+          1232.4804912015393
+        ],
+        [
+          92.0,
+          910.0237601640744
+        ],
+        [
+          92.0,
+          335.37305538413716
+        ]
+      ],
+      "registeredSourceRadius": 590.3442247140949,
+      "isotropicScale": 0.8672906053209257,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "church",
+      "nameKo": "교회",
+      "buildingType": "church",
+      "source": "asset-inbox/beige-approved/originals/church.png",
+      "sourceSha256": "f5f02e20ee8aa0988f93536504982602443ccd9dda5e8743590bccf6eeca5950",
+      "file": "church.png",
+      "outputSha256": "94a5916bd1525c600bd39039305b75f6837f05520a5e9dc875a4febc14b4e385",
+      "measuredSourceCenter": [
+        624.6224123291555,
+        620.6883388069879
+      ],
+      "measuredSourceVertices": [
+        [
+          626.0541967270793,
+          5.005893775305303
+        ],
+        [
+          1162.986928023507,
+          331.2855902565545
+        ],
+        [
+          1162.9844912931567,
+          909.9120478766375
+        ],
+        [
+          623.3763909938023,
+          1241.68661354699
+        ],
+        [
+          86.2570882311843,
+          907.5596360042475
+        ],
+        [
+          86.07537870620345,
+          328.6802513821927
+        ]
+      ],
+      "registeredSourceRadius": 594.5898183221365,
+      "isotropicScale": 0.8610978261363517,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "warehouse",
+      "nameKo": "창고",
+      "buildingType": "warehouse",
+      "source": "asset-inbox/beige-approved/originals/warehouse.png",
+      "sourceSha256": "a6d132449aba371d3376ca0a06bf0d5be51946de7ca8d2b5264d99a25acb0b10",
+      "file": "warehouse.png",
+      "outputSha256": "dd6aa4904a3db8f86e41c96e827532690c32d9702e9dde5c1aa89e4b79462476",
+      "measuredSourceCenter": [
+        625.2091813342446,
+        623.8048843998307
+      ],
+      "measuredSourceVertices": [
+        [
+          626.6304962796681,
+          32.339830590902864
+        ],
+        [
+          1155.0,
+          349.3881584092931
+        ],
+        [
+          1155.0,
+          895.7230906944366
+        ],
+        [
+          623.1571116482373,
+          1220.2950611592414
+        ],
+        [
+          96.41292633626313,
+          896.1735074118446
+        ],
+        [
+          95.05455374129859,
+          348.90965813326574
+        ]
+      ],
+      "registeredSourceRadius": 574.7179742844779,
+      "isotropicScale": 0.8908717369374751,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "crane",
+      "nameKo": "기중기",
+      "buildingType": "crane",
+      "source": "asset-inbox/beige-approved/originals/crane.png",
+      "sourceSha256": "24316feb37702accb0cfe142bf7f2a8bdd138d3e5f8a8ddce9cef2b4c2081b32",
+      "file": "crane.png",
+      "outputSha256": "a3005acf1f460562e971766cc0de66e205dbdb6d3e5d2a94a80cd46dffe45e3f",
+      "measuredSourceCenter": [
+        626.6298160821649,
+        621.6892465212076
+      ],
+      "measuredSourceVertices": [
+        [
+          627.992541567545,
+          2.0017854897721743
+        ],
+        [
+          1165.0,
+          327.24233406095027
+        ],
+        [
+          1165.0,
+          913.9313532177824
+        ],
+        [
+          623.8391300090498,
+          1249.4569933690284
+        ],
+        [
+          89.05088718012007,
+          912.2559226960221
+        ],
+        [
+          88.89633773627467,
+          325.24709029369023
+        ]
+      ],
+      "registeredSourceRadius": 597.8099922026934,
+      "isotropicScale": 0.8564594213513937,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "boarding_house",
+      "nameKo": "하숙집",
+      "buildingType": "boarding-house",
+      "source": "asset-inbox/beige-approved/originals/boarding_house.png",
+      "sourceSha256": "f8972a09f8eb3fffff17c6e392afe55f542b0f9fc08461c86c43a4cf95897353",
+      "file": "boarding-house.png",
+      "outputSha256": "5b5968e9dd7516cb5247cfb04a763f0322852aada95c3858966d4da1c5d797a0",
+      "measuredSourceCenter": [
+        625.6646774823485,
+        614.5671081242216
+      ],
+      "measuredSourceVertices": [
+        [
+          625.7952865917769,
+          -2.3454133367745333
+        ],
+        [
+          1166.3958532320014,
+          319.7439995477901
+        ],
+        [
+          1168.1851822364545,
+          908.3187962647314
+        ],
+        [
+          623.9850568411598,
+          1235.6291605085826
+        ],
+        [
+          84.42137099339902,
+          908.6573501188591
+        ],
+        [
+          85.20531499929896,
+          317.398755642141
+        ]
+      ],
+      "registeredSourceRadius": 603.0225018400539,
+      "isotropicScale": 0.8490562100712508,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "bank",
+      "nameKo": "은행",
+      "buildingType": "bank",
+      "source": "asset-inbox/beige-approved/originals/bank.png",
+      "sourceSha256": "9bcaeac0249aafa95b361e54526e17b3d441c8b3a1b1c2b8d091e837892b72fe",
+      "file": "bank.png",
+      "outputSha256": "25234addf9d489c6bdd9663479b7ded1f13feb487203389a5f9d961333d37166",
+      "measuredSourceCenter": [
+        626.233782540016,
+        619.4539980733708
+      ],
+      "measuredSourceVertices": [
+        [
+          625.9216148731552,
+          10.098202271730369
+        ],
+        [
+          1153.6801036140143,
+          331.1394992242989
+        ],
+        [
+          1154.5712955074355,
+          910.3171369364383
+        ],
+        [
+          625.8126038499006,
+          1228.2080522316467
+        ],
+        [
+          98.99021151219677,
+          909.9720168007839
+        ],
+        [
+          98.42686588339349,
+          326.9890809753271
+        ]
+      ],
+      "registeredSourceRadius": 589.2589758946065,
+      "isotropicScale": 0.8688879099765723,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "city_hall",
+      "nameKo": "시청",
+      "buildingType": "town-hall",
+      "source": "asset-inbox/beige-approved/originals/city_hall.png",
+      "sourceSha256": "badb37f6f362ca5182555a3261820640582fc59c5a62fcececd143742780e5b9",
+      "file": "city-hall.png",
+      "outputSha256": "c9cce5a9542e5eabf466ece2a9113643f4f158f120b9004a3c7eda1acc90d8e7",
+      "measuredSourceCenter": [
+        626.232585494746,
+        619.0980098072168
+      ],
+      "measuredSourceVertices": [
+        [
+          627.2971451417733,
+          12.54033381876617
+        ],
+        [
+          1153.048766662704,
+          328.2932667853156
+        ],
+        [
+          1152.9701525127716,
+          911.6598655688124
+        ],
+        [
+          625.8220265766604,
+          1223.8084140373405
+        ],
+        [
+          99.0144118900148,
+          911.349687563231
+        ],
+        [
+          99.24301018455179,
+          326.9364910698355
+        ]
+      ],
+      "registeredSourceRadius": 591.2254705149389,
+      "isotropicScale": 0.8659978731194784,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "watchtower",
+      "nameKo": "망루",
+      "buildingType": "watchtower",
+      "source": "asset-inbox/beige-approved/originals/watchtower.png",
+      "sourceSha256": "9553707c00af99a9e00563cbcb30f27b3e0eeff01d1c25937d33a560d918f87a",
+      "file": "watchtower.png",
+      "outputSha256": "93eb6c85628cf0c658ca88030b4b54ea7d695d52f8332397122d7099d0985b2f",
+      "measuredSourceCenter": [
+        626.5418302767877,
+        618.2428612648876
+      ],
+      "measuredSourceVertices": [
+        [
+          626.6294555777584,
+          12.548341314016257
+        ],
+        [
+          1150.0333704829095,
+          327.37990704669295
+        ],
+        [
+          1149.986024831428,
+          907.360849799682
+        ],
+        [
+          626.6255096969055,
+          1227.5513864226555
+        ],
+        [
+          102.95983580065672,
+          907.1715212943386
+        ],
+        [
+          103.01678527106785,
+          327.44516171194005
+        ]
+      ],
+      "registeredSourceRadius": 587.6059751117656,
+      "isotropicScale": 0.8713321880408297,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "id": "white_castle",
+      "nameKo": "흰 성",
+      "buildingType": "white-castle",
+      "source": "asset-inbox/beige-approved/originals/white_castle.png",
+      "sourceSha256": "00e2dfc2b826195d6f949ae8b8d0a5ed85664ec4c1cc5082ec8bb106ccfa5bae",
+      "file": "white-castle.png",
+      "outputSha256": "c4f576ccc5b379e1981b6903a78af8b451243415580db48d13d4a97ccd5b0b5e",
+      "measuredSourceCenter": [
+        626.0646076312902,
+        619.3525027929593
+      ],
+      "measuredSourceVertices": [
+        [
+          627.0888835502259,
+          20.128297022306537
+        ],
+        [
+          1152.3336139471885,
+          334.2211936587327
+        ],
+        [
+          1153.3508243108363,
+          901.4120884701182
+        ],
+        [
+          623.6469616451184,
+          1228.6024301186696
+        ],
+        [
+          99.95650704651348,
+          899.0351154539273
+        ],
+        [
+          100.01085528785848,
+          332.71589203400106
+        ]
+      ],
+      "registeredSourceRadius": 580.4677025351681,
+      "isotropicScale": 0.8820473520987674,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    }
+  ]
+}
