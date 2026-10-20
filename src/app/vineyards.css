@@ -12,3 +12,16 @@
 .vineyard-cell.planted.layer-1{fill:var(--vine-layer-1)}.vineyard-cell.planted.layer-2{fill:var(--vine-layer-2)}.vineyard-cell.planted.layer-3{fill:var(--vine-layer-3)}.vineyard-cell.planted.layer-4{fill:var(--vine-layer-4)}
 
 @media(min-width:761px){.vineyard-personal{flex-basis:360px;width:360px}}.vineyard-bonus{font-size:11px}
+
+/* Supply layout only: shared SVG dimensions prevent occupied/empty slot reflow. */
+.common-vineyard-row{width:100%;max-width:100%;gap:18px;overflow-x:auto;align-items:flex-start}
+.common-vineyard-row>.common-board-panel{flex:0 0 950px;max-width:none}
+.vineyard-supply.panel{--vine-supply-tile-width:140px;flex:0 0 360px;width:360px;max-width:none;padding:16px}
+.vineyard-supply header{align-items:baseline;margin-bottom:14px}.vineyard-supply header strong{font-size:16px}
+.vineyard-supply .vineyard-depots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vineyard-supply .vineyard-depots button{width:100%;min-height:142px;padding:6px;gap:6px;justify-content:center}
+.vineyard-supply .vineyard-depots button b{font-size:14px;line-height:18px}.vineyard-supply .vineyard-depots button small{font-size:11px;line-height:16px;min-height:16px}
+.vineyard-supply .vine-tile-art{display:block;flex:none;width:var(--vine-supply-tile-width);height:auto;aspect-ratio:100/57}
+.vineyard-supply p{margin:16px 0 10px;line-height:1.6}
+.vineyard-supply .vineyard-token-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0 0;font-size:11px}
+@media(max-width:760px){.common-vineyard-row>.common-board-panel{flex:0 0 calc(100% - 10px);max-width:calc(100% - 10px)}.common-vineyard-row{flex-wrap:wrap}.vineyard-supply.panel{flex:0 0 360px}}

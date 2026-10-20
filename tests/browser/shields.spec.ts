@@ -18,8 +18,8 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
   await expect(page.locator("[data-shield-depot]")).toHaveCount(6);
   await expect(page.locator("[data-shield-slot]")).toHaveCount(count===2?6:count===3?9:12);
   const overlapping=()=>page.evaluate(()=>{
-    const shields=[...document.querySelectorAll("[data-shield-slot] .shield-outline, [data-shield-slot] .shield-depot-number")].map(el=>el.getBoundingClientRect());
-    const elements=[...document.querySelectorAll(".common-board-svg .supply-art-tile, .common-board-svg [data-depot]>rect, .common-board-svg [data-black-depot]>rect, .common-board-svg [data-color-bonuses] rect, .common-board-svg [data-region-score-panel]>rect, .common-board-svg [data-color-bonuses]>text, .common-board-svg [data-region-score-panel]>text")].map(el=>el.getBoundingClientRect());
+    const shields=[...document.querySelectorAll("[data-shield-zone], [data-shield-slot] .shield-outline, [data-shield-slot] .shield-depot-number")].map(el=>el.getBoundingClientRect());
+    const elements=[...document.querySelectorAll(".common-board-svg .supply-art-tile, .common-board-svg [data-depot]>rect, .common-board-svg [data-black-depot]>rect, .common-board-svg [data-info-panel], .common-board-svg [data-color-bonuses] rect, .common-board-svg [data-region-score-panel]>rect, .common-board-svg [data-color-bonuses]>text, .common-board-svg [data-region-score-panel]>text")].map(el=>el.getBoundingClientRect());
     return shields.some(s=>elements.some(e=>Math.min(s.right,e.right)-Math.max(s.left,e.left)>1&&Math.min(s.bottom,e.bottom)-Math.max(s.top,e.top)>1));
   });
   expect(await overlapping()).toBe(false);
@@ -27,10 +27,20 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
     mkdirSync('.local-data/shield-overlap',{recursive:true});
     for(const zoom of [1,1.6,2]){
       await page.evaluate(z=>{const s=JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!);s.view.commonZoom=z;localStorage.setItem('burgundy-expanded:local-v1',JSON.stringify(s));},zoom);await page.reload();
+      await expect(page.getByLabel("방패 배치 검증",{exact:true})).toBeVisible();
+      await expect(page.locator("[data-shield-slot]")).toHaveCount(count===2?6:count===3?9:12);
       await expect(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true})).toHaveText(`${zoom*100}%`);
       expect(await overlapping()).toBe(false);
+      expect(await page.locator('.common-board-svg').evaluate(el=>el.getBoundingClientRect().width)).toBeCloseTo(950*zoom,1);
+      expect(await page.locator('[data-shield-depot]').evaluateAll(groups=>groups.every(group=>{const slots=[...group.querySelectorAll('[data-shield-slot]')].map(el=>el.getAttribute('transform')!.match(/translate\(([^ ]+) ([^)]+)\)/)!.slice(1).map(Number));return slots.length===1||(slots[0][0]===slots[1][0]&&slots[1][1]-slots[0][1]===70);}))).toBe(true);
+      expect(await page.locator('[data-shield-depot]').evaluateAll(groups=>groups.every(g=>(g.querySelector('[data-shield-zone]') as SVGGraphicsElement).getBBox().height===(g.querySelectorAll('[data-shield-slot]').length===2?172:104)))).toBe(true);
       for(const shield of await page.locator('[data-shield-slot]').all()){
         await shield.evaluate(el=>el.scrollIntoView({block:'center',inline:'center'}));const hit=await shield.evaluate(el=>{const b=el.querySelector('.shield-outline')!.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return {matches:!!hit&&el.contains(hit),label:hit?.getAttribute('aria-label'),slot:el.getAttribute('data-shield-slot')};});expect(hit.matches,JSON.stringify({zoom,...hit})).toBe(true);
+      }
+      for(const tile of await page.locator('.common-board-svg .supply-art-tile').all()){
+        await tile.locator('[data-supply-hit]').scrollIntoViewIfNeeded();
+        await tile.locator('[data-supply-hit]').evaluate(el=>{const b=el.getBoundingClientRect();window.scrollBy(0,b.y+b.height/2-window.innerHeight/2);});
+        const hit=await tile.evaluate(el=>{const b=el.querySelector('[data-supply-hit]')!.getBoundingClientRect();const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return {matches:!!hit&&el.contains(hit),tile:el.getAttribute('aria-label'),hit:hit?.outerHTML.slice(0,200),x:b.x,y:b.y};});expect(hit.matches,JSON.stringify({zoom,...hit})).toBe(true);
       }
       await page.locator('.common-board-panel').screenshot({path:`.local-data/shield-overlap/after-${count}p-${zoom*100}.png`});
     }
