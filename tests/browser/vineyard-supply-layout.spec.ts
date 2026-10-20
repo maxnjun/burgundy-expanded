@@ -20,7 +20,7 @@ for(const count of [2,3,4])test(`vine supply ${count}p shared occupied/empty fra
  await expect(supply.locator('[data-vine-supply-kind="depot"] button')).toHaveCount(count===4?6:3);await expect(supply.locator('[data-vine-supply-kind="store"] button')).toHaveCount(count===2?1:3);
  for(const zoom of [1,1.6,2]){
   await page.evaluate(z=>{const s=JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!);s.view.commonZoom=z;localStorage.setItem('burgundy-expanded:local-v1',JSON.stringify(s));},zoom);await page.reload();await ready(page,count);await expect(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true})).toHaveText(`${zoom*100}%`);
-  expect((await page.locator('.common-board-svg').boundingBox())!.width).toBeCloseTo(950*zoom,1);expect((await page.locator('.common-board-panel').boundingBox())!.width).toBeCloseTo(950,1);expect((await supply.boundingBox())!.width).toBeCloseTo(360,1);
+  expect((await page.locator('.common-board-svg').boundingBox())!.width).toBeCloseTo(940*zoom,1);expect((await page.locator('.common-board-panel').boundingBox())!.width).toBeCloseTo(950,1);expect((await supply.boundingBox())!.width).toBeCloseTo(360,1);
   const main=(await page.locator('.common-board-panel').boundingBox())!,side=(await supply.boundingBox())!;expect(side.x-main.x-main.width).toBeCloseTo(18,1);
   for(const button of await supply.locator('.vineyard-depots button').all()){
    const art=(await button.locator('svg').boundingBox())!;expect(art.width).toBeCloseTo(140,1);expect(art.height).toBeCloseTo(79.8,1);

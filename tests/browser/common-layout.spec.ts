@@ -18,6 +18,16 @@ for (const [count,shields] of [[2,false],[3,false],[4,false],[2,true],[3,true],[
  if(screenshotViewport)await page.setViewportSize(screenshotViewport);
  if(process.env.LAYOUT_BEFORE)return;
  await expect(board.locator('.common-board-svg')).toHaveAttribute('viewBox','0 0 950 1030');
+ await expect(board.locator('.common-board-note')).toHaveCount(0);
+ const help=board.locator('.common-board-help');await expect(help).not.toHaveAttribute('open','');
+ await expect(help.locator('p')).toBeHidden();await help.locator('summary').evaluate(el=>el.scrollIntoView({block:'center'}));await help.locator('summary').click();await expect(help.locator('p')).toBeVisible();await help.locator('summary').click();
+ if(info.project.name==='desktop-1280'){
+  expect(await board.locator('.live-board-scroll').evaluate(el=>el.scrollWidth-el.clientWidth)).toBe(0);
+  expect(await board.locator('.common-board-scroll').evaluate(el=>el.scrollWidth-el.clientWidth)).toBe(0);
+ }else{
+  expect(await board.locator('.live-board-scroll').evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(true);
+ }
+
  expect(await board.evaluate(el=>{const panels=[...el.querySelectorAll('[data-info-panel]')].map(e=>e.getBoundingClientRect());const contents=[...el.querySelectorAll('.supply-art-tile,[data-shield-zone],[data-goods-space]')].map(e=>e.getBoundingClientRect());return panels.length===4&&!panels.some(a=>contents.some(b=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1));})).toBe(true);
  expect(await board.evaluate(el=>{
   const svg=el.querySelector('.common-board-svg') as SVGSVGElement;
@@ -69,5 +79,6 @@ for (const [count,shields] of [[2,false],[3,false],[4,false],[2,true],[3,true],[
  await expect(board.locator('.direct-cost').first()).toBeVisible();
  await page.getByRole('button',{name:'공용 보드 확대',exact:true}).click();
  await expect(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true})).toHaveText('125%');
+ expect(await board.locator('.live-board-scroll').evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(true);
  await board.screenshot({path:`.local-data/qa/common-costs-${count}${shields?'-shields':''}.png`});
 });

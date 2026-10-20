@@ -11,7 +11,7 @@ import { GoodsArt, terrainPaint, TileArt } from "./tile-art";
 
 // Native SVG geometry; all market quantities and click handlers stay in the engine.
 const layout = {
- width:950,height:1030,axis:475,
+ width:950,height:1030,axis:475,frameWidth:5,
  panels:{left:18,right:542,width:390,top:18,topHeight:205,bottom:857,bottomHeight:155},
  top:{shield:160,tiles:290,goods:390},bottom:{goods:690,tiles:790,shield:920},
  side:{left:300,right:650,upper:390,lower:690},
@@ -71,8 +71,8 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   const trackPositions = Array.from({length: Math.max(6,...game.turn.orderTrack.map(s=>s.position))+1},(_,i)=>i);
   return <section className={`common-board-panel${shields ? " with-shields" : ""}`} aria-label="공용 공급처 보드">
     <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.75} onClick={()=>onZoom(Math.max(.75,+(zoom-.25).toFixed(2)))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(Math.min(2,zoom+.25))}>+</button></div></div>
-    <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드 · 주사위 선택 후 대상을 누르세요</span></div>
-    <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:`${layout.width*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
+    <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드 · 주사위 선택 후 대상을 누르세요</span><details className="common-board-help"><summary>조작 도움말</summary><p>주사위 선택 → 비용 확인 → 타일 터치. 검은 마름모는 검은 뒷면 타일입니다.{shields && " 방패 선택 → 강조된 성을 누르면 장착합니다."} 확대하거나 화면이 좁을 때는 스크롤 또는 드래그 이동을 사용하세요.</p></details></div>
+    <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:`${(layout.width-layout.frameWidth*2)*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
       <CommonBoardBackdrop width={layout.width} height={layout.height}/>
       <CornerPanel name="phase-goods" x={layout.panels.left} y={layout.panels.top} height={layout.panels.topHeight}/>
       <CornerPanel name="turn-order" x={layout.panels.right} y={layout.panels.top} height={layout.panels.topHeight}/>
@@ -135,6 +135,6 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
             </g>;})}
         </g>;})}
       <text x={475} y={1020} textAnchor="middle" className="common-small">{game.turn.phase}단계 · {game.turn.round}라운드</text>
-    </svg></div></BoardViewport><p className="common-board-note">주사위 선택 → 비용 확인 → 타일 터치. 검은 마름모는 검은 뒷면 타일입니다.{shields && " 방패 선택 → 강조된 성을 누르면 장착합니다. 작은 화면에서는 보드를 좌우로 스크롤하세요."}</p>
+    </svg></div></BoardViewport>
   </section>;
 }

@@ -246,7 +246,7 @@ export default function GameScreen() {
         </div>}
         <div aria-label="장착 방패">{shields.mounted.length?shields.mounted.map(m=><span key={`${m.playerId}:${m.cellId}`}>{game.players.find(p=>p.id===m.playerId)?.name} · 성 {m.cellId} · {shieldLabel(m.shieldNumber)} {shields.effectsActive?" (능력 적용 중)":" (능력 미적용)"}</span>):"장착한 방패 없음"}</div>
       </section>}
-      <div className={game.vineyards?"common-vineyard-row":""}><CommonBoard shieldSelection={{slotId:selectedShieldSlot,onSelect:id=>{if(die&&!computerTurn&&shieldOptions.get(id)?.length){setSelectedShieldSlot(selectedShieldSlot===id?null:id);setSelectedTileId(null);}},cost:id=>die&&!computerTurn?shieldOptions.get(id)?.[0]??null:null}} game={game} selectedTileId={selectedTileId} onSelect={selectSupply} titleFor={titleFor} zoom={commonZoom} onZoom={setCommonZoom} showCosts={!!die} actionFor={supplyAction}/>{game.vineyards&&<VineyardSupply v={game.vineyards} actions={!computerTurn?actions:[]} dieId={die?.id} onAction={activate}/>}</div>
+      <div className={game.vineyards?"common-vineyard-row":"common-board-row"}><CommonBoard shieldSelection={{slotId:selectedShieldSlot,onSelect:id=>{if(die&&!computerTurn&&shieldOptions.get(id)?.length){setSelectedShieldSlot(selectedShieldSlot===id?null:id);setSelectedTileId(null);}},cost:id=>die&&!computerTurn?shieldOptions.get(id)?.[0]??null:null}} game={game} selectedTileId={selectedTileId} onSelect={selectSupply} titleFor={titleFor} zoom={commonZoom} onZoom={setCommonZoom} showCosts={!!die} actionFor={supplyAction}/>{game.vineyards&&<VineyardSupply v={game.vineyards} actions={!computerTurn?actions:[]} dieId={die?.id} onAction={activate}/>}</div>
       <div className="live-estates" ref={estateArea}>{boards.map(renderBoard)}</div>
 
     </div>

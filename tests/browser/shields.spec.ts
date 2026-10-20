@@ -31,7 +31,7 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
       await expect(page.locator("[data-shield-slot]")).toHaveCount(count===2?6:count===3?9:12);
       await expect(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true})).toHaveText(`${zoom*100}%`);
       expect(await overlapping()).toBe(false);
-      expect(await page.locator('.common-board-svg').evaluate(el=>el.getBoundingClientRect().width)).toBeCloseTo(950*zoom,1);
+      expect(await page.locator('.common-board-svg').evaluate(el=>el.getBoundingClientRect().width)).toBeCloseTo(940*zoom,1);
       expect(await page.locator('[data-shield-depot]').evaluateAll(groups=>groups.every(group=>{const slots=[...group.querySelectorAll('[data-shield-slot]')].map(el=>el.getAttribute('transform')!.match(/translate\(([^ ]+) ([^)]+)\)/)!.slice(1).map(Number));return slots.length===1||(slots[0][0]===slots[1][0]&&slots[1][1]-slots[0][1]===70);}))).toBe(true);
       expect(await page.locator('[data-shield-depot]').evaluateAll(groups=>groups.every(g=>(g.querySelector('[data-shield-zone]') as SVGGraphicsElement).getBBox().height===(g.querySelectorAll('[data-shield-slot]').length===2?172:104)))).toBe(true);
       for(const shield of await page.locator('[data-shield-slot]').all()){
