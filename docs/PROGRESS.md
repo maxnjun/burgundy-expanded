@@ -1,3 +1,14 @@
+# 최신 체크포인트 — 승인 동물 13종 실제 게임 적용 (2026-10-21)
+
+- 구현·검증·GitHub main 백업 완료(전체 프로젝트 완료 아님). 승인 ZIP13개(1254 RGBA)를 보존하여 1024 공통 alpha/등방성 파생 등록. 비정규 원본 테두리만 분리·원본 연두 RGB의 공통 SVG 프레임 사용. 단일 viewBox/clip/imageRect, 동물별 런타임 배율·이동 없음.
+- TileArt의 species/count→final manifest+캐시해시로 번호/검은 공급·보관·영지·선택·온라인 공통 적용. chickens→기니피그,geese→하프물범 이름만 분리. 카탈로그/공급/점수/AI/저장 ID는 유지. 하프물범은 기존 검은 확장1개만 사용. 가축 count 배지는 얼굴 가림을 피한 상단 중앙 공통 위치.
+- 이번 검사: 관련PC9/9·최종배지PC3/3·최종 전체PC103/103(10.4분,full-pc.log), 전체코어413/413·보드33/33, 최종타입/전체lint/프로덕션빌드 exit0. 동물 재생성--check13/기존 에셋6·아이콘2 통과/경고0. 기존 검사 삭제·완화 없음.
+- 직접 확인: .local-data/animal-live/neighbours-200.png·game-estate-5/7-200.png·game-supply-7.png·game-storage-all-thirteen.png, 13종 동물 수/자세·어두운 무늬 보존·잘림/검정/흰 배경/추가 테두리 이상 없음. 10공유변×3배율 배경노출0px, 동일alpha·투명RGBA0. baseline18파일(원본ZIP/13PNG/기존수도원2PNG/문서꼬리)해시 유지·소스/에셋23파일 동결 일치.
+- 산출물: public/assets/tiles/animals/final/13PNG+manifest+_preview_sheet.png, prepare-animal-tiles.py(--check), ANIMAL_TILE_IMPORT_NOTES.md, animal-assets 브라우저3건. 실제 게임은 기존 보관3칸/지형을 유지해2종씩7fixture로 검증. 상세 캡처=같은 폴더 before-after,neighbours-{100,160,200},game-supply/storage-{1..7},game-estate-{1..7}-{100,160,200}.png.
+- 백업: 이번26파일만 85623841b14a93cce4fc75d9586b198b6311af7d 일반Push·원격main SHA 일치. 기존 공개 origin/main 예외를 사용자가 명시 허용했고 공개 설정은 변경하지 않음. 베이지 검증 기록d4970a0도 함께 백업. 무관한 asset-inbox/수도원 원본2개/기존 문서 여관 구간은 보존·제외. 이번 문서 접두 구간만 별도 체크포인트로 기록.
+- 다음: 이번 동물 적용 작업 완료. 모바일 정밀QA는 최종 통합 단계로 보류. 재검증은 가져오기노트의 명령과 .local-data/animal-live/*.log 및 asset-validation.json 참조. 새로운 승인 ZIP은 해시/contour를 다시 검수하며 현재 원본을 덮어쓰지 않는다.
+
+---
 # 최신 체크포인트 — 승인 베이지 PNG10종 실제 게임 연결 (2026-10-21)
 
 - 구현·최종 회귀·main 백업 완료. TileArt에서 final/manifest의 buildingType→file+출력해시 연결. 베이지 완성형만 바깥clip0/추가SVG backdrop·rim 없음, 실패 시 기존SVG/안쪽프레임 복구. 공용/보관/영지/온라인/무역로 공통 적용. 좌표/클릭/게임엔진/AI/저장·PNG원본/최종파일 불변.
