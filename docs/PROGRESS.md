@@ -1,3 +1,14 @@
+# 최신 체크포인트 — 승인 베이지 타일 10종 정규화 (2026-10-21)
+
+- 이번 에셋 정리/검증/본체 백업 완료(게임 기본 연결 자동치환 및 전체 프로젝트 완료 아님). manifest/README/동봉 지시문·원본10종 확인. 신규 public/assets/tiles/beige/final/에 1024 RGBA10개·동일 alpha·승인 베이지 바닥/목재 테두리 유지. 새 그림/색 보정/비등방 변형 없음.
+- 파일: scripts/prepare-beige-tiles.py(재생성/--check), tests/browser/beige-assets.spec.ts, docs/BEIGE_TILE_IMPORT_NOTES.md, 최종 PNG10/manifest/83px·3배 비교 시트. 게임 building 매핑은 목수carpenters-workshop/시청town-hall 등 코드 대조. 실제 게임 공급/보관/영지는 격리 DOM 미리보기로 교체 규격 확인하며 추가 SVG rim 없음.
+- 이번 검사: 원본10해시/동일 alpha/투명 RGBA0/검정 matte0/결정적 픽셀/기존 자산 검사 통과. 전체 코어413/413(core-final.log), 보드33/33(boards.log), 관련PC7/7(browser-final.log), 최종신규PC2/2(beige-final.log), 최종타입/전체lint+신규파일lint/프로덕션빌드 exit0. PC 전체97 및 모바일 정밀QA는 에셋 준비 범위에서 재실행하지 않음.
+- 실패 수정: SVG image의 사각 bbox 대신 getScreenCTM의 공유 꼭짓점을 측정, fixture 흰 성 활성/저장 로딩 대기·TS narrowing 보완. 초기 코어14건 sandbox Temp rename EPERM은 정상 권한으로 같은 테스트 재실행하여 전부 통과. 기존 테스트 삭제/완화 및 게임 코드 변경 없음.
+- 직접 확인: .local-data/beige-import/{before-after,neighbours-100,neighbours-160,neighbours-200,game-estate-preview,game-supply-preview,game-storage-preview}.png 및 final/_preview_sheet.png. 4공유변×3배율 순수 배경노출0px, alpha 경계 오차≤0.9773 PNG px(0.0917 영지 SVG 단위), 추가 수동보정 필요 현상 없음. 상세=asset-validation.json.
+- 백업: 신규15파일만 4b470f4055964cbd6aa12126a43c4e79e7c1744b 커밋/일반Push·원격SHA 일치. 사용자가 공개 전환한 기존 public origin/main 유지, 권한/선행0대0/민감패턴0/실제diff 확인. 기존 문서 여관 구간·수도원PNG2개·asset-inbox 원본은 보존/제외. 이번 문서 접두 구간은 별도 체크포인트로 백업.
+- 다음: 사용자 최종 PNG/프리뷰 확인 후 게임 기본 연결 교체가 필요하면 full-face용 바깥 clip(0)/추가 rim 없음 방식으로 적용. 이번 요청 범위의 에셋 정리는 완료. 승인 원본이 없는 clone에서도 브라우저 최종10종 검사는 실행되며 재생성에는 로컬 승인 입력이 필요.
+
+---
 # 최신 체크포인트 — 공통 타일·자원 규격 v1 (2026-10-20)
 
 - 구현/검증/본체 백업 완료(전체 프로젝트 및 합성PNG 자원 교체 완료 아님). JSON 공통규격·48개 단일 타일 viewBox/안쪽clip/3겹 SVG rim,보관함 부모clip 제거. 좌표/규칙/AI/저장 불변. 기존PNG 원본/기존5종 파생 보존;여관 rim 분리·기중기/거위 공통alpha canvas.
