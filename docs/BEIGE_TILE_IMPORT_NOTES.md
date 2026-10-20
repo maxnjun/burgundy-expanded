@@ -1,7 +1,7 @@
 # 승인 베이지 건물 타일 10종 정리
 
 2026-10-21. 새 일러스트 제작/AI 재생성/색 보정 없이 승인 PNG를 정규화했다.
-게임 규칙, 기본 렌더러, 실제 게임의 에셋 연결, 사용자 저장 데이터는 변경하지 않았다.
+규격 변환 뒤 같은 날 사용자의 실제 적용 승인을 받아 공통 `TileArt`에 10종을 연결했다. 게임 규칙, 좌표/클릭 영역, AI와 저장 데이터는 변경하지 않았다.
 
 ## 입력과 파일 매핑
 
@@ -38,14 +38,14 @@
 
 ## 게임에서 사용할 때: 테두리를 한 번만 표시
 
-최종 PNG에는 승인된 원래 테두리가 이미 들어 있다. 기존 `TileArt`의 **안쪽 clip(inset 2.2)+추가 TileFrame rim을 그대로 겹쳐 쓰면 안 된다.** 이번에는 요청대로 최종 에셋만 정리하고 게임 기본 에셋을 자동 교체하지 않았다.
+최종 PNG에는 승인된 원래 테두리가 이미 들어 있다. 기존 `TileArt`의 **안쪽 clip(inset 2.2)+추가 TileFrame rim을 그대로 겹쳐 쓰면 안 된다.** 실제 적용은 `buildingType`으로 매핑된 완성형 PNG에만 SVG backdrop/rim을 생략하고 바깥 clip을 사용한다. 그 외 타일은 기존 규격을 유지한다.
 
 - 같은 viewBox `0 0 100 (200/√3)`를 사용한다.
 - image는 `x=(100-H)/2`, `y=0`, `width=height=H`, `H=200/√3`, `preserveAspectRatio="xMidYMid meet"`.
 - clip은 기존 `tileHexPoints(0)` 공통 바깥 육각형이다. 추가 polygon stroke와 `TileFrame` rim은 그리지 않는다. 클릭 영역과 영지 좌표는 그대로 쓴다.
 - URL은 `/assets/tiles/beige/final/<file>?v=<outputSha256 앞12자>`. 베이지 원화에 별도 외부 그림자나 검은 뒷면 식별자를 합성하지 않았으므로 필요시 기존 UI 레이어로 표시한다.
 
-`tests/browser/beige-assets.spec.ts`가 이 방식으로 10종/인접 배치/100·160·200%를 확인하고, 실제 게임의 공용 공급·보관함·영지 DOM에만 임시 적용해 교체 가능성을 확인한다. 이 **검증용 미리보기는 production 기본 연결 변경이 아니다.** 격리된 브라우저 컨텍스트만 쓰며 사용자 게임은 건드리지 않는다.
+`tests/browser/beige-assets.spec.ts`는 현재 **실제 production TileArt**로 10종/인접 배치/100·160·200%를 검증한다. 게임 저장고3칸 제한을 유지해 3·3·3·1개씩 4판의 격리 fixture에서 모든 그림이 공용 검은 공급처·보관함·영지에 동일한 URL/해시로 표시되는지 확인한다. DOM 그림 치환은 제거했다. 파일404 시 10종 SVG fallback/프레임 복구와 새로고침 후 PNG 재표시도 검사한다. 원래 좌표에서 실제 클릭과 선택, 저장 GameState 불변을 확인하며 사용자 게임은 건드리지 않는다.
 
 ## 생성 및 검증
 
@@ -70,7 +70,7 @@ npx playwright test tests/browser/beige-assets.spec.ts tests/browser/tile-standa
 - `game-{supply,storage,estate}-preview.png`: 실제 게임 좌표계의 교체 미리보기.
 - 검사 명령/결과와 실패 수정은 최신 PROGRESS 체크포인트에 요약한다.
 
-## 이번 검증 결과
+## 규격 변환 단계의 검증 결과
 
 - 원본10종 전부 입력 manifest SHA256과 일치. 1024 RGBA10개·동일 alpha·투명 픽셀 RGBA0·전체 외곽 검정 matte0, 재현된 픽셀 일치 및 기존 자산검사(전체형6/자원2) 통과.
 - alpha≥128 경계와 이상 육각형의 최대 내측 차이는 **0.977241336 PNG px = 0.091616375 영지 SVG 단위**다. 래스터/안티앨리어싱에 따른1픽셀 미만 차이로, 10개 모두 같은 마스크를 사용한다.
@@ -79,4 +79,12 @@ npx playwright test tests/browser/beige-assets.spec.ts tests/browser/tile-standa
 - 초기 테스트 fixture의 미활성 흰 성·저장 로딩 대기·SVG 이미지 사각 bbox 측정을 고쳐 실제 공유 좌표를 검사했다. 코어 첫 실행의14건은 sandbox 임시 파일 rename 권한(EPERM) 실패였고, 같은 테스트를 정상 권한에서 재실행해413개 전부 통과했다. 기존 테스트 삭제/완화 또는 게임 코드 수정은 없다.
 - 입력 원본이 없는 clean clone에서도 브라우저의 최종10종 검사는 동작한다. 원본 비교 사진만 로컬 입력이 있을 때 추가한다. 재생성/원본 해시 검사는 승인 입력 폴더가 필요하다.
 
-추가 수동 보정이 필요한 잘림/검정 배경/왜곡/중심 어긋남은 발견하지 못했다. 원화의 자연스러운 건물 높이/폭 차이는 유지하며 개별 건물만 떼어 임의 확대하지 않는다. 현재 기본 게임의 에셋 연결은 변경하지 않았으므로, 게임 전체 교체는 위의 단일 테두리 방식으로 별도 적용할 수 있다.
+추가 수동 보정이 필요한 잘림/검정 배경/왜곡/중심 어긋남은 발견하지 못했다. 원화의 자연스러운 건물 높이/폭 차이는 유지하며 개별 건물만 떼어 임의 확대하지 않는다.
+
+## 실제 게임 적용 — 2026-10-21
+
+- 공통 `TileArt` 한 곳만 변경하여 공용 번호/검은 공급, 개인 보관/영지와 확대 화면, 온라인 공급/보관/영지, 무역로 건물 보상에 동일한 PNG를 적용했다. 기존 저장 판을 그대로 불러와도 표시가 바뀌며 저장 형식 변경은 없다.
+- manifest의 `buildingType`/file/outputSha256을 그대로 재사용하며 경로에 출력 해시를 붙여 캐시를 구분한다. 픽셀 크기·색·알파 및 원본/최종 PNG 파일은 재작성하지 않았다.
+- 새 스크린샷/로그: `.local-data/beige-live/`. 게임 `game-estate-{100,160,200}.png`, `game-supply-{1..4}.png`, `game-storage-{1..4}.png`/`game-storage-all-ten.png`; production renderer의 `neighbours-{100,160,200}.png`.
+- 최종 검사: 관련PC9/9, **전체PC100/100(14.1분·실패/skip0)**, 코어413/413·보드33/33, TypeScript/ESLint/프로덕션빌드 exit0. 명령은 기존 `test:core`, `test:boards`, `playwright test --project=desktop-1280`, `tsc --noEmit`, `npm run lint`, `npm run build`이며 로그는 위 폴더에 있다. 모바일 정밀QA는 기존 계획대로 별도다.
+- production 렌더러의 100/160/200% 인접 캡처에서 가로 공유변4쌍씩 배경 노출0px. 10종 전부 공용/보관/영지 URL·출력 SHA 일치, 파일404 복구, 선택/히트와 게임 저장 상태 불변 검사를 통과했다. 원본/기존 미커밋/최종PNG를 포함한29개 파일(문서의 이번 접두 구간 제외)과 검사 중 소스4파일 해시가 그대로다. 상세=`asset-validation.json`, `verified-source-hashes.json`.

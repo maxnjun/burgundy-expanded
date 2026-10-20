@@ -8,6 +8,8 @@
 
 모든 단일 육각형 얼굴(일반/추가 건물, 가축, 수도원 1–29, 성·광산·선박·여관)은 이제 공통 프레임/비율/안쪽 clip을 쓴다. 빈 칸의 격자는 유지하고 채워진 칸의 중복 격자선은 숨긴다. 선택·합법 배치 강조선과 클릭 polygon은 그대로다. 상품 사각형, 방패 모양, 포도 이중 육각형은 별도 규격이다.
 
+2026-10-21 승인 베이지 건물10종 예외: `public/assets/tiles/beige/final/manifest.json`의 buildingType 매핑을 `TileArt`에서 사용한다. 완성형 PNG에 기존 목재 테두리가 포함되므로 같은 viewBox/정사각 이미지 배치와 **바깥 clip(inset 0)**을 쓰고 추가 SVG backdrop/rim을 생략한다. 기중기도 이 완성형으로 연결하며 기존 중앙형 원본/파생은 보존한다. 로딩 실패 시 기존 SVG 그림·안쪽 clip·프레임으로 복구한다. 공용/보관/영지/온라인/무역로 모두 동일 컴포넌트와 URL을 쓰고 좌표·클릭 영역·엔진/저장은 바꾸지 않는다. 상세/검증은 `../BEIGE_TILE_IMPORT_NOTES.md`.
+
 ## 수학적 규격
 
 정의: `src/app/tile-standard.json`, `estate-geometry.ts`, `tile-frame.tsx`.

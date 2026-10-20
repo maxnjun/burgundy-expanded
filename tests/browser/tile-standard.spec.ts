@@ -24,13 +24,15 @@ test("every tile face shares viewBox clip inward frame and readable resource siz
  await page.setContent(`<body style="margin:12px;background:#f5ecd0">${gallery}</body>`);
  await page.locator('image,img').evaluateAll(async els=>Promise.all(els.map(async el=>{const i=new Image();i.src=el.getAttribute('href')??el.getAttribute('src')!;await i.decode();})));
  const tiles=page.locator('[data-tile-art]');await expect(tiles).toHaveCount(faces.length);
+ await expect(tiles.locator('image[data-approved-building]')).toHaveCount(10);
  for(const tile of await tiles.all()){
+  const baked=await tile.getAttribute('data-baked-tile-frame')==='approved-beige';
   await expect(tile).toHaveAttribute('viewBox',`0 0 100 ${H}`);
-  await expect(tile.locator('[data-tile-frame="common"]')).toHaveCount(1);
-  await expect(tile.locator('clipPath polygon')).toHaveAttribute('points',tileHexPoints(TILE_FRAME_INSET));
-  await expect(tile.locator('[data-tile-backdrop]')).toHaveAttribute('stroke','none');
+  await expect(tile.locator('[data-tile-frame="common"]')).toHaveCount(baked?0:1);
+  await expect(tile.locator('clipPath polygon')).toHaveAttribute('points',tileHexPoints(baked?0:TILE_FRAME_INSET));
+  if(baked)await expect(tile.locator('[data-tile-backdrop],[data-rim-band]')).toHaveCount(0);else await expect(tile.locator('[data-tile-backdrop]')).toHaveAttribute('stroke','none');
  }
- const bands=await tiles.evaluateAll(els=>els.map(el=>[...el.querySelectorAll('[data-rim-band]')].map(p=>p.getAttribute('d')).join('|')));expect(new Set(bands).size).toBe(1);
+ const bands=await tiles.evaluateAll(els=>els.filter(el=>!el.hasAttribute('data-baked-tile-frame')).map(el=>[...el.querySelectorAll('[data-rim-band]')].map(p=>p.getAttribute('d')).join('|')));expect(new Set(bands).size).toBe(1);
  const sizes=await page.locator('img[data-resource-icon]').evaluateAll(els=>els.map(e=>{const b=e.getBoundingClientRect();return [b.width,b.height,getComputedStyle(e).objectFit];}));expect(sizes).toEqual([16,20,24,32].flatMap(n=>[[n,n,"contain"],[n,n,"contain"]]));
  const separation=await page.locator('[data-resource-shield]').evaluateAll(els=>els.map(g=>{const icon=g.querySelector<SVGGraphicsElement>('image')!.getBBox(),texts=g.querySelectorAll<SVGGraphicsElement>('text'),number=texts[0].getBBox(),score=texts[1].getBBox();return icon.y+icon.height<=number.y&&number.y+number.height<=score.y;}));expect(separation).toEqual([true,true]);
  await page.screenshot({path:'.local-data/tile-standard/all-faces-resources.png',fullPage:true});
@@ -56,7 +58,7 @@ test("actual game keeps estate supply storage and resources aligned without chan
  for(const tile of faces.slice(0,3)){const {id:ignored,...face}=tile;void ignored;game=stash(game,face).g;}
  const saved=serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game,logs:["TEST FIXTURE · shared asset standard"],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.clock.install();await page.addInitScript(value=>localStorage.setItem('burgundy-expanded:local-v1',value),saved);await page.goto('/');
- const board=page.getByRole('group',{name:'규칙A 영지',exact:true});await expect(board.locator('[data-tile-frame="common"]')).toHaveCount(10);
+ const board=page.getByRole('group',{name:'규칙A 영지',exact:true});await expect(board.locator('[data-tile-frame="common"]')).toHaveCount(8);await expect(board.locator('image[data-approved-building]')).toHaveCount(2);
  await expect(page.locator('.direct-toolbar img[data-resource-icon]')).toHaveCount(2);
  // Outer button clipping must not shave off the new shared hex corners.
  for(const tile of await page.locator('.estate-keyspaces [data-tile-art]').all()){
