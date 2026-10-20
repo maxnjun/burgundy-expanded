@@ -9,20 +9,37 @@ import { directCost } from "../game/direct-actions";
 import type { GameAction, GameState, TileType } from "../game/types";
 import { GoodsArt, terrainPaint, TileArt } from "./tile-art";
 
-// Shared layout in native SVG units. Tile size never depends on player count.
-const depotCenters = [[650,340],[650,480],[650,700],[650,830],[300,700],[300,480]];
-const tileWidth = 60, tileHeight = tileWidth * 2 / Math.sqrt(3);
+// Native SVG geometry; all market quantities and click handlers stay in the engine.
+const layout = {
+ width:950,height:1030,axis:475,
+ panels:{left:18,right:542,width:390,top:18,topHeight:205,bottom:857,bottomHeight:155},
+ top:{shield:160,tiles:290,goods:390},bottom:{goods:690,tiles:790,shield:920},
+ side:{left:300,right:650,upper:390,lower:690},
+ tileWidth:60,tileGap:72,shieldGap:70,
+};
+const playCenter={x:layout.axis,y:(layout.panels.top+layout.panels.topHeight+layout.panels.bottom)/2};
+const depotCenters = [[layout.axis,layout.top.goods],[layout.side.right,layout.side.upper],[layout.side.right,layout.side.lower],[layout.axis,layout.bottom.goods],[layout.side.left,layout.side.lower],[layout.side.left,layout.side.upper]];
+const tileWidth = layout.tileWidth, tileHeight = tileWidth * 2 / Math.sqrt(3);
 const hex = (x:number,y:number,w=tileWidth) => {const r=w/Math.sqrt(3);return [[x,y-r],[x+w/2,y-r/2],[x+w/2,y+r/2],[x,y+r],[x-w/2,y+r/2],[x-w/2,y-r/2]].map(p=>p.join(",")).join(" ");};
 function slotCenter(depot:number,index:number,count:number):number[]{
  const [,y]=depotCenters[depot-1];
- if(depot===1||depot===4)return [462-(count>2?index%2*72:0),(depot===1?320:900)+(count>2?Math.floor(index/2)-.5:index-.5)*80];
+ if(depot===1||depot===4)return [layout.axis+(index-(count-1)/2)*layout.tileGap,depot===1?layout.top.tiles:layout.bottom.tiles];
  const right=depot===2||depot===3;
  return [right?748+(count>2?index%2*72:0):202-(count>2?index%2*72:0),y+(count>2?Math.floor(index/2)-.5:index-.5)*80];
 }
-function blackCenter(index:number,count:number):number[]{
- if(count===4)return [[475,480],[445,480+tileHeight*.75],[505,480+tileHeight*.75],[475,480+tileHeight*1.5]][index];
- const columns=count>6?3:2,q=index%columns,r=Math.floor(index/columns);
- return [475+(q-(columns-1)/2)*tileWidth+(r%2?tileWidth/2:0)-tileWidth/4,480+r*tileHeight*.75];
+function blackCenters(count:number):number[][]{
+ const raw=Array.from({length:count},(_,index)=>{
+  if(count===4)return [[0,0],[-30,tileHeight*.75],[30,tileHeight*.75],[0,tileHeight*1.5]][index];
+  const columns=count>6?3:2,q=index%columns,r=Math.floor(index/columns);
+  return [q*tileWidth+(r%2?tileWidth/2:0),r*tileHeight*.75];
+ });
+ // Use every allocated slot, including purchased/null ones, to keep the center fixed.
+ const cx=(Math.min(...raw.map(p=>p[0]))+Math.max(...raw.map(p=>p[0])))/2;
+ const cy=(Math.min(...raw.map(p=>p[1]))+Math.max(...raw.map(p=>p[1])))/2;
+ return raw.map(([x,y])=>[playCenter.x+x-cx,playCenter.y+y-cy]);
+}
+function CornerPanel({name,x,y,height}:{name:string;x:number;y:number;height:number}){
+ return <rect data-info-panel={name} x={x} y={y} width={layout.panels.width} height={height} rx="3" fill="#fff5d8" fillOpacity=".55" stroke="#b49a68"/>;
 }
 const colors = { blue:"#287fba",red:"#bd4838",green:"#608d43",yellow:"#d0a536" };
 const terrainNames: Record<TileType,string> = {castle:"성",ship:"선박",mine:"광산",livestock:"가축",building:"건물",monastery:"수도원"};
@@ -48,17 +65,19 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   </g>;
   const shields=shieldLayout(game);
   const twoPlayer = game.config.marketRecipeId === "se:main:2";
-  const shieldCenters=[[540,320],[900,480],[900,700],[540,900],[50,700],[50,480]];
+  const shieldCenters=[[layout.axis,layout.top.shield],[900,layout.side.upper],[900,layout.side.lower],[layout.axis,layout.bottom.shield],[50,layout.side.lower],[50,layout.side.upper]];
   const shieldDepotCenters=depotCenters;
-  const blackCount = game.market.blackDepot.length;
+  const blackSlots = blackCenters(game.market.blackDepot.length);
   const trackPositions = Array.from({length: Math.max(6,...game.turn.orderTrack.map(s=>s.position))+1},(_,i)=>i);
   return <section className={`common-board-panel${shields ? " with-shields" : ""}`} aria-label="공용 공급처 보드">
     <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.75} onClick={()=>onZoom(Math.max(.75,+(zoom-.25).toFixed(2)))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(Math.min(2,zoom+.25))}>+</button></div></div>
     <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드 · 주사위 선택 후 대상을 누르세요</span></div>
-    <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox="0 0 950 1030" style={{width:`${950*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
-      <CommonBoardBackdrop width={950} height={1030}/>
-      <rect data-info-panel="phase-goods" x="18" y="18" width="390" height="205" rx="3" fill="#fff5d8" fillOpacity=".55" stroke="#b49a68"/>
-      <rect data-info-panel="turn-order" x="542" y="18" width="390" height="205" rx="3" fill="#fff5d8" fillOpacity=".55" stroke="#b49a68"/>
+    <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:`${layout.width*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
+      <CommonBoardBackdrop width={layout.width} height={layout.height}/>
+      <CornerPanel name="phase-goods" x={layout.panels.left} y={layout.panels.top} height={layout.panels.topHeight}/>
+      <CornerPanel name="turn-order" x={layout.panels.right} y={layout.panels.top} height={layout.panels.topHeight}/>
+      <CornerPanel name="region-score" x={layout.panels.left} y={layout.panels.bottom} height={layout.panels.bottomHeight}/>
+      <CornerPanel name="color-bonuses" x={layout.panels.right} y={layout.panels.bottom} height={layout.panels.bottomHeight}/>
       <path d="M19 118H407" stroke="#c6ba8f" strokeWidth="1"/>
 
       <text x="60" y="44" className="common-small">단계 · 지역 완성 추가 점수</text>
@@ -83,28 +102,34 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <text x={x} y={y+39} textAnchor="middle" className="common-small">상품 {depot.goods.length}개</text>
         {depot.slots.map((slot,i)=>{const [tx,ty]=slotCenter(depot.number,i,depot.slots.length);return slot.tileId ? selected(slot.tileId,tx,ty,tileWidth,`${depot.number}번 공급처 ${titleFor(slot.tileId)}`) : <g key={slot.id}><polygon points={hex(tx,ty,tileWidth)} fill={terrainPaint[slot.requiredType]} fillOpacity=".45" stroke="#b4ac85" strokeDasharray="3 3"/><title>{`${terrainNames[slot.requiredType]} 빈 공급 칸`}</title></g>;})}
       </g>;})}
-      <g transform="translate(135 222)"><InnStack game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
+      <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
       <g data-black-depot="true">
-        <text x="475" y="430" textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
-        {game.market.blackDepot.map((id,i)=>{const [x,y]=blackCenter(i,blackCount);return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}
+        <text x={playCenter.x} y={playCenter.y-tileHeight*1.25-5} textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
+        {game.market.blackDepot.map((id,i)=>{const [x,y]=blackSlots[i];return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}
       </g>
-      <g transform="translate(14 327)"><g data-region-score-panel="true"><rect x="16" y="573" width="190" height="96" rx="22" fill="#514636" stroke="#c2ab74"/><text x="111" y="592" textAnchor="middle" fill="#f9edbd" fontSize="12">지역 완성 · 칸 수 / 점수</text>{[1,3,6,10,15,21,28,36].map((v,i)=><g key={v}><text x={40+(i%4)*47} y={610+Math.floor(i/4)*32} textAnchor="middle" fontSize="9" fill="#e9dcb4">{i+1}칸</text><path d={`M${28+(i%4)*47} ${614+Math.floor(i/4)*32}h24v12l-12 5-12-5z`} fill="#a54431"/><text x={40+(i%4)*47} y={624+Math.floor(i/4)*32} textAnchor="middle" fontSize="11" fill="#fff1cb">{v}</text></g>)}</g>
-      <g data-color-bonuses="true" transform="translate(285 0)"><text x="529" y="574" textAnchor="middle" className="common-small">지형 전체 완성 · 1위 / 2위</text>
-      {(["castle","mine","ship","livestock","building","monastery"] as const).map((type,i)=><g key={type}>
-        <rect x={435+(i%2)*94} y={583+Math.floor(i/2)*29} width="86" height="25" rx="9" fill={terrainPaint[type]} stroke="#877c4f"/>
-        <text x={478+(i%2)*94} y={593+Math.floor(i/2)*29} textAnchor="middle" fontSize="9" fill="#fff6d6">{terrainNames[type]}</text>
-        <text x={478+(i%2)*94} y={603+Math.floor(i/2)*29} textAnchor="middle" fontSize="10" fill="#fff6d6">{["first","second"].map(rank=>{const b=game.market.bonusTiles.find(b=>b.color===type&&b.rank===rank);return b ? b.points : "완료";}).join(" / ")}</text>
-      </g>)}
-      </g></g>
+      <g data-region-score-panel="true" transform={`translate(${layout.panels.left} ${layout.panels.bottom})`}>
+        <text x="195" y="29" textAnchor="middle" className="common-small">지역 완성 · 칸 수 / 점수</text>
+        {[1,3,6,10,15,21,28,36].map((v,i)=><g key={v} transform={`translate(${60+(i%4)*90} ${56+Math.floor(i/4)*45})`}>
+          <text textAnchor="middle" fontSize="11" fill="#665035">{i+1}칸</text><path d="M-16 7h32v17l-16 7-16-7z" fill="#a54431"/><text y="24" textAnchor="middle" fontSize="13" fill="#fff1cb">{v}</text>
+        </g>)}
+      </g>
+      <g data-color-bonuses="true" transform={`translate(${layout.panels.right} ${layout.panels.bottom})`}>
+        <text x="195" y="29" textAnchor="middle" className="common-small">지형 전체 완성 · 1위 / 2위</text>
+        {(["castle","mine","ship","livestock","building","monastery"] as const).map((type,i)=><g key={type} transform={`translate(${24+(i%2)*176} ${43+Math.floor(i/2)*33})`}>
+          <rect width="166" height="28" rx="9" fill={terrainPaint[type]} stroke="#877c4f"/>
+          <text x="83" y="11" textAnchor="middle" fontSize="10" fill="#fff6d6">{terrainNames[type]}</text>
+          <text x="83" y="23" textAnchor="middle" fontSize="11" fill="#fff6d6">{["first","second"].map(rank=>{const b=game.market.bonusTiles.find(b=>b.color===type&&b.rank===rank);return b ? b.points : "완료";}).join(" / ")}</text>
+        </g>)}
+      </g>
       {shields && game.market.numberedDepots.map(depot=>{
         const slots=shields.slots.filter(s=>s.depot===depot.number);const [cx,cy]=shieldCenters[depot.number-1];
         const [dx]=shieldDepotCenters[depot.number-1];
         const zoneHeight=slots.length===2?172:104;
-        const linkDirection=Math.sign(([1,4].includes(depot.number)?426:dx)-cx);
+        const linkDirection=Math.sign(dx-cx);
         return <g key={`shields-${depot.number}`} data-shield-depot={depot.number} aria-label={`${depot.number}번 공급처 방패 그룹`}>
-          <path d={`M${cx+linkDirection*36} ${cy}h${linkDirection*16}`} className="shield-depot-link"/>
+          {linkDirection!==0&&<path d={`M${cx+linkDirection*36} ${cy}h${linkDirection*16}`} className="shield-depot-link"/>}
           <rect data-shield-zone={depot.number} x={cx-36} y={cy-zoneHeight/2} width="72" height={zoneHeight} rx="28" fill="#b9bcb0" fillOpacity=".38" stroke="#929689" pointerEvents="none"/>
-          {slots.map((slot,i)=>{const offset=slots.length===2?(i===0?-35:35):0;const x=cx,y=cy+offset;const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
+          {slots.map((slot,i)=>{const offset=slots.length===2?(i===0?-layout.shieldGap/2:layout.shieldGap/2):0;const x=cx,y=cy+offset;const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
             return <g key={slot.id} data-shield-slot={slot.id} data-empty={slot.shieldNumber===null} transform={`translate(${x} ${y})`} role={slot.shieldNumber===null?"img":"button"} tabIndex={slot.shieldNumber===null?undefined:0} aria-label={label} aria-pressed={slot.shieldNumber===null?undefined:shieldSelection?.slotId===slot.id} aria-disabled={slot.shieldNumber!==null&&!shieldSelection?.cost(slot.id)} className={slot.shieldNumber===null?"shield-slot empty":`shield-slot occupied ${shieldSelection?.cost(slot.id)?"direct-legal":"direct-unavailable"}`} onClick={slot.shieldNumber===null?undefined:()=>shieldSelection?.onSelect(slot.id)} onKeyDown={slot.shieldNumber===null?undefined:e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();shieldSelection?.onSelect(slot.id);}}}>
               <title>{label}{slot.shieldNumber===null?" · 보충 없음":(shields.effectsActive?" · 장착 시 능력 활성":" · 능력은 검증 모드에서 미적용")}</title><ShieldArt number={slot.shieldNumber}/>{showCosts&&slot.shieldNumber!==null&&<g className="direct-cost"><rect x="-29" y="23" width="58" height="16" rx="5"/><text y="35" textAnchor="middle">{shieldSelection?.cost(slot.id)?`일꾼 ${directCost(game,shieldSelection.cost(slot.id)!)}`:"불가"}</text></g>}{(i===0)&&<text y={-40} textAnchor="middle" className="shield-depot-number">{depot.number}번</text>}
             </g>;})}
