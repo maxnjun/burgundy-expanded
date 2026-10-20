@@ -8,7 +8,8 @@
 - 최종검사:코어406/406(four-release-core.log),보드33/33(four-boards.log),관련42/42(four-final-save-tests.log),타입/린트/프로덕션빌드통과(four-release-*). PC전체85중83통과/2실패(11.7분;four-final-PC.log),포도밭최종7/7+100/160/200실측2/2통과(four-release-browser.log/four-zoom-browser.log). AI2/3/4인각30게임 총90게임25라운드/저장통과(443초;four-final-simulation90.log). 마지막저장표식/글자보완은AI정책·현재신규게임진행불변,최종관련/전체코어/PC재검사완료. 전체브라우저통과아님.
 - 발견오류:PC shields.spec.ts의방패미리보기3/4인공용보드겹침검사2건실패(line24 overlapping=true). 포도밭비활성상태이며이번common-board.tsx/공용CSS변경없음. 실패테스트/원본로그·스크린샷/trace보존(test-results/shields-shield-groups-{3,4}p-*)·후속별도수정필요. 전체브라우저통과라고보고하지않는다.
 - 화면:.local-data/qa/vineyards-four-{multiple,enlarged,token-choice,completed}.png 및 vineyards-empty-estate.png.직접시각확인완료(빈보드/여러배치/V11보상·확대). 검은/상점 획득 라벨은두줄로줄바꿈해칸침범방지.모바일정밀QA미실행.
-- 다음:이번파일민감검사/기존문서구간분리→비공개main커밋Push/원격해시확인.백업아직미실행.후속별도우선:방패미리보기3/4인겹침2건수정/원본실패재실행(포도밭비활성).모바일정밀QA유보.서버25180/127.0.0.1:3000유지,사용자내장브라우저탭열어둠.
+- 백업:14파일의이번변경만9f0c00ef4213b19c66dfd0d8fdb86d6bcdddd7fd로비공개mainPush/원격해시일치.민감패턴0건·원격선행0/0·권한/비공개확인.기존PNG2개/문서여관구간제외보존.
+- 다음:후속별도우선:방패미리보기3/4인겹침2건수정/원본실패재실행(포도밭비활성).모바일정밀QA유보.서버25180/127.0.0.1:3000유지,사용자내장브라우저탭열어둠.
 
 ---
 # 현재 구현 체크포인트 — 포도밭 프로젝트 복원판 v0.1
