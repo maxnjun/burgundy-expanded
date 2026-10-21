@@ -1,3 +1,14 @@
+# 최신 체크포인트 — 사람 턴 수동 종료 확인 (2026-10-21)
+
+- 이번 버그 수정·검증·main 백업 완료(전체 프로젝트 완료 아님). 원인=automaticAction이 선택 구매가 없으면 사람 end-turn을 반환. 사람 자동 처리는 round-setup/phase-end만 유지, AI chooseComputerAction은 변경 없음. 두 주사위를 써도 현재 턴/스냅샷을 유지하며 사용자 확인에서만 end-turn 실행.
+- TurnControls 공통 native dialog: 필수 효과가 모두 해결된 뒤 “턴을 종료하시겠습니까?”/취소. 엔진·서버 검증 buy-black-tile 액션이 있으면 “(은화 구매 가능)”; 빈 공급·은화 부족·공유 구매 사용/보관 교체 조건은 엔진 기준. 같은 game/view 객체에서 취소 후 반복 자동 표시 없음. Undo/구매 등 상태 변경과 수동 요청은 새 확인. 메뉴를 열어도 수동 확인 가능. 중앙 정렬/취소 기본 포커스.
+- 로컬의 모든 end-turn 호출·온라인 범용 행동 실행도 확인창을 거침. 확인 중복 실행/온라인 요청 ref 잠금, 기존 서버 revision·좌석·직렬화 검증 유지. 오래된 종료 요청409·다른 좌석403·연속 클릭POST1회 검사. 엔진/턴 기록/저장 구조/난수/자원 수치는 변경하지 않음. 온라인 Undo 기존 미지원 유지.
+- 이번 검사: 전체코어417/417·보드33/33, 최종 타입/전체ESLint/프로덕션빌드 exit0. 전체PC108개 최초106통과/기존2개실패(17.8분): 사람→AI 인계에 종료 확인이 빠졌고 방패 획득 후 확대에 취소가 빠짐. 스크린샷/trace 원인 확인 후 기존 판정은 유지하며 확인/취소 추가. 실패2개 포함 최종관련PC15/15(2.6분), 유효한 구매 fixture 강화 후 관련코어15/15 및 타입/해당lint 재검사 통과. 전체108개를 수정 뒤 다시 일괄 실행하지는 않음. 미해결 실패 없음.
+- 소스5개(direct-actions,game-screen.tsx/css,online/room-screen,turn-controls)·관련검사9개만 변경. A~L: 2·3·4인 한 주사위/두 주사위/취소·반복방지/행동별·턴전체Undo/실구매 전후 안내/1은화/필수 성 효과/수동 종료/AI 25라운드/온라인 재접속·권한·중복·오래된 요청/저장 포맷 검사. 실제 화면 직접 확인=.local-data/manual-turn/confirm-{2,3,4}p.png,mandatory-resolved.png,online-confirm.png. 실패 당시 화면/trace는 같은 폴더 failures/에 보존.
+- 백업: 검증된 소스·검사14개만 9da259b9b913d1eb49734becb376fca8b2cd6004 일반Push·원격main SHA 일치. 기존 공개 origin/main Push 허용과 이번 Push 요청에 따라 공개 설정 유지. 비밀패턴0/동결14파일 일치/기존 수도원PNG2·문서 꼬리2 해시 유지. asset-inbox와 다른 미커밋 여관 문서/수도원 원본은 보존·제외. 이번 문서 접두 구간만 별도 체크포인트로 백업.
+- 다음: 이번 수정 완료. localhost:3000은 별도 숨김 dev 프로세스로 유지. 모바일 정밀QA는 통합 단계로 보류. 재개/재검사는 .local-data/manual-turn/{core,boards,full-pc,final-affected,core-final-direct,types-last,lint-final,build-final}.log 및 final-validation.json 참조. 다른 미완성 기능은 이번 범위에서 변경하지 않음.
+
+---
 # 최신 체크포인트 — 승인 동물 13종 실제 게임 적용 (2026-10-21)
 
 - 구현·검증·GitHub main 백업 완료(전체 프로젝트 완료 아님). 승인 ZIP13개(1254 RGBA)를 보존하여 1024 공통 alpha/등방성 파생 등록. 비정규 원본 테두리만 분리·원본 연두 RGB의 공통 SVG 프레임 사용. 단일 viewBox/clip/imageRect, 동물별 런타임 배율·이동 없음.
