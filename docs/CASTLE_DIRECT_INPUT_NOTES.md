@@ -73,3 +73,7 @@
 - `tests/fixtures/direct-choice.ts`
 - `docs/CASTLE_DIRECT_INPUT_NOTES.md`
 - `docs/PROGRESS.md` 및 `docs/TODO.md`의 이번 접두 기록만 별도 스테이징한다.
+
+## 백업 확인
+
+- 기능 커밋 `76f2830b11b003d3cc819bb349c83b8fe514cc4a`를 기존 공개 main에 일반 Push하고 원격 SHA 일치를 확인했다. 36개 경로만 포함했으며 원본 PNG/asset-inbox/기존 여관 문서 변경은 제외했다.
