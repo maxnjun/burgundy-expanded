@@ -8,7 +8,9 @@
 - 최종 검사: 전체코어455/455·보드33/33, PC145건=142통과/터치전용3제외(13-production-full-pc.log). 최종 PC/Chrome터치/WebKit 관련9/9·기존모바일도움말5통과/PC전용2제외(29-*). 실제 프로덕션 WS·동시중복·재시작·빈경로 복원/배포보호3/3. 최종27번 타입/린트/빌드 exit0, 에셋6/아이콘2 경고0·YAML 통과·runtime audit0.
 - 해결: 개발 HMR/테스트 소유 서버 종료는 프로덕션 상시서버/CI모드 분리. WS는 인증된 state 후에만 live, 막힌 WS는 정상HTTP 조작을 잠그지 않음. 고정포도보상 전송 유실/인증대기 폴링복구. 모바일 영지 pan-x/중첩overscroll 차단해제→실제 CDP 가로스와이프·revision불변·팝업미발생 확인. 실패로그19/23/25/26 보존, 검증 삭제/완화 없음.
 - 실제 캡처 확인: .local-data/internet-release/*mobile-board-portrait.png, *mobile-estate.png, *vineyard-swiped.png 및 *online-pair/*update-required. 기존 그림/좌표/게임규칙/구저장 유지. 원본SHA·기존 문서꼬리 보존/민감패턴0 사전검사 완료.
-- 현재: 이번46경로 및 문서 접두만 선별 백업 준비. 기존 origin 공개main/이전 사용자 Push 허용/원격시작0a890e1 확인. localhost3000 최종 프로덕션 유지, 로컬기존방50개 보존(한도 도달, 삭제 안함). 다음은 diff·Commit/일반Push·원격SHA/CI 확인 후 실제 Render 생성 승인 요청. 전체 목표의 외부망/실기기/유료 배포/외부백업은 미완료다.
+- 백업: 이번46경로/문서접두만 bd45e3e218eed988b7641af0693f4259c7b319f0 일반Push·원격main일치 확인. origin 공개/이전 사용자 Push 허용 유지. 원본/기존문서꼬리 제외. localhost3000 최종 프로덕션 유지, 로컬기존방50개 보존(한도 도달).
+- 원격CI: 첫 GameCI39652071835는 저장소 원본27/28과 로컬검토hash 차이로 중단, Game release는 정상skip. 원본 제작검사/기존테스트 그대로 두고 새 배포PNG62개 무결성 검사로 CI입력 구분(31-deploy-assets통과). 원본을 백업에 끼워넣거나 변경하지 않음. 보완커밋/원격CI 재확인 중.
+- 알려진 문제: full npm audit 개발의존성 braces 동일권고 전이5high/현재patch없음; runtime0과 구분, 강제 Next14 downgrade 안함. 상세 운영안. 다음은 보완Commit/Push→실제CI 통과 확인→Render환경/비용 승인 안내. 전체 외부망/실기기/유료 배포/외부백업은 미완료다.
 
 ---
 # 최신 체크포인트 — 수정사항 프롬프트 통합 (2026-10-22)

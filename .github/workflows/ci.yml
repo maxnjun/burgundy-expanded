@@ -29,7 +29,8 @@ jobs:
           python-version: '3.13'
       - run: npm ci
       - run: python -m pip install Pillow==12.3.0
-      - run: python scripts/validate-tile-assets.py
+      # Source-authoring review also uses private, deliberately uncommitted originals.
+      - run: python scripts/validate-deployment-assets.py
       - run: npm run test:core && npm run test:boards && npm run lint
       - run: npm run build && npx tsc --noEmit
       - run: npm run test:deployment

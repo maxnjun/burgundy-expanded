@@ -65,6 +65,7 @@ Render 무료 웹 서비스는15분 유휴 절전과 영속 디스크 부재 때
 | 프로덕션 서버/배포 보호 | 3/3 통과. 실제 HTTP+WS 권한·동시 입력·2회 재시작·정확한 빈 경로 복원, 잘못된 Origin/버전/토큰, CI 실패·staging 불일치 차단·가짜 훅 rollback | 29-deployment-final.log |
 | 타입·린트·프로덕션 빌드 | 모두 exit0 | 27-{types,lint,build}.log |
 | 기존 이미지 규격 | 일러스트6/아이콘2 검증, 경고0. 원본PNG27/28·사용자 문서 시작 SHA 불변 | 10-assets.log/prepare-backup.py |
+| 배포용 이미지 | 승인된 배포 PNG62개의 해시·규격·RGBA·알파 경계 통과. 원본 제작 검사는 별도 유지 | 31-deploy-assets.log |
 | YAML/런타임 의존성 | Render/워크플로 구문 통과, 공식 Actions v7 태그 존재 확인, 프로덕션 의존성 취약점0 | 29-yaml.log/production-audit.json |
 
 초기 개발 HMR이 검사 중 페이지를 다시 여는 문제는 프로덕션 테스트 모드로 분리했다. 테스트가 관리하던 공유 서버 종료 문제도 상시 서버와 분리했다. 인증 전 OPEN 소켓을 연결 완료로 보던 판단을 고쳐 폴링 지연을 없앴고, WS 실패 중 HTTP가 정상인 경우 행동 버튼을 잠그지 않는다. 필수 보상 첫 전송 실패 후에도 최신 공개 뷰로 재개해 정확히 한 번만 지급한다. 영지 내부의 pan-y/overscroll contain은 모바일 가로 포도밭 탐색을 막았으므로 두 축 터치와 행 내부 스크롤 연결을 허용했다. Chrome 실제 CDP 터치로 가로 이동, revision 불변, 팝업 미발생을 검사했다. 실패 로그19/23/25/26은 보존했으며 테스트 삭제나 결과 기준 완화는 하지 않았다.
@@ -84,7 +85,14 @@ localhost3000은 최종 프로덕션 번들로 실행 중이다. 기존 로컬 �
 - 서버: `src/server/{rooms,room-http,room-limit,room-events,release}.ts`, `src/game/release.ts`, `src/app/api/{health,version}/route.ts`.
 - 화면: `src/app/online/{room-screen.tsx,room-connection.ts}`, `board-viewport.tsx`, `game-screen.css`, `layout.tsx`, `game-version.tsx`, `updates/page.tsx`.
 - 실행/운영: `scripts/{server,room-websockets,room-backups,deploy-render}.mjs`, `package.json`, `package-lock.json`, `.node-version`, `.env.example`, `render.yaml`, `.github/workflows/{ci,release}.yml`, `playwright.config.ts`. 새 런타임 의존성은 ws 하나다.
+- 배포 검증: `scripts/validate-deployment-assets.py`는 실제 배포 PNG62개를 검사한다. 기존 `validate-tile-assets.py`는 변경하지 않았다. 후자는 버전 관리에서 의도적으로 제외된 검토용 원본27/28도 요구하므로 제작 작업에서 그대로 사용한다. 원본·이미지를 재생성하거나 GitHub에 추가하지 않았다.
 - 검증: `tests/core/internet-online.test.ts`, `run.mjs`, `tests/deployment/{backups,release,server}.test.mjs`, `tests/browser/internet-online.spec.ts`, `starting-castles.ts`. 기존 온라인 spec의 준비/시작 단계를 연결하고 fixture revision을 단조 증가시키며, 기존 fixed-vine-reward 검사는 전송 유실/응답 없는 WS까지 강화했다.
 - 문서: 이 운영안, `docs/CHANGELOG.md`, `docs/TODO.md`, `docs/PROGRESS.md`의 이번 작업 접두 구간만 백업한다. 기존 문서 수정 꼬리/원본 PNG/ZIP/다른 asset-inbox는 포함하지 않는다.
 
-미실행: 실제 Android/iPhone/macOS 기기, 서로 다른 인터넷망, 실제 Render 유료 환경, 원격 CI·환경 승인·실제 배포·실제 서비스 롤백·외부 백업. 로컬 에뮬레이터/가짜 배포 훅 검증과 구분한다. 온라인 Undo는 기존 보안 제한대로 미지원이다.
+## GitHub 백업·원격 CI와 남은 항목
+
+코드46경로는 `bd45e3e218eed988b7641af0693f4259c7b319f0`로 main 일반Push 후 원격 SHA 일치를 확인했다. 최초 [실제 CI](https://github.com/maxnjun/burgundy-expanded/actions/runs/39652071835)는 기존 원본27/28의 저장소 버전과 로컬 검토용 해시 차이를 발견해 이미지 단계에서 중단했다. [배포 workflow](https://github.com/maxnjun/burgundy-expanded/actions/runs/39652204344)는 정상적으로 skip되어 정식 배포가 실행되지 않았다. 기존 원본 제작 검사와 기존 브라우저 검사 기준을 유지하고, CI에는 버전 관리된 승인 배포 이미지62개 검사를 연결했다. 이 보완 커밋의 CI 결과를 계속 확인한다.
+
+전체 npm audit에는 기존 개발 도구 `eslint-config-next → fast-glob → micromatch → braces`의 동일 [braces 권고](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)가 전이되어 고위험 패키지5개로 보고된다. 현재 패치 버전이 없고 npm은 Next14 계열로의 큰 변경을 제안하므로 강제 downgrade/fix는 하지 않았다. 프로덕션 의존성 audit0과 구분한다. 별도 개발 의존성 유지보수가 남아 있으며, 모든 보안 문제가 없다고 주장하지 않는다.
+
+미실행: 실제 Android/iPhone/macOS 기기, 서로 다른 인터넷망, 실제 Render 유료 환경, 환경 승인·실제 배포·실제 서비스 롤백·외부 백업. 로컬 에뮬레이터/가짜 배포 훅 검증과 구분한다. 온라인 Undo는 기존 보안 제한대로 미지원이다.
