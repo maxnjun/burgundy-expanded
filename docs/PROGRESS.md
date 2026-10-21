@@ -1,3 +1,18 @@
+# 최신 체크포인트 — 중앙 행동 안내 및 즉시 턴 제어 (2026-10-21)
+
+- 사용자 “진행해” 승인 범위 구현·검증·main 백업 완료(전체 프로젝트 완료 아님). 사람의 자동 end-turn 금지는 유지, 라운드/단계 자동 처리·AI 전략/진행·게임 규칙/저장 형식/보드 좌표/PNG 불변.
+- 원인: 첫 좌석 전용 숨김이 아니라 restore의 start 스냅샷 부재. 기존 저장 파일은 그대로 두고 burgundy-expanded:turn-history-v1 sidecar에 현재 게임/로그와 턴 스냅샷을 자동 저장. 복원 시 상태 전체·로그·턴키·config·revision 순서·기존 저장 파서로 검증하고 잘못된 기록은 안전하게 초기화. 전체 턴/행동 Undo·연쇄 효과/RNG·새 분기·다음 플레이어 경계 유지.
+- TurnControls의 종료 dialog/자동 팝업과 full Undo window.confirm 제거. 세 빨간 버튼 즉시 실행, 같은 로컬 상태의 중복 실행 방지 및 온라인 in-flight/좌석/revision 검증 유지. 폐기/보관/방패 교체 확인창은 유지. 온라인 Undo 기존 미지원.
+- action-guidance는 화면 상태로부터 순수 계산: 필수 효과/포도·방패·무역로 자식 선택→현재 선택→엔진 합법 end-turn/구매→주사위. 검은 타일·여관·포도 상점의 실제 합법 구매만 “(구매 가능)”. 불가능한 수도원6 선택은 취소 안내. 온라인은 서버가 공개 안내 문자열만 계산하며 숨은 게임 상태는 추가 노출하지 않음.
+- 중앙 큰 안내/대칭 grid(PC 좌우 최소360px)/좁은 화면 줄바꿈. 기존 별도 주사위 안내와 “특수 행동” 글자 제거, 기능은 접근 가능한 ⋯ 메뉴 유지. 공용 보드 헤더의 고정 주사위 안내만 삭제, 단계/라운드·조작 도움말/보드 디자인 유지. 포도 보관 UI 선택도 중앙 안내/취소와 연결, 4층·시작1+층4=최대5토큰 규칙 유지.
+- 변경 코드/검사20파일: app/{common-board,game-screen,turn-controls,vineyard-board,online/room-screen}.tsx 및 game-screen.css/globals.css; game/{action-guidance,turn-history-cache}.ts; server/rooms.ts; core action-guidance.test.ts/run.mjs; browser {direct-input,game,manual-turn,rooms,shield-ai,shield-castles,shield-rules,turn-controls}.spec.ts. 새 의존성/이미지 변경 없음.
+- 검사: 전체 코어422/422·보드33/33·전체PC109/109(18.5분). 최종 안내 조건 코어5/5·PC/모바일12/12(3.1분), 마지막 PC 자원 줄바꿈 보정 후 관련PC/모바일6/6(49초). TypeScript·전체ESLint·최종프로덕션빌드 exit0. 초기 관련PC10/10 및 온라인/AI6/6도 통과. 기존 검증 삭제/완화 없이 확인창 동작만 새 요구대로 갱신.
+- 직접 확인: .local-data/action-guidance/desktop-1280-{2,3,4}p-game.png 및 *-toolbar.png, mobile-390-{2,3,4}p-game.png, desktop-1280-mandatory-resolved.png, 각 프로젝트 toolbar-{1280,390,375}-{100,160,200}.png. 중앙 안내/세 버튼/전체 턴·행동 Undo/새로고침/두 주사위 후 유지/실구매 전후/필수 성 효과/중복 종료/다음 플레이어 제한 검증. 현재 사용자 localhost도 화면 관찰만 수행, 게임 행동은 테스트 전용 브라우저에서 검증.
+- 로그: .local-data/action-guidance/{core-full,boards-full,browser-full-pc,browser-final-ui,browser-final-layout,core-guidance-final,types-final,lint-final,build-final}.log 및 final-validation.json. 샌드박스 임시 방 rename/빌드 mkdir EPERM은 동일 검사를 정상 권한에서 재실행해 통과, 규칙 코드나 검증 기준으로 우회하지 않음.
+- 백업: 20파일 민감 패턴0·실제diff/스테이징 검사 후 0ac329e4b88d2edb85762113fc0f66d3a9e127ec 일반 Push·원격main SHA 일치 확인. origin=maxnjun/burgundy-expanded, public/main 유지(이전 사용자 명시 Push 허용), 기존 수도원 PNG2·asset-inbox·여관 문서 꼬리 변경은 보존/제외. 이 접두 검증 기록만 별도 문서 커밋으로 백업.
+- 제한/재개: 기록 없는 과거 저장과 파일 import는 Undo 시작을 추정하지 않음(현재 턴의 새 행동별 Undo/다음 턴부터 전체 Undo). 내보내는 저장 파일 형식은 동일, Undo sidecar는 로컬 자동 저장 전용. 온라인 Undo 미지원·모바일 확장 전반 정밀QA는 기존 최종 단계 유지. 이번 범위 남은 오류 없음. localhost3000 유지, 다른 미완성 기능은 건드리지 않음.
+
+---
 # 최신 체크포인트 — 사람 턴 수동 종료 확인 (2026-10-21)
 
 - 이번 버그 수정·검증·main 백업 완료(전체 프로젝트 완료 아님). 원인=automaticAction이 선택 구매가 없으면 사람 end-turn을 반환. 사람 자동 처리는 round-setup/phase-end만 유지, AI chooseComputerAction은 변경 없음. 두 주사위를 써도 현재 턴/스냅샷을 유지하며 사용자 확인에서만 end-turn 실행.
