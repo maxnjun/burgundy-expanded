@@ -7,7 +7,7 @@
 - 최종 검사: 코어459/459(12-full-core), 보드33/33(13), 관련 브라우저23개 최종통과(09의11통과+WebKit실패1은14에서수정재검사통과, 15의7/16의4). 프로덕션 WS·중복·권한·재시작·백업/배포4/4(20). TypeScript18/21·ESLint17·build19 exit0. 01샌드박스EPERM/05오류selector/09WebKit초기화 실패로그 보존, 검증 삭제·완화 없음.
 - 변경: src/server/{rooms,room-http}.ts, src/app/online/room-screen.tsx, scripts/room-backups.mjs, 관련 core/browser/deployment 테스트·runner, 운영문서. 게임규칙/좌표/이미지/저장JSON형식은 변경하지 않음. 기존 원본·문서꼬리 미커밋 변경 보존.
 - 캡처 직접확인: .local-data/room-capacity/live-host.png / live-guest.png. inventory-before/체크섬스냅샷/live-result/22-restart 로그는 private 로컬 보관. localhost3000 개발서버 실행 유지. 실제 외부망/Android·iPhone 실기기는 미검증.
-- 백업 준비: main=ec38d6d, origin은 기존 공개 maxnjun/burgundy-expanded(사용자의 공개 main Push 예외 유지). 이번13경로/문서접두만 검토·선별 백업. 압축 미지원 구버전 롤백은 중지 후 이번 snapshot/restore로 빈 경로에 모든 JSON을 복원해야 함. 이전 외부배포/서비스승인 및 개발도구 braces 이슈는 별도 TODO 유지.
+- 백업 완료: 106260592ebf70276fba9a950fd8534b8b8ee46a Commit/일반Push·원격main 일치 확인. origin은 기존 공개 maxnjun/burgundy-expanded(사용자의 공개 main Push 예외 유지). 이번13경로/문서접두만 반영, 기존 변경/원본/방 데이터 제외. 압축 미지원 구버전 롤백은 중지 후 이번 snapshot/restore로 빈 경로에 모든 JSON을 복원해야 함. 이전 외부배포/서비스승인 및 개발도구 braces 이슈는 별도 TODO 유지.
 
 ---
 # 최신 체크포인트 — 모바일 온라인·인터넷 배포 (2026-10-22)
