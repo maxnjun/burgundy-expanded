@@ -7,8 +7,8 @@
 - 검증 완료: 전체코어451/451·보드33/33, 최종 TypeScript/전체ESLint(경고0)/프로덕션빌드 exit0(22-checks.json), 에셋6/아이콘2 경고0. PC 전체143건 실행은135통과/3터치전용제외/5실패, 수정 후5건 모두 재검증 통과→실행대상140개 최종확인. 온라인6통과/관련PC·모바일8통과(입력방식2제외), 25라운드/3배율4통과, 여관16통과 등 기능별 로그01~22.
 - 발견/해결: 모바일 sticky 클릭가림·200% 상품잘림→일반흐름/줄바꿈. 저장고 illustrated-tile 래퍼 누락→기존 래퍼60px 복원, 키보드/외곽clip 검사 유지. 새setup 전 roll하던fixture/구상품이름 도우미 이관. 온라인 stale409는 정상 거부, 최신UI 동기화 후 실제 클릭하는 helper로 보완. 검증 삭제/완화/강제클릭 없음.
 - 실제 PC·390터치 100/160/200% 캡처 직접 확인. 로그/캡처 .local-data/player-improvements/, .local-data/qa/inn-stack-*, .local-data/tile-standard/game-storage-after.png. 원본PNG27/28/사용자txt SHA 불변, 기존 문서꼬리/asset-inbox/ZIP 보존·백업 제외.
-- 변경 파일/원리/검사 상세 docs/PLAYER_IMPROVEMENTS_NOTES.md. 코드/UI/테스트54경로와 이 작업 문서 접두 구간만 선별 백업 예정. 기존 origin 공개main은 사용자의 기존 Push 허용에 따라 사용, 공개설정 불변. 원격시작main=85b7bf1 확인. 아직 이번 커밋/Push 안함.
-- 다음: staged 실제diff/민감정보 점검→선별커밋/일반Push→원격SHA확인 후 완료기록. localhost3000 유지. 실기기 정밀QA 및 온라인Undo 기존 미지원은 범위 밖.
+- 변경 파일/원리/검사 상세 docs/PLAYER_IMPROVEMENTS_NOTES.md. 코드/UI/테스트54경로와 이 작업 문서 접두 구간만 선별 백업. 기존 origin 공개main은 사용자의 기존 Push 허용에 따라 사용, 공개설정 불변. 원격시작main=85b7bf1 확인. 이번56경로 661be175ec404c5c6f25f4cb9fb0af7f3be91b42 Commit/일반Push 후 원격main 전체SHA 일치 확인.
+- 완료: 실제 staged diff/민감정보 패턴0/원본SHA/문서꼬리 제외 확인 후 백업 완료. 이 원격검증 완료 기록은 별도 문서 커밋으로 보존한다. 다음은 사용자 결과 보고. localhost3000 유지. 실기기 정밀QA 및 온라인Undo 기존 미지원은 범위 밖.
 
 ---
 # 최신 체크포인트 — 통합 타일 설명 시스템 (2026-10-21)

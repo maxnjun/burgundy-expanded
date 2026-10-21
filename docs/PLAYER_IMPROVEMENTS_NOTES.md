@@ -86,3 +86,7 @@
 - `tests/browser/player-inventory-zoom.spec.ts`
 - `tests/core/player-improvements.test.ts`
 - 이 문서와 `docs/PROGRESS.md`, `docs/TODO.md`의 이번 작업 접두 기록.
+
+## 백업 완료
+
+검증된56경로만 `661be175ec404c5c6f25f4cb9fb0af7f3be91b42`로 커밋하고 기존 origin/main에 일반 Push했다. 원격 main 전체 SHA 일치를 확인했다. 원본 해시 불변, 기존 문서 꼬리와 원본/미커밋 자료는 제외했다. 이 완료 기록은 별도 문서 커밋으로 보존한다.
