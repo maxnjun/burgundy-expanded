@@ -96,3 +96,8 @@
 .shield-action-tools:empty,.shield-rule-tools:empty{display:none}
 .shield-action-tools p{font-size:12px;margin:8px 0}
 @media(max-width:700px){.direct-toolbar .turn-controls{width:100%;justify-content:flex-end}.turn-controls button{flex:1}.direct-toolbar .turn-controls button{padding:6px 8px}}
+
+.turn-end-dialog{margin:auto;width:min(420px,calc(100vw - 32px));padding:22px;border:2px solid #ab8847;border-radius:8px;background:#fff3d8;color:#4a3420;box-shadow:0 12px 48px #30261966}
+.turn-end-dialog::backdrop{background:#30261980}
+.turn-end-dialog p{margin:0 0 20px;line-height:1.6;font-weight:600}
+.turn-end-dialog .turn-controls{justify-content:flex-end}

@@ -22,13 +22,19 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
       await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
       await expect(page.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(i+1);
     }
-    await page.getByLabel("온라인 행동 종류",{exact:true}).selectOption("end-turn");await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
+    const endPrompt=page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true});await expect(endPrompt).toBeVisible();await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");
+    await endPrompt.getByRole("button",{name:"취소",exact:true}).click();await page.waitForTimeout(1400);await expect(endPrompt).not.toBeVisible();
+    await page.getByLabel("온라인 행동 종류",{exact:true}).selectOption("end-turn");await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();await expect(endPrompt).toBeVisible();
+    let endRequests=0;page.on("request",r=>{if(r.method()==="POST"&&r.url().endsWith("/actions")&&r.postDataJSON()?.action?.type==="end-turn")endRequests++;});
+    await page.screenshot({path:".local-data/manual-turn/online-confirm.png"});await endPrompt.getByRole("button",{name:"턴 종료",exact:true}).evaluate(el=>{(el as HTMLButtonElement).click();(el as HTMLButtonElement).click();});
     await expect(guest.getByLabel("온라인 상태",{exact:true})).toContainText("온라인B의 차례");
+    expect(endRequests).toBe(1);
     await guest.reload();await expect(guest.getByRole("button",{name:"온라인 행동 실행",exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toHaveCount(0);
     const auth=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));
     const response=await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}});expect(response.status()).toBe(200);
     const publicState=await response.json();expect(publicState.random).toBeUndefined();expect(publicState.supplyPools).toBeUndefined();
+    const stale=await page.request.post(`${isolated.url}/api/rooms/${code}/actions`,{headers:{Authorization:`Bearer ${auth.token}`},data:{revision:publicState.revision-1,action:{type:"end-turn",playerId:"seat-1"}}});expect(stale.status()).toBe(409);const unchanged=await(await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}})).json();expect(unchanged.revision).toBe(publicState.revision);
     const forged=await page.request.post(`${isolated.url}/api/rooms/${code}/actions`,{headers:{Authorization:`Bearer ${auth.token}`},data:{revision:publicState.revision,action:{type:"end-turn",playerId:"seat-2"}}});expect(forged.status()).toBe(403);
     const unauthorized=await page.request.get(`${isolated.url}/api/rooms/${code}`);expect(unauthorized.status()).toBe(401);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

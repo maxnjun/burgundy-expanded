@@ -18,6 +18,7 @@ test("mounted shield stays on its physical castle through touch, zoom, pan and r
  const slot=await selectShield(page,info);const empty=g.players[0].duchy.cells.find(c=>c.tileId&&g.tiles[c.tileId].type==="castle"&&c.tileId!==tile)!;
  const target=page.getByRole("button",{name:new RegExp(`^규칙A ${empty.id} .*배치 가능`)});await press(target,info);
  await expect(page.locator(`[data-shield-slot="${slot}"]`)).toHaveAttribute("data-empty","true");await expect(page.locator("[data-mounted-shield]")).toHaveCount(2);
+ const endPrompt=page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true});await expect(endPrompt).toBeVisible();await endPrompt.getByRole("button",{name:"취소",exact:true}).click();
  const before=(await overlay.boundingBox())!;await page.getByRole("button",{name:"규칙A 영지 확대",exact:true}).click();expect((await overlay.boundingBox())!.width).toBeGreaterThan(before.width);
  const board=page.getByRole("group",{name:"규칙A 영지",exact:true});await board.scrollIntoViewIfNeeded();const bounds=(await board.boundingBox())!;await page.mouse.move(bounds.x+80,bounds.y+80);await page.mouse.down();await page.mouse.move(bounds.x+110,bounds.y+100,{steps:5});await page.mouse.up();
  const next=await current(page);expect(shieldLayout(next)!.mounted).toHaveLength(2);await page.reload();await expect(page.locator("[data-mounted-shield]")).toHaveCount(2);await expect(overlay).toHaveAttribute("data-castle-tile",tile);

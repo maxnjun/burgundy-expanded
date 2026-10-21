@@ -112,7 +112,7 @@ test("three and four player local practice seats each finish a round",async({pag
     await expect(page.getByRole("button",{name:/^행동 주사위 1 눈/})).toBeEnabled();
     for(let seat=0;seat<count;seat++){
       for(let die=0;die<2;die++){await page.getByRole("button",{name:new RegExp(`^행동 주사위 ${die+1} 눈`)}).click();await page.getByLabel("일꾼 자원",{exact:true}).click();}
-      const next=page.getByRole("button",{name:"턴 종료",exact:true});if(await next.isEnabled())await next.click();
+      const endPrompt=page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true});await expect(endPrompt).toBeVisible();await endPrompt.getByRole("button",{name:"턴 종료",exact:true}).click();
       await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.turn.activePlayerId)).not.toBe(`seat-${seat+1}`);
 
     }
