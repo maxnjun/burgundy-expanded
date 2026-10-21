@@ -1,3 +1,4 @@
+import {clickChoice} from "../fixtures/direct-choice";
 import { test, expect, type Page, type Locator, type TestInfo } from "@playwright/test";
 import { setup, mount, placed } from "../fixtures/shields";
 import { serializeSavedGame } from "../../src/game/save";
@@ -38,5 +39,5 @@ test("occupied castle replacement requires confirmation and cancellation spends 
 test("castle11 free replacement also waits for confirmation before acquiring",async({page})=>{
  let g=placed(mount(setup(),11),0,{type:"castle",back:"matching-color"});const id=g.players[0].duchy.cells.filter(c=>c.tileId&&g.tiles[c.tileId].type==="castle").at(-1)!.tileId!;g=prepareTileEffect(g,"seat-1",id);await load(page,g);
  const option=g.turn.pendingChoice!.options.find(o=>(o.payload as {shield?:{replaceShieldNumber:number|null}}|null)?.shield?.replaceShieldNumber===11)!;
- await page.getByLabel("타일 효과 선택",{exact:true}).getByRole("button",{name:option.label,exact:true}).click();await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toBeVisible();expect((await current(page)).revision).toBe(g.revision);await page.getByRole("button",{name:"교체 확정",exact:true}).click();await expect(page.locator('[data-mounted-shield="11"]')).toHaveCount(0);const next=await current(page);expect(shieldLayout(next)!.removed).toContain(11);expect(next.players[0].workers).toBe(g.players[0].workers);expect(next.dice).toEqual(g.dice);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
+ await clickChoice(page,g,option);await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toBeVisible();expect((await current(page)).revision).toBe(g.revision);await page.getByRole("button",{name:"교체 확정",exact:true}).click();await expect(page.locator('[data-mounted-shield="11"]')).toHaveCount(0);const next=await current(page);expect(shieldLayout(next)!.removed).toContain(11);expect(next.players[0].workers).toBe(g.players[0].workers);expect(next.dice).toEqual(g.dice);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
 });

@@ -1,3 +1,4 @@
+import {clickChoice} from "../fixtures/direct-choice";
 import {test,expect,type Page} from "@playwright/test";
 import {createPracticeSession} from "../../src/game/practice";
 import {serializeSavedGame} from "../../src/game/save";
@@ -43,8 +44,8 @@ test("insufficient silver: no purchase hint; reload preserves completed turn and
 test("mandatory castle choice overrides completed dice until resolved",async({page})=>{
  let game=placed(setup(),0,{type:"castle",back:"matching-color"});game={...game,dice:{...game.dice,players:{...game.dice.players,"seat-1":[{...game.dice.players["seat-1"][0],used:true},{...game.dice.players["seat-1"][1],used:true}]}}};
  const tileId=game.players[0].duchy.cells.filter(c=>c.tileId&&game.tiles[c.tileId].type==="castle").at(-1)!.tileId!;game=prepareTileEffect(game,"seat-1",tileId);const choice=game.turn.pendingChoice!;expect(choice).toBeTruthy();const option=choice.options.find(o=>(o.payload as {intent?:ActionIntent})?.intent?.kind==="take-workers")!;expect(option).toBeTruthy();
- await load(page,game);await expect(page.getByLabel("타일 효과 선택",{exact:true})).toBeVisible();await page.clock.runFor(1000);await expect(guidance(page)).toHaveText('성의 추가 행동을 선택하세요.');await expect(page.getByRole('button',{name:'턴 종료',exact:true})).toBeDisabled();expect((await current(page)).turn.activePlayerId).toBe("seat-1");
- await page.getByLabel("타일 효과 선택",{exact:true}).getByRole("button",{name:option.label,exact:true}).click();await expect(guidance(page)).toContainText('턴을 종료하시겠습니까?');await expect(prompt(page)).toHaveCount(0);expect((await current(page)).turn.pendingChoice).toBeNull();expect((await current(page)).turn.activePlayerId).toBe("seat-1");await page.screenshot({path:`.local-data/action-guidance/${test.info().project.name}-mandatory-resolved.png`});
+ await load(page,game);await expect(page.locator(".choice-panel button")).toHaveCount(0);await page.clock.runFor(1000);await expect(guidance(page)).toHaveText('추가 주사위 행동을 선택하세요.');await expect(page.getByRole('button',{name:'턴 종료',exact:true})).toBeDisabled();expect((await current(page)).turn.activePlayerId).toBe("seat-1");
+ await clickChoice(page,game,option);await expect(guidance(page)).toContainText('턴을 종료하시겠습니까?');await expect(prompt(page)).toHaveCount(0);expect((await current(page)).turn.pendingChoice).toBeNull();expect((await current(page)).turn.activePlayerId).toBe("seat-1");await page.screenshot({path:`.local-data/action-guidance/${test.info().project.name}-mandatory-resolved.png`});
 });
 
 test('central guidance remains readable at PC 100/160/200 and mobile widths',async({page})=>{

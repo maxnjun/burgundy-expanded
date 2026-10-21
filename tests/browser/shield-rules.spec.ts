@@ -1,3 +1,4 @@
+import {clickChoice} from "../fixtures/direct-choice";
 import { test, expect, type Page } from "@playwright/test";
 import { setup, mount, boundary } from "../fixtures/shields";
 import { serializeSavedGame } from "../../src/game/save";
@@ -20,7 +21,7 @@ test("actual shield UI completes all 25 rounds, phase choices and final score",a
   for(let n=0;n<550;n++){
     const g=await current(page);if(g.status==="finished"){done=true;break;}
     const actor=g.turn.activePlayerId??orderedPlayers(g)[0];
-    if(g.turn.pendingChoice){await expect(page.getByRole("button",{name:"턴 종료",exact:true})).toBeDisabled();const options=g.turn.pendingChoice.options;const option=options.find(o=>o.id.includes(":silver"))??options.find(o=>{const p=o.payload as {tileId?:string}|null;return p?.tileId&&["mine","livestock","monastery"].includes(g.tiles[p.tileId]?.type);})??options.find(o=>o.id==="skip"||o.id==="shield5:skip")??options[0];await page.getByLabel("타일 효과 선택",{exact:true}).getByRole("button",{name:option.label,exact:true}).first().click();}
+    if(g.turn.pendingChoice){await expect(page.getByRole("button",{name:"턴 종료",exact:true})).toBeDisabled();const options=g.turn.pendingChoice.options;const option=options.find(o=>o.id.includes(":silver"))??options.find(o=>{const p=o.payload as {tileId?:string}|null;return p?.tileId&&["mine","livestock","monastery"].includes(g.tiles[p.tileId]?.type);})??options.find(o=>o.id==="skip"||o.id==="shield5:skip")??options[0];await clickChoice(page,g,option);}
     else {const options=listCoreActionOptions(g,actor);expect(options.ok).toBe(true);if(!options.ok)throw new Error("legal options");if(automaticAction(g,options.value.actions)){await expect.poll(async()=>{await page.clock.runFor(400);return (await current(page)).revision;}).toBeGreaterThan(g.revision);continue;}const action=options.value.actions.find(a=>a.type==="roll-round"||a.type==="advance-phase")??options.value.actions.find(a=>a.type==="use-die"&&a.intent.kind==="take-workers")??options.value.actions.find(a=>a.type==="end-turn");if(!action)throw new Error("No UI progression action");
       if(action.type==="roll-round")await page.getByRole("button",{name:"공용 보드 주사위 굴리기",exact:true}).click();
       else if(action.type==="advance-phase")await page.getByRole("button",{name:g.turn.phase==="E"?"E단계 수입 · 최종 정산":"단계 수입 · 다음 단계 준비",exact:true}).click();

@@ -1,4 +1,5 @@
 import {validVineyards} from "../vineyards";
+import {validCastleActions} from "../castle-actions";
 import {validCustomTrade} from "../custom-trade-routes";
 import { validInns } from "../inns";
 import { validFortressScores } from "./fortress-lines";
@@ -54,6 +55,7 @@ export function validateCoreState(state: GameState): ValidationResult {
     if (state.turn.stage === "round-setup" && (state.status !== "playing" || state.turn.activePlayerId !== null ||
       state.turn.actedPlayerIds.length || state.dice.rolledForRound || state.dice.roundGoodsDistributed)) issue("Inconsistent round setup");
     if(!validVineyards(state))issue("Invalid vineyard conservation, reservations or effects");
+    if(!validCastleActions(state))issue("Invalid deferred castle actions");
     if(!validCustomTrade(state))issue("Invalid custom trade routes or pending reward");
     if (!validInns(state)) issue("Invalid inn supply or duplicate inn in region");
     if (!validFortressScores(state)) issue("Inconsistent fortress line scores");

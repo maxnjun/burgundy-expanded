@@ -1,4 +1,5 @@
 import type { GameAction, GameState } from './types';
+import {isCastleAction} from './castle-actions';
 
 export interface TurnSnapshot { readonly game:GameState;readonly logs:readonly string[] }
 export interface TurnHistory {readonly key:string|null;readonly start:TurnSnapshot|null;readonly past:readonly TurnSnapshot[]}
@@ -17,11 +18,11 @@ export function recordTurnAction(history:TurnHistory,before:GameState,after:Game
  if(key!==next||action.type==='end-turn')return beginHistory(after,nextLogs,true);
  if(!key||action.playerId!==before.turn.activePlayerId)return beginHistory(after,nextLogs);
  const current=history.key===key?history:beginHistory(before,logs);
- if(before.turn.pendingChoice||before.turn.pendingEffects.length)return current;
+ if((before.turn.pendingChoice||before.turn.pendingEffects.length)&&!isCastleAction(before))return current;
  return {...current,past:[...current.past,snapshot(before,logs)]};
 }
 export function canUndoTurn(history:TurnHistory,game:GameState,kind:'turn'|'action'):boolean{
- return !!history.key&&history.key===turnKey(game)&&history.past.length>0&&!game.turn.pendingChoice&&!game.turn.pendingEffects.length&&(kind==='action'||!!history.start);
+ return !!history.key&&history.key===turnKey(game)&&history.past.length>0&&(kind==='action'||!!history.start);
 }
 export function undoTurn(history:TurnHistory,game:GameState,kind:'turn'|'action'): {snapshot:TurnSnapshot;history:TurnHistory}|null{
  if(!canUndoTurn(history,game,kind))return null;

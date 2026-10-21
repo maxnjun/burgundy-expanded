@@ -1,5 +1,6 @@
 "use client";
 
+import {GoodsSpace,type GoodsOption} from "./goods-space";
 import { ResourceGlyph } from "./resource-icon";
 import { InnStack } from "./inn-stack";
 import { shieldLayout } from "../game/shields";
@@ -50,14 +51,15 @@ function Die({x,y,value}: {x:number;y:number;value:number|null}) {
   return <g aria-hidden="true"><rect x={x-14} y={y-14} width="28" height="28" rx="5" fill="#fffbea" stroke="#a99c78"/>{value ? pips[value].map(([dx,dy],i)=><circle key={i} cx={x+dx} cy={y+dy} r="2.5" fill="#494735"/>) : <text x={x} y={y+4} textAnchor="middle">—</text>}</g>;
 }
 
-export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,actionFor,shieldSelection,showCosts}: {
+export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,actionFor,shieldSelection,showCosts,goodsOptions,onGoods,onGoodsSelecting}: {
   game:GameState;selectedTileId:string|null;onSelect:(id:string)=>void;titleFor:(id:string)=>string;
   zoom:number;onZoom:(zoom:number)=>void;showCosts:boolean;actionFor:(id:string)=>GameAction|null;
+  goodsOptions?:(depot:number)=>readonly GoodsOption[];onGoods?:(a:GameAction)=>void;onGoodsSelecting?:()=>void;
   shieldSelection?: {slotId:string|null;onSelect:(id:string)=>void;cost:(id:string)=>GameAction|null};
 
 }) {
-  const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
-    <title>{`${label}${game.tiles[id].back==="black" ? " · 검은 뒷면" : ""}`}</title>
+  const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} data-tile-id={id} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
+    <title>{`${label}${!actionFor(id)?game.turn.pendingChoice?" · 현재 효과에서 선택할 수 없는 타일입니다.":" · 주사위 선택, 일꾼 및 보관 공간을 확인하세요.":" · 클릭하면 획득합니다."}${game.tiles[id].back==="black" ? " · 검은 뒷면" : ""}`}</title>
     <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
     <TileArt tile={game.tiles[id]} x={x-width/2} y={y-width/Math.sqrt(3)} width={width} height={width*2/Math.sqrt(3)}/>
     <polygon data-supply-hit="true" points={hex(x,y,width)} fill="transparent"/>
@@ -94,13 +96,8 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
       {game.players.map((p,i)=><g key={p.id}><circle cx={570+(i%2)*165} cy={137+Math.floor(i/2)*35} r="5" fill={colors[p.color??(["blue","red","green","yellow"] as const)[p.seat]]}/><text x={585+(i%2)*165} y={141+Math.floor(i/2)*35} fontSize="11" fill={p.id===game.turn.activePlayerId ? "#a53f30" : "#575742"}>{p.name.slice(0,8)}{p.id===game.turn.activePlayerId ? " ◀" : ""}</text></g>)}
       <g><Die x={60} y={265} value={game.dice.whiteDie}/><text x="83" y="269" className="common-small">흰 주사위</text></g>
       {game.market.numberedDepots.map(depot=>{const [baseX,y]=depotCenters[depot.number-1];const x=baseX;return <g key={depot.number} data-depot={depot.number} aria-label={`${depot.number}번 공급처 상품 ${depot.goods.length}개`}>
-        <rect data-goods-space={depot.number} x={x-46} y={y-46} width="92" height="92" rx="2" fill="#fcf6df" stroke="#bbad7f" strokeWidth="1"/>
-
+        <GoodsSpace key={`${game.revision}:${game.turn.pendingChoice?.id}`} number={depot.number} goods={depot.goods} x={x} y={y} options={goodsOptions?.(depot.number)} onAction={onGoods} onSelecting={onGoodsSelecting}/>
         <Die x={x+(depot.number===2||depot.number===3?46:depot.number===5||depot.number===6?-46:0)} y={y+(depot.number===1||depot.number===4?-46:0)} value={depot.number}/>
-        {depot.goods.slice(0,4).map((g,i)=><GoodsArt key={g.id} value={g.type} x={x-29+(i%2)*30} y={y-19+Math.floor(i/2)*29} width="27" height="27"/>)}
-        {depot.goods.length>4 && <text x={x+27} y={y+38} textAnchor="end" fontSize="9" fill="#775b3b">{`+${depot.goods.length-4}`}</text>}
-        {depot.goods.length===0 && <text x={x} y={y+6} textAnchor="middle" className="common-small" fill="#a29876">상품</text>}
-        <text x={x} y={y+39} textAnchor="middle" className="common-small">상품 {depot.goods.length}개</text>
         {depot.slots.map((slot,i)=>{const [tx,ty]=slotCenter(depot.number,i,depot.slots.length);return slot.tileId ? selected(slot.tileId,tx,ty,tileWidth,`${depot.number}번 공급처 ${titleFor(slot.tileId)}`) : <g key={slot.id}><polygon points={hex(tx,ty,tileWidth)} fill={terrainPaint[slot.requiredType]} fillOpacity=".45" stroke="#b4ac85" strokeDasharray="3 3"/><title>{`${terrainNames[slot.requiredType]} 빈 공급 칸`}</title></g>;})}
       </g>;})}
       <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>

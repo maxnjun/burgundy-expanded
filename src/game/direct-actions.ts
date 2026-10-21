@@ -2,6 +2,20 @@ import { listCoreActionOptions, validateCoreAction } from "./core/engine";
 import { orderedPlayers } from "./core/state";
 import { shieldLayout, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAction } from "./shields";
 import type { ActionIntent, GameAction, GameState } from "./types";
+import {isCastleAction} from './castle-actions';
+
+export interface BoardTarget {intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}
+/** Public click targets are projections of canonical engine options, never executable UI payloads. */
+export function boardTarget(game:GameState,action:GameAction):BoardTarget {
+ if(action.type==='use-die')return {intent:action.intent};
+ if(action.type!=='resolve-choice')return {};
+ const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield']}|null;
+ return {intent:p?.intent,shield:p?.shield,...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
+}
+export function directBoardAction(game:GameState,actions:readonly GameAction[],dieId:string|undefined,match:(intent:ActionIntent)=>boolean):GameAction|null {
+ if(dieId&&(!game.turn.pendingChoice||isCastleAction(game)))return cheapestDieAction(actions,dieId,match);
+ return actions.filter(a=>a.type==='resolve-choice'&&!!boardTarget(game,a).intent&&match(boardTarget(game,a).intent!)).sort((a,b)=>directCost(game,a)-directCost(game,b))[0]??null;
+}
 
 export type DieAction = Extract<GameAction,{type:"use-die"}>;
 /** Only engine-validated actions; selection and preview never mutate state. */
@@ -19,6 +33,7 @@ export function directShieldActions(game:GameState,playerId:string,slotId:string
 }
 export function directCost(game:GameState,action:GameAction):number{
  if(action.type==="use-die")return action.adjustment.workersSpent;
+ if(action.type==='resolve-choice')return (game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {adjustment?:{workersSpent:number}}|null)?.adjustment?.workersSpent??0;
  if(action.type==="use-monastery-six")return 2;
  if(action.type==="extension"&&action.extensionId==="shields"&&["acquire","acquire-preview"].includes(action.command))return (action as ShieldAcquireAction).payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
  return 0;

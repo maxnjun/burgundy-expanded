@@ -120,6 +120,7 @@ export interface PendingEffect {
   readonly payload: JsonValue;
 }
 export interface TurnState {
+  readonly castleActions?: readonly PendingEffect[];
   readonly phase: Phase;
   readonly round: RoundNumber;
   readonly stage: "setup" | "phase-setup" | "round-setup" | "player-turn" | "resolve-effect" | "phase-end" | "final-scoring" | "finished";

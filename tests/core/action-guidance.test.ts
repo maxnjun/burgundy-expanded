@@ -36,7 +36,7 @@ test('guidance follows legal actions, purchase availability, UI selection and co
 });
 
 test('all selectable tile benefits override end guidance; white castle and contextual rewards stay specific',()=>{
- const messages:Partial<Record<BuildingType|string,RegExp>>={castle:/성의 추가 행동/,market:/선박 또는 동물/,'carpenters-workshop':/건물 타일/,church:/성·광산·수도원/,warehouse:/판매할 상품/,'town-hall':/추가로 배치/,crane:/복사할 건물/,ship:/상품을 가져올 공급처/};
+ const messages:Partial<Record<BuildingType|string,RegExp>>={castle:/추가 행동 또는 주사위/,market:/선박 또는 동물/,'carpenters-workshop':/건물 타일/,church:/성·광산·수도원/,warehouse:/판매할 상품/,'town-hall':/추가로 배치/,crane:/복사할 건물/,ship:/공용보드에서 상품 보관함/};
  for(const [kind,message] of Object.entries(messages)){
   const tile=kind==='castle'||kind==='ship'?{type:kind as 'castle'|'ship',back:'matching-color' as const}:{type:'building' as const,building:kind as BuildingType,back:'matching-color' as const};
   const g=placed(setup(),0,tile),id=Object.keys(g.tiles).find(k=>k.startsWith('shield-fixture:'))!,pending=prepareTileEffect(g,'seat-1',id);

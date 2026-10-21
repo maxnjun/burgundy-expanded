@@ -1,4 +1,5 @@
 import {vineIntents,vineTakeIssue,vineValues,executeVine,keyOccupant,discardStored} from "../vineyards";
+import {isCastleAction,suspendCastleAction} from "../castle-actions";
 import {resumeVineyards,vineStoreIntents} from "./vineyard-effects";
 import {intentIssue} from "./intents";
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
@@ -10,7 +11,7 @@ import { monasteryNumbers, orderedPlayers, validateCoreState } from "./state";
 import {advanceCustomTrade} from "./trade-effects";
 import { placementIssue } from "./placement";
 import { advancePhase } from "./phases";
-import { prepareTileEffect, resolveTileChoice, validPendingChoice, refreshPendingChoice } from "./effects";
+import { prepareTileEffect, resolveTileChoice, validPendingChoice, refreshPendingChoice, resumeCastleAction } from "./effects";
 import { executeIntent, destinationIssue as tileDestination } from "./intents";
 import { adjustmentValid, planAdjustment } from "./modifiers";
 
@@ -27,6 +28,10 @@ export function adjustedDie(value: DieValue, steps: readonly (1 | -1)[]): DieVal
 
 function actionIssue(state: GameState, action: GameAction, pendingValid?: boolean): EngineResult<never> | null {
   if (state.status !== "playing") return failure("illegal-action", "Game is not playing");
+  if(action.type==="use-die"&&isCastleAction(state)){
+    if(!(pendingValid??validPendingChoice(state)))return failure("unresolved-rule","Invalid castle action");
+    state=suspendCastleAction(state);
+  }
   if (action.type === "buy-workers") {
     const owner=state.players.find(p=>p.id===action.playerId);
     return owner && owner.silver>=1 && monasteryNumbers(state,owner).includes(28) ? null : failure("illegal-action","Monastery28 requires one silver");
@@ -53,6 +58,7 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
   }
   if (state.turn.stage !== "player-turn" || state.turn.activePlayerId !== action.playerId) return failure("illegal-action", "Not this player's turn");
   if (action.type === "end-turn") {
+    if(state.turn.castleActions?.length)return failure("unresolved-rule","Use the remaining castle actions first");
     if (state.dice.players[player.id].some(d => !d.used)) return failure("illegal-action", "Both dice actions must be resolved before ending the turn");
     return null;
   }
@@ -144,7 +150,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   const validation = validateCoreAction(state, action);
   if (!validation.valid) return { ok: false, issues: validation.issues };
   if (action.type === "advance-phase") return advancePhase(state, action.playerId);
-  let draft = structuredClone(state) as Draft;
+  let draft = structuredClone(action.type==="use-die"?suspendCastleAction(state):state) as Draft;
   let player = draft.players.find(p => p.id === action.playerId)!;
   let pages = [6];
   let payload: JsonValue = { actionType: action.type };
@@ -212,7 +218,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
         cellId: action.intent.kind === "place-tile" ? action.intent.cellId : null,
         discardedTileId: action.intent.kind === "take-tile" ? action.intent.discardTileId ?? null : null };
     }
-    draft=structuredClone(resumeVineyards(settleShieldState(draft))) as Draft;
+    draft=structuredClone(resumeCastleAction(resumeVineyards(settleShieldState(draft)))) as Draft;
     draft.revision++;
     const valid = validateCoreState(draft);
     if (!valid.valid) return { ok: false, issues: valid.issues };

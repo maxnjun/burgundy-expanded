@@ -1,3 +1,4 @@
+import {isCastleAction} from "../../src/game/castle-actions";
 import {createPracticeSession} from '../../src/game/practice';
 import {chooseComputerAction} from '../../src/game/computer';
 import {test} from 'node:test';
@@ -29,9 +30,9 @@ test('shield acquisition, spent dice and all mounted effects restore atomically'
  const g=setup(),a=directShieldActions(g,'seat-1',(g.extensionStates.shields as unknown as {slots:{id:string}[]}).slots[0].id)[0];assert.ok(a);
  const next=step(g,a),h=recordTurnAction(beginHistory(g,[],true),g,next,a,[],['shield']);assert.deepEqual(undoTurn(h,next,'turn')!.snapshot.game,g);
 });
-test('white castle bonus chain is one completed undo unit and pending choices block undo/end',()=>{
+test('white castle bonus chain is one completed undo unit and pending chains undo atomically and block end',()=>{
  const g=whiteFixture(),a:GameAction={type:'use-die',playerId:'p1',dieId:'p1:a',adjustment:{workersSpent:0,steps:[]},intent:{kind:'place-tile',tileId:'white',cellId:'target'}};
- const pending=step(g,a),h=recordTurnAction(beginHistory(g,[],true),g,pending,a,[],[]);assert.ok(pending.turn.pendingChoice);assert.equal(undoTurn(h,pending,'action'),null);
+ const pending=step(g,a),h=recordTurnAction(beginHistory(g,[],true),g,pending,a,[],[]);assert.ok(pending.turn.pendingChoice);assert.deepEqual(undoTurn(h,pending,'action')!.snapshot.game,g);
  assert.equal(applyCoreAction(pending,{type:'end-turn',playerId:'p1'}).ok,false);
  const child=choice(pending,p=>p.intent?.kind==='take-workers'),done=step(pending,child),finished=recordTurnAction(h,pending,done,child,[],[]);
  assert.equal(finished.past.length,1);assert.deepEqual(undoTurn(finished,done,'action')!.snapshot.game,g);
@@ -48,7 +49,7 @@ test('all extensions AI25 rounds: every settled action and turn restores its com
  let game=createPracticeSession({names:['A','B'],seed:'shield-ai-2',officialSlots:true,fullEffects:true,shieldRules:true,vineyards:true,tradeRoutes:true,inns:true,whiteCastles:true,additionalHexes:true,boardIds:['se:base:2','se:base:2']});
  let history=beginHistory(game,[],true),root=game,start=game,n=0,checks=0;
  while(game.status!=='finished'){
-  assert.ok(++n<1400);const a=chooseComputerAction(game);assert.ok(a.ok);if(!game.turn.pendingChoice&&!game.turn.pendingEffects.length)root=game;
+  assert.ok(++n<1400);const a=chooseComputerAction(game);assert.ok(a.ok);if(!game.turn.pendingChoice&&!game.turn.pendingEffects.length||isCastleAction(game))root=game;
   const next=step(game,a.value);history=recordTurnAction(history,game,next,a.value,[],[]);
   if(turnKey(game)!==turnKey(next))start=next;
   if(canUndoTurn(history,next,'action')){assert.deepEqual(undoTurn(history,next,'action')!.snapshot.game,root);checks++;}

@@ -107,3 +107,8 @@
 @media(max-width:600px){.direct-toolbar{grid-template-columns:minmax(0,1fr)}.direct-toolbar .turn-controls{width:100%;justify-self:stretch}.direct-resources{justify-content:center}.action-guidance{font-size:18px}}
 
 .online-controls .action-guidance{flex-basis:100%;order:-1}
+
+.goods-type-selectable:hover > rect,.goods-type-selectable:focus-visible > rect{stroke:#874f1d;stroke-width:2}
+.goods-space [role="button"]:focus-visible{outline:2px solid #89552c;outline-offset:2px}
+.online-direct-resources{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.online-direct-resources button[aria-pressed="true"]{outline:3px solid #b69243}

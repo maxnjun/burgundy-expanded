@@ -156,3 +156,9 @@ export function refreshPendingChoice(state: GameState): GameState {
         return { ...state, turn: { ...state.turn, pendingChoice: { ...state.turn.pendingChoice, options: immediateOptions(state, state.players.find(p => p.id === effect.playerId)!, payload.kind,!!(effect.payload as {tradeSlotId?:string})?.tradeSlotId) } } };
     return refreshShipChoice(state);
 }
+/** Rebuild choices from the current board, never from stale stored options. */
+export function resumeCastleAction(state:GameState):GameState {
+    if(state.turn.pendingChoice||state.turn.pendingEffects.length||!state.turn.castleActions?.length)return state;
+    const [effect,...remaining]=state.turn.castleActions;
+    return {...state,turn:{...state.turn,castleActions:remaining,pendingEffects:[effect],pendingChoice:{id:effect.id,playerId:effect.playerId,source:effect.source,options:immediateOptions(state,state.players.find(p=>p.id===effect.playerId)!,"castle")}}};
+}

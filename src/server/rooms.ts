@@ -1,3 +1,5 @@
+import {boardTarget,type BoardTarget} from "../game/direct-actions";
+import {isCastleAction} from "../game/castle-actions";
 import {actionGuidance} from "../game/action-guidance";
 import { LIVESTOCK_NAMES } from "../game/tile-help";
 import {GRAPES,type Grape} from "../game/vineyards";
@@ -25,7 +27,7 @@ export interface RoomView {
   guidance:string;id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
   depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];inns?:GameState["market"]["inns"];dice:GameState["dice"];
-  actions:readonly {action:GameAction;label:string;group:string}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
+  castleAction:boolean;actions:readonly {action:GameAction;label:string;group:string;target:BoardTarget}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
 }
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
 const name=(value:unknown)=>typeof value==="string"&&value.trim().length>0&&value.trim().length<=30 ? value.trim() : (()=>{throw new RoomError(400,"이름은1~30자로 입력하세요.");})();
@@ -126,10 +128,10 @@ export class RoomStore {
     for(const id of [...s.market.blackDepot,...(s.market.inns?.stack??[])])if(id)visible.add(id);
     const ending=checkCoreGameEnd(s);
     const legal=room.tokens[1]&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
-    const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type})) : [];
+    const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    return {guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 

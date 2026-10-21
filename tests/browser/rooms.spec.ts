@@ -18,17 +18,15 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
     await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
     await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");
     for(let i=0;i<2;i++){
-      await page.getByLabel("온라인 행동 종류",{exact:true}).selectOption("take-workers");
-      await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
+      await page.getByLabel("온라인 일꾼 획득",{exact:true}).click();
       await expect(page.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(i+1);
     }
     await expect(page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true})).toHaveCount(0);await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");await expect(page.getByLabel("현재 행동 안내",{exact:true})).toContainText("턴을 종료하시겠습니까?");
-    await page.getByLabel("온라인 행동 종류",{exact:true}).selectOption("end-turn");
     let endRequests=0;page.on("request",r=>{if(r.method()==="POST"&&r.url().endsWith("/actions")&&r.postDataJSON()?.action?.type==="end-turn")endRequests++;});
-    await page.screenshot({path:".local-data/action-guidance/online-immediate.png"});await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).evaluate(el=>{(el as HTMLButtonElement).click();(el as HTMLButtonElement).click();});
+    await page.screenshot({path:".local-data/action-guidance/online-immediate.png"});await page.getByRole("button",{name:"턴 종료",exact:true}).evaluate(el=>{(el as HTMLButtonElement).click();(el as HTMLButtonElement).click();});
     await expect(guest.getByLabel("온라인 상태",{exact:true})).toContainText("온라인B의 차례");
     expect(endRequests).toBe(1);
-    await guest.reload();await expect(guest.getByRole("button",{name:"온라인 행동 실행",exact:true})).toBeVisible();
+    await guest.reload();await expect(guest.getByLabel("온라인 일꾼 획득",{exact:true})).toBeEnabled();
     await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toHaveCount(0);
     const auth=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));
     const response=await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}});expect(response.status()).toBe(200);
