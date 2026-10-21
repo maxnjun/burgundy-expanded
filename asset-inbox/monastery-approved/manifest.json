@@ -1,0 +1,296 @@
+{
+  "zipSha256": "81ad011a09699ef0012fdb697a6f0c7d9e3772e2231cedece6c86a72aba1705e",
+  "count": 29,
+  "assets": [
+    {
+      "number": 1,
+      "zipEntry": "수도원 타일/1번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-01.png",
+      "sourceSha256": "ceaeae0d7758069848e5fb654ead5529b6df15079bc60c6e65dcc885da1deea4",
+      "sourceSize": [
+        1294,
+        1216
+      ]
+    },
+    {
+      "number": 2,
+      "zipEntry": "수도원 타일/2번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-02.png",
+      "sourceSha256": "b13ce487c5fa7767fc721e86f328b34d9a0bb2d28141fe34d29ef7bf7e03426b",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 3,
+      "zipEntry": "수도원 타일/3번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-03.png",
+      "sourceSha256": "20ff08f1efbce55b52852eef60fd329e3ea5bfbcaff329911900b801aaa4bfff",
+      "sourceSize": [
+        1293,
+        1216
+      ]
+    },
+    {
+      "number": 4,
+      "zipEntry": "수도원 타일/4번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-04.png",
+      "sourceSha256": "88420353ef070239d7d4f38068d1bef22cd3f47ba872578f21474f6bfe9ba8b5",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 5,
+      "zipEntry": "수도원 타일/5번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-05.png",
+      "sourceSha256": "f45ed7b795b8136b4930dfb754c2b7fe95e6944e041c9e26e5efa5aecb614303",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 6,
+      "zipEntry": "수도원 타일/6번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-06.png",
+      "sourceSha256": "cc80cb99011d31306aaf38758378593dae977c97f7ddf43d8549106db7ca39d9",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 7,
+      "zipEntry": "수도원 타일/7번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-07.png",
+      "sourceSha256": "aa223d47403bfa2511a58be4d6e0947da62bd56cb204c2dcc844b26e8e9a92ea",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 8,
+      "zipEntry": "수도원 타일/8번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-08.png",
+      "sourceSha256": "760edc2b264acb70ba66a0aab39c1d16e6baa67f42eb999633955dd3bc997ff1",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 9,
+      "zipEntry": "수도원 타일/9번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-09.png",
+      "sourceSha256": "03fd5f6963fbc54b475f0a00c975896c29905eded4554b07520e9813277cec9a",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 10,
+      "zipEntry": "수도원 타일/10번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-10.png",
+      "sourceSha256": "0d91f05fbad2b1ec510181f1053e911ead19ae00c315c460426bd96bfe995962",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 11,
+      "zipEntry": "수도원 타일/11번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-11.png",
+      "sourceSha256": "0f09d054b49d816f7e3f66607d48afcf616e1c6e1ff934bd394d9a3e44b801df",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 12,
+      "zipEntry": "수도원 타일/12번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-12.png",
+      "sourceSha256": "dc2993a73b2cc92f79599a99d81a4d6a4dcbd3e7b1e1372f0ac533f27a33c56f",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 13,
+      "zipEntry": "수도원 타일/13번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-13.png",
+      "sourceSha256": "50d71ba3e0d55c4e1821d50008e634d21612182667d8daaf8d8f1e570dcd1b1f",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 14,
+      "zipEntry": "수도원 타일/14번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-14.png",
+      "sourceSha256": "f6dc3c279dfe2f4989ea7ce0bdf6260cbfd1df37c3c00dec218b175073fbd4fc",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 15,
+      "zipEntry": "수도원 타일/15번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-15.png",
+      "sourceSha256": "0f70bcb9c7ec005541323509e338a544bfc32bf1aa7ceec198631495f0327e8a",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 16,
+      "zipEntry": "수도원 타일/16번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-16.png",
+      "sourceSha256": "dd0cfca0118f9a7ac67fe52415362ed0ca3cdd00005d043f376e8efdd4bbd259",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 17,
+      "zipEntry": "수도원 타일/17번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-17.png",
+      "sourceSha256": "f7b436c69af277a9372cb168892355d70409328992390101e15bfc02945b1b26",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 18,
+      "zipEntry": "수도원 타일/18번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-18.png",
+      "sourceSha256": "14efeadecbfdb69ba83102b1aaac448223222f3a3d9d5040a0c8415e0f9e7841",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 19,
+      "zipEntry": "수도원 타일/19번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-19.png",
+      "sourceSha256": "9f7d01aecbd9369bba7eae4dbba0aaf43f65243659857a37396ab16bf57a65c0",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 20,
+      "zipEntry": "수도원 타일/20번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-20.png",
+      "sourceSha256": "52cef957d107513f5cd168569bed1e5dd002e3723abf9c348d5e561bafd74cb0",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 21,
+      "zipEntry": "수도원 타일/21번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-21.png",
+      "sourceSha256": "42c6dea795b4cfae47d6cb3f57da5d458d4b9b6014a696fc43cf7815dc1d0fad",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 22,
+      "zipEntry": "수도원 타일/22번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-22.png",
+      "sourceSha256": "e9bb2a033f413469a962d7da4073bbcf025c227087a9b6ad0a56cfa53c90158d",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 23,
+      "zipEntry": "수도원 타일/23번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-23.png",
+      "sourceSha256": "2dbd5960ec563108ff3af12bfb747b31718996e802b5c966c82c6a8a0667500e",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 24,
+      "zipEntry": "수도원 타일/24번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-24.png",
+      "sourceSha256": "57a631c6a1518eede6d0dc306e80b0244b53fdc873bdd06a08305ecc73a71200",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 25,
+      "zipEntry": "수도원 타일/25번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-25.png",
+      "sourceSha256": "3c473526d5eafc1114474edeb5ab40ee6f8cc46a9553469c55a87efba31d8a5c",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 26,
+      "zipEntry": "수도원 타일/26번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-26.png",
+      "sourceSha256": "815e0daf8332bf5070f5a236be47db2836c2deaa3e32fd77ac771d020c665f62",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 27,
+      "zipEntry": "수도원 타일/27번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-27.png",
+      "sourceSha256": "4565b96a76dd1a9e2361e8f909fcfe712f38d46ff09d695e133fb7b8fc8cfa35",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 28,
+      "zipEntry": "수도원 타일/28번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-28.png",
+      "sourceSha256": "c8d4592c887cd13905993d523c3d53b8bdf773e2ff5cae9d8bd0a56761b4ffc5",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "number": 29,
+      "zipEntry": "수도원 타일/29번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-29.png",
+      "sourceSha256": "c69772b3e830db95bb479955e444daac504a98c48fb586e22b4a5fcc02e60c99",
+      "sourceSize": [
+        1254,
+        1254
+      ]
+    }
+  ]
+}

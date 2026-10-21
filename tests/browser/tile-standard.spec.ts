@@ -25,8 +25,10 @@ test("every tile face shares viewBox clip inward frame and readable resource siz
  await page.locator('image,img').evaluateAll(async els=>Promise.all(els.map(async el=>{const i=new Image();i.src=el.getAttribute('href')??el.getAttribute('src')!;await i.decode();})));
  const tiles=page.locator('[data-tile-art]');await expect(tiles).toHaveCount(faces.length);
  await expect(tiles.locator('image[data-approved-building]')).toHaveCount(10);
+ await expect(tiles.locator('image[data-approved-monastery]')).toHaveCount(29);
+ await expect(tiles.locator('[data-rim-band]')).toHaveCount(27);
  for(const tile of await tiles.all()){
-  const baked=await tile.getAttribute('data-baked-tile-frame')==='approved-beige';
+  const baked=['approved-beige','approved-monastery'].includes((await tile.getAttribute('data-baked-tile-frame'))??'');
   await expect(tile).toHaveAttribute('viewBox',`0 0 100 ${H}`);
   await expect(tile.locator('[data-tile-frame="common"]')).toHaveCount(baked?0:1);
   await expect(tile.locator('clipPath polygon')).toHaveAttribute('points',tileHexPoints(baked?0:TILE_FRAME_INSET));
@@ -58,7 +60,7 @@ test("actual game keeps estate supply storage and resources aligned without chan
  for(const tile of faces.slice(0,3)){const {id:ignored,...face}=tile;void ignored;game=stash(game,face).g;}
  const saved=serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game,logs:["TEST FIXTURE · shared asset standard"],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.clock.install();await page.addInitScript(value=>localStorage.setItem('burgundy-expanded:local-v1',value),saved);await page.goto('/');
- const board=page.getByRole('group',{name:'규칙A 영지',exact:true});await expect(board.locator('[data-tile-frame="common"]')).toHaveCount(8);await expect(board.locator('image[data-approved-building]')).toHaveCount(2);
+ const board=page.getByRole('group',{name:'규칙A 영지',exact:true});await expect(board.locator('[data-tile-frame="common"]')).toHaveCount(5);await expect(board.locator('image[data-approved-monastery]')).toHaveCount(3);await expect(board.locator('image[data-approved-building]')).toHaveCount(2);
  await expect(page.locator('.direct-toolbar img[data-resource-icon]')).toHaveCount(2);
  // Outer button clipping must not shave off the new shared hex corners.
  for(const tile of await page.locator('.estate-keyspaces [data-tile-art]').all()){

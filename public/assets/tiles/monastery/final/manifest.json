@@ -1,0 +1,1507 @@
+{
+  "canvas": 1024,
+  "geometry": "pointy-regular-hex",
+  "center": [
+    512.0,
+    512.0
+  ],
+  "radius": 512.0,
+  "viewBox": [
+    0,
+    0,
+    100,
+    115.47005383792516
+  ],
+  "imageRect": [
+    -7.735026918962582,
+    0,
+    115.47005383792516,
+    115.47005383792516
+  ],
+  "renderMode": "full-face-approved-baked-border-no-svg-overlay",
+  "count": 29,
+  "zipSha256": "81ad011a09699ef0012fdb697a6f0c7d9e3772e2231cedece6c86a72aba1705e",
+  "registration": "measured-inscribed-hex-isotropic-4px-matte-guard",
+  "protectedInnerFraction": 0.9,
+  "assets": [
+    {
+      "number": 1,
+      "zipEntry": "수도원 타일/1번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-01.png",
+      "sourceSha256": "ceaeae0d7758069848e5fb654ead5529b6df15079bc60c6e65dcc885da1deea4",
+      "sourceSize": [
+        1294,
+        1216
+      ],
+      "file": "monastery-01.png",
+      "outputSha256": "d2b610ec7723a8467c8e84206cfeb08727967ce3e017909fe082fc8325cc9f27",
+      "measuredSourceCenter": [
+        645.5887180471356,
+        601.5565153826423
+      ],
+      "measuredSourceVertices": [
+        [
+          646.3761676946638,
+          96.08137438552852
+        ],
+        [
+          1114.0,
+          369.93309798291403
+        ],
+        [
+          1114.0,
+          834.8778749517618
+        ],
+        [
+          645.0803877419332,
+          1103.9617426850402
+        ],
+        [
+          176.85007053601385,
+          834.4528339065545
+        ],
+        [
+          177.22568231020207,
+          370.0321683840549
+        ]
+      ],
+      "registeredSourceRadius": 498.11352808352507,
+      "isotropicScale": 1.027878126438169,
+      "protectedFraction": 0.9209406047833733,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 2,
+      "zipEntry": "수도원 타일/2번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-02.png",
+      "sourceSha256": "b13ce487c5fa7767fc721e86f328b34d9a0bb2d28141fe34d29ef7bf7e03426b",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-02.png",
+      "outputSha256": "2c5714a9d07a9e92dfc77e8b029bb79a85805201b8f1ac084fb3142327b4712a",
+      "measuredSourceCenter": [
+        625.5178721595936,
+        614.9344982623774
+      ],
+      "measuredSourceVertices": [
+        [
+          627.9135940931649,
+          20.563575597007123
+        ],
+        [
+          1161.5030768765573,
+          337.4300785095011
+        ],
+        [
+          1159.2334058222996,
+          896.6054289691451
+        ],
+        [
+          624.4571561655403,
+          1203.927499846104
+        ],
+        [
+          90.0,
+          895.3864932481969
+        ],
+        [
+          90.0,
+          335.6939134043097
+        ]
+      ],
+      "registeredSourceRadius": 583.4054016525732,
+      "isotropicScale": 0.8776058612924941,
+      "protectedFraction": 0.9434678557014078,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 3,
+      "zipEntry": "수도원 타일/3번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-03.png",
+      "sourceSha256": "20ff08f1efbce55b52852eef60fd329e3ea5bfbcaff329911900b801aaa4bfff",
+      "sourceSize": [
+        1293,
+        1216
+      ],
+      "file": "monastery-03.png",
+      "outputSha256": "8bc1f54b4702e6d78f96bce72598a2792774709259674efac949ff6c29ebbe34",
+      "measuredSourceCenter": [
+        643.6941734967614,
+        604.0055459486917
+      ],
+      "measuredSourceVertices": [
+        [
+          644.6612026490839,
+          77.81279174932897
+        ],
+        [
+          1120.0,
+          361.3353172712546
+        ],
+        [
+          1120.0,
+          849.1496967125134
+        ],
+        [
+          643.5038383314852,
+          1125.6913646387502
+        ],
+        [
+          167.0,
+          850.1151683995821
+        ],
+        [
+          167.0,
+          359.92893692072084
+        ]
+      ],
+      "registeredSourceRadius": 514.1918916148461,
+      "isotropicScale": 0.9957372108533988,
+      "protectedFraction": 0.9341486959908412,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 4,
+      "zipEntry": "수도원 타일/4번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-04.png",
+      "sourceSha256": "88420353ef070239d7d4f38068d1bef22cd3f47ba872578f21474f6bfe9ba8b5",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-04.png",
+      "outputSha256": "fd149454831a078e9f64ea52102b4efef7f151e8fb57f7cb56ee1d515ec184ce",
+      "measuredSourceCenter": [
+        625.1255308590818,
+        615.946230206025
+      ],
+      "measuredSourceVertices": [
+        [
+          627.2464536626642,
+          19.166611272947677
+        ],
+        [
+          1159.7486735372245,
+          338.95298867345207
+        ],
+        [
+          1158.7889881972815,
+          894.7770134901324
+        ],
+        [
+          622.9690697573205,
+          1211.7914825426706
+        ],
+        [
+          91.0,
+          895.1478986259542
+        ],
+        [
+          91.0,
+          335.8413866309927
+        ]
+      ],
+      "registeredSourceRadius": 582.2814673814436,
+      "isotropicScale": 0.8792998381049224,
+      "protectedFraction": 0.9441049224779553,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 5,
+      "zipEntry": "수도원 타일/5번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-05.png",
+      "sourceSha256": "f45ed7b795b8136b4930dfb754c2b7fe95e6944e041c9e26e5efa5aecb614303",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-05.png",
+      "outputSha256": "30f2f00ed257208dd340024c6410fbeb9881663c8e171c33b56a70e2a93e1ce4",
+      "measuredSourceCenter": [
+        625.4654282481372,
+        615.8509035329901
+      ],
+      "measuredSourceVertices": [
+        [
+          627.3970786375414,
+          20.25447948045852
+        ],
+        [
+          1157.0,
+          338.80610101379114
+        ],
+        [
+          1157.0,
+          894.9166624019418
+        ],
+        [
+          625.3954908512817,
+          1210.596798174421
+        ],
+        [
+          93.0,
+          894.8570761008186
+        ],
+        [
+          93.0,
+          335.67430402650916
+        ]
+      ],
+      "registeredSourceRadius": 580.537450532694,
+      "isotropicScale": 0.881941379544412,
+      "protectedFraction": 0.9442118743064589,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 6,
+      "zipEntry": "수도원 타일/6번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-06.png",
+      "sourceSha256": "cc80cb99011d31306aaf38758378593dae977c97f7ddf43d8549106db7ca39d9",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-06.png",
+      "outputSha256": "c86c43f7aad48c346fe951c950bbdee4b64547f6a6790462f5d35139f16d1505",
+      "measuredSourceCenter": [
+        625.0942290130297,
+        615.9690185617161
+      ],
+      "measuredSourceVertices": [
+        [
+          627.7040949048421,
+          19.28810286070907
+        ],
+        [
+          1159.0,
+          340.899903363881
+        ],
+        [
+          1159.0,
+          898.4682019934862
+        ],
+        [
+          622.8612791733358,
+          1204.7879297737452
+        ],
+        [
+          91.0,
+          895.233270036903
+        ],
+        [
+          91.0,
+          337.1367033415724
+        ]
+      ],
+      "registeredSourceRadius": 580.1048873185998,
+      "isotropicScale": 0.882599011303975,
+      "protectedFraction": 0.9406309635769545,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 7,
+      "zipEntry": "수도원 타일/7번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-07.png",
+      "sourceSha256": "aa223d47403bfa2511a58be4d6e0947da62bd56cb204c2dcc844b26e8e9a92ea",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-07.png",
+      "outputSha256": "e2fc6d6456cb01d91d5984fa08fa73e184ce81e61084920841cab5524fc44186",
+      "measuredSourceCenter": [
+        626.4636391621075,
+        610.975753910397
+      ],
+      "measuredSourceVertices": [
+        [
+          628.9044355166427,
+          9.579941606828015
+        ],
+        [
+          1182.0,
+          342.04456738154056
+        ],
+        [
+          1182.0,
+          882.7139364946264
+        ],
+        [
+          625.8773994560024,
+          1208.6443889889204
+        ],
+        [
+          70.0,
+          880.5543389436905
+        ],
+        [
+          70.0,
+          342.31735004677626
+        ]
+      ],
+      "registeredSourceRadius": 586.7142697276088,
+      "isotropicScale": 0.8726564640019817,
+      "protectedFraction": 0.9131045167875261,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 8,
+      "zipEntry": "수도원 타일/8번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-08.png",
+      "sourceSha256": "760edc2b264acb70ba66a0aab39c1d16e6baa67f42eb999633955dd3bc997ff1",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-08.png",
+      "outputSha256": "050337549cfbae50a59449bad2fcca4ec0136438cedf4fd4bd8057095641500b",
+      "measuredSourceCenter": [
+        625.0468252719544,
+        617.4702346448013
+      ],
+      "measuredSourceVertices": [
+        [
+          625.8879778817881,
+          21.528125130282756
+        ],
+        [
+          1159.0345681731753,
+          342.9308157125178
+        ],
+        [
+          1158.8981016976693,
+          896.1939558595348
+        ],
+        [
+          622.7624136438876,
+          1213.6858700992434
+        ],
+        [
+          91.9915794893468,
+          892.5036173977121
+        ],
+        [
+          91.70631074585947,
+          337.97902366951666
+        ]
+      ],
+      "registeredSourceRadius": 579.5616435221415,
+      "isotropicScale": 0.8834263028319949,
+      "protectedFraction": 0.9401905880606414,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 9,
+      "zipEntry": "수도원 타일/9번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-09.png",
+      "sourceSha256": "03fd5f6963fbc54b475f0a00c975896c29905eded4554b07520e9813277cec9a",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-09.png",
+      "outputSha256": "a6a8ff345de444465c42bae3a89cac84a0c281c51cb8ed63252035456a69ab19",
+      "measuredSourceCenter": [
+        626.5542314318845,
+        621.0460021075313
+      ],
+      "measuredSourceVertices": [
+        [
+          627.8354333124422,
+          10.390791575889617
+        ],
+        [
+          1188.0,
+          349.5987883500405
+        ],
+        [
+          1188.0,
+          897.5597971680062
+        ],
+        [
+          627.4899552788652,
+          1224.7889706954902
+        ],
+        [
+          64.0,
+          895.3591977700053
+        ],
+        [
+          64.0,
+          348.5784670857561
+        ]
+      ],
+      "registeredSourceRadius": 592.854533849736,
+      "isotropicScale": 0.8636182583867542,
+      "protectedFraction": 0.912671273942448,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 10,
+      "zipEntry": "수도원 타일/10번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-10.png",
+      "sourceSha256": "0d91f05fbad2b1ec510181f1053e911ead19ae00c315c460426bd96bfe995962",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-10.png",
+      "outputSha256": "8ac0ecb662d17cbc102bcc380e1122b67838c0355b11f9340ab37a84454f6162",
+      "measuredSourceCenter": [
+        626.4507433383791,
+        621.3841347779756
+      ],
+      "measuredSourceVertices": [
+        [
+          627.4034631688619,
+          10.151277133997102
+        ],
+        [
+          1188.0,
+          350.68357840123207
+        ],
+        [
+          1188.0,
+          898.5049742325789
+        ],
+        [
+          627.3009968614128,
+          1224.311548804476
+        ],
+        [
+          64.0,
+          895.3904313082676
+        ],
+        [
+          64.0,
+          349.2629987873021
+        ]
+      ],
+      "registeredSourceRadius": 592.2704263384918,
+      "isotropicScale": 0.8644699739024011,
+      "protectedFraction": 0.9119398297439758,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 11,
+      "zipEntry": "수도원 타일/11번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-11.png",
+      "sourceSha256": "0f09d054b49d816f7e3f66607d48afcf616e1c6e1ff934bd394d9a3e44b801df",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-11.png",
+      "outputSha256": "520c781b24b81f797a8689e261e84cc083958d332b8fc81292c1e74bd4d1e3b0",
+      "measuredSourceCenter": [
+        625.9380079831973,
+        621.8667826140655
+      ],
+      "measuredSourceVertices": [
+        [
+          627.4729142676538,
+          10.555263381118012
+        ],
+        [
+          1187.1718062988266,
+          353.1289133488406
+        ],
+        [
+          1186.9275098586854,
+          898.2189133166873
+        ],
+        [
+          626.0558174740181,
+          1223.754198858617
+        ],
+        [
+          64.0,
+          895.9495055695114
+        ],
+        [
+          64.0,
+          349.593901209619
+        ]
+      ],
+      "registeredSourceRadius": 590.3802117160789,
+      "isotropicScale": 0.8672377390694577,
+      "protectedFraction": 0.9098588349144872,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 12,
+      "zipEntry": "수도원 타일/12번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-12.png",
+      "sourceSha256": "dc2993a73b2cc92f79599a99d81a4d6a4dcbd3e7b1e1372f0ac533f27a33c56f",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-12.png",
+      "outputSha256": "b7be2aca881e57ae21e9d75620307de55ffecb22d8dcba7d3aa7174cd034be67",
+      "measuredSourceCenter": [
+        627.1909023154057,
+        621.2404585623646
+      ],
+      "measuredSourceVertices": [
+        [
+          628.4890038179783,
+          11.045846185774234
+        ],
+        [
+          1189.0,
+          349.7384056890413
+        ],
+        [
+          1189.0,
+          897.7666872782895
+        ],
+        [
+          628.6564100744558,
+          1223.921050080332
+        ],
+        [
+          64.0,
+          896.1050716932135
+        ],
+        [
+          64.0,
+          348.8656904475369
+        ]
+      ],
+      "registeredSourceRadius": 593.0663347196049,
+      "isotropicScale": 0.8633098357236342,
+      "protectedFraction": 0.9119652144325016,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 13,
+      "zipEntry": "수도원 타일/13번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-13.png",
+      "sourceSha256": "50d71ba3e0d55c4e1821d50008e634d21612182667d8daaf8d8f1e570dcd1b1f",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-13.png",
+      "outputSha256": "654fe02b2be225fca41a641d3e5c1fd38708c37ea838a3104f58939ad726aeb5",
+      "measuredSourceCenter": [
+        626.1597568867497,
+        615.4232127512613
+      ],
+      "measuredSourceVertices": [
+        [
+          626.628171866293,
+          20.17717636180849
+        ],
+        [
+          1159.6589421290025,
+          340.88245035508487
+        ],
+        [
+          1159.8930411759682,
+          894.6845460722268
+        ],
+        [
+          626.9402527696943,
+          1207.9974009802434
+        ],
+        [
+          91.53455687082078,
+          893.0829786035277
+        ],
+        [
+          92.3035765087194,
+          335.7147241346763
+        ]
+      ],
+      "registeredSourceRadius": 579.246979760729,
+      "isotropicScale": 0.8839062056249186,
+      "protectedFraction": 0.9397278863512096,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 14,
+      "zipEntry": "수도원 타일/14번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-14.png",
+      "sourceSha256": "f6dc3c279dfe2f4989ea7ce0bdf6260cbfd1df37c3c00dec218b175073fbd4fc",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-14.png",
+      "outputSha256": "bd9dc3df1fab0ab8bf9c30ece8f9cb5094c126ad267c4bb9ef0bcd92868b1186",
+      "measuredSourceCenter": [
+        626.1878053871696,
+        615.6550130153832
+      ],
+      "measuredSourceVertices": [
+        [
+          626.5232464471447,
+          19.89072936507454
+        ],
+        [
+          1159.7374604310166,
+          341.13311474870557
+        ],
+        [
+          1159.9101495475018,
+          894.763099785254
+        ],
+        [
+          627.1561698423939,
+          1208.5639804931777
+        ],
+        [
+          91.62287664832706,
+          893.6071986934198
+        ],
+        [
+          92.1769294066339,
+          335.9719550066678
+        ]
+      ],
+      "registeredSourceRadius": 579.2805154623932,
+      "isotropicScale": 0.8838550345359216,
+      "protectedFraction": 0.9394908844666358,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 15,
+      "zipEntry": "수도원 타일/15번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-15.png",
+      "sourceSha256": "0f70bcb9c7ec005541323509e338a544bfc32bf1aa7ceec198631495f0327e8a",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-15.png",
+      "outputSha256": "23781b7226f3e9267e39dc02daa13f1f42bc82288fc2d217fa42c281ad5fec06",
+      "measuredSourceCenter": [
+        625.1115944119448,
+        615.5601967916455
+      ],
+      "measuredSourceVertices": [
+        [
+          626.9474877854624,
+          20.32547144038376
+        ],
+        [
+          1161.0488741301451,
+          338.5717753860919
+        ],
+        [
+          1159.6357199429697,
+          898.221209341484
+        ],
+        [
+          624.995029940706,
+          1202.7055306847046
+        ],
+        [
+          89.09646327273185,
+          897.0490572806078
+        ],
+        [
+          88.94599139965332,
+          336.48813661660085
+        ]
+      ],
+      "registeredSourceRadius": 582.9235120864073,
+      "isotropicScale": 0.8783313580326225,
+      "protectedFraction": 0.9418272231297622,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 16,
+      "zipEntry": "수도원 타일/16번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-16.png",
+      "sourceSha256": "dd0cfca0118f9a7ac67fe52415362ed0ca3cdd00005d043f376e8efdd4bbd259",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-16.png",
+      "outputSha256": "09f3b3a27e318264bb5a8e15e9381f9bd8b201f980f2f342d811e0396075234b",
+      "measuredSourceCenter": [
+        625.7020804754407,
+        624.6219486914987
+      ],
+      "measuredSourceVertices": [
+        [
+          627.9202514593679,
+          30.6005189953167
+        ],
+        [
+          1156.0,
+          350.2770090868612
+        ],
+        [
+          1156.0,
+          898.8229635080952
+        ],
+        [
+          623.7654649225453,
+          1221.080398959734
+        ],
+        [
+          95.53349217719779,
+          898.6869063576728
+        ],
+        [
+          94.99327429353306,
+          348.2638952413125
+        ]
+      ],
+      "registeredSourceRadius": 577.0471794378958,
+      "isotropicScale": 0.8872758038584323,
+      "protectedFraction": 0.9423712561863654,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 17,
+      "zipEntry": "수도원 타일/17번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-17.png",
+      "sourceSha256": "f7b436c69af277a9372cb168892355d70409328992390101e15bfc02945b1b26",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-17.png",
+      "outputSha256": "847cf75dbc0ace51286b33755d2c5a7b76845d1899284b601367da40e2cf73a9",
+      "measuredSourceCenter": [
+        625.6195855652705,
+        624.3866471917314
+      ],
+      "measuredSourceVertices": [
+        [
+          627.7478424636428,
+          30.184058041246374
+        ],
+        [
+          1156.0073631862224,
+          349.82785672139875
+        ],
+        [
+          1155.9867353817144,
+          898.9349703767581
+        ],
+        [
+          623.9755723600438,
+          1221.0314110427887
+        ],
+        [
+          95.0,
+          898.5021287089495
+        ],
+        [
+          95.0,
+          347.83945825924735
+        ]
+      ],
+      "registeredSourceRadius": 577.3480382208875,
+      "isotropicScale": 0.8868134402564888,
+      "protectedFraction": 0.9422910151191428,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 18,
+      "zipEntry": "수도원 타일/18번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-18.png",
+      "sourceSha256": "14efeadecbfdb69ba83102b1aaac448223222f3a3d9d5040a0c8415e0f9e7841",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-18.png",
+      "outputSha256": "ec8e0367f3fc72366076ef2d11e3148af56a744f39641746e0cb990a1e44151e",
+      "measuredSourceCenter": [
+        625.7714433726522,
+        624.3902058909352
+      ],
+      "measuredSourceVertices": [
+        [
+          627.8395256712872,
+          30.399287419142816
+        ],
+        [
+          1156.0,
+          349.7883529693541
+        ],
+        [
+          1156.0,
+          898.8556999473082
+        ],
+        [
+          624.1813696666579,
+          1221.0759578557481
+        ],
+        [
+          95.23462214504752,
+          898.5630144678877
+        ],
+        [
+          95.37314275292083,
+          347.65892268617046
+        ]
+      ],
+      "registeredSourceRadius": 577.354776203615,
+      "isotropicScale": 0.8868030907558191,
+      "protectedFraction": 0.9427083247208448,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 19,
+      "zipEntry": "수도원 타일/19번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-19.png",
+      "sourceSha256": "9f7d01aecbd9369bba7eae4dbba0aaf43f65243659857a37396ab16bf57a65c0",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-19.png",
+      "outputSha256": "b0a1062473de1c1f57e6e3a0df68873af3bcb915fc848fb2a7fb3dfe88151d5b",
+      "measuredSourceCenter": [
+        625.5929898597805,
+        624.4142504809519
+      ],
+      "measuredSourceVertices": [
+        [
+          627.7114679214592,
+          30.120928988571688
+        ],
+        [
+          1156.0,
+          349.8430943080357
+        ],
+        [
+          1156.0,
+          898.674624332107
+        ],
+        [
+          623.8464712372233,
+          1221.806750434664
+        ],
+        [
+          95.0,
+          898.385052109232
+        ],
+        [
+          95.0,
+          347.65505271310076
+        ]
+      ],
+      "registeredSourceRadius": 577.2401593242903,
+      "isotropicScale": 0.8869791744901124,
+      "protectedFraction": 0.9421621687680453,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 20,
+      "zipEntry": "수도원 타일/20번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-20.png",
+      "sourceSha256": "52cef957d107513f5cd168569bed1e5dd002e3723abf9c348d5e561bafd74cb0",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-20.png",
+      "outputSha256": "1af66d4d119ac1ab0d812f48f1cf4af78d078a65148fa7fbb08611cc948147a9",
+      "measuredSourceCenter": [
+        625.7051693406511,
+        624.2578732332256
+      ],
+      "measuredSourceVertices": [
+        [
+          627.8862472897924,
+          30.279425187790928
+        ],
+        [
+          1155.990265928116,
+          349.90289402535564
+        ],
+        [
+          1155.9615872376125,
+          898.4336728991561
+        ],
+        [
+          624.0747208576176,
+          1220.794733333036
+        ],
+        [
+          95.25525755487729,
+          898.5175247062565
+        ],
+        [
+          95.06293717589051,
+          347.6189892477583
+        ]
+      ],
+      "registeredSourceRadius": 577.0953143031072,
+      "isotropicScale": 0.8872017971906158,
+      "protectedFraction": 0.9421996564828486,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 21,
+      "zipEntry": "수도원 타일/21번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-21.png",
+      "sourceSha256": "42c6dea795b4cfae47d6cb3f57da5d458d4b9b6014a696fc43cf7815dc1d0fad",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-21.png",
+      "outputSha256": "1fefe199141ab013cc9d64e14fd483ac62a61cdfb7c65821dc1d10f1b9c5737c",
+      "measuredSourceCenter": [
+        625.9506830588051,
+        624.2512793146351
+      ],
+      "measuredSourceVertices": [
+        [
+          627.6120597365441,
+          30.1145105659155
+        ],
+        [
+          1156.1801507130604,
+          349.55616497032133
+        ],
+        [
+          1155.9062344800686,
+          898.8481846041403
+        ],
+        [
+          624.501453788682,
+          1220.8422276662309
+        ],
+        [
+          96.05244119841404,
+          898.868087159922
+        ],
+        [
+          95.45175843606182,
+          347.2785009212807
+        ]
+      ],
+      "registeredSourceRadius": 577.3246357340029,
+      "isotropicScale": 0.8868493882112791,
+      "protectedFraction": 0.943461306336293,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 22,
+      "zipEntry": "수도원 타일/22번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-22.png",
+      "sourceSha256": "e9bb2a033f413469a962d7da4073bbcf025c227087a9b6ad0a56cfa53c90158d",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-22.png",
+      "outputSha256": "e5f517ccbcf2abed9ddcbd1eb0dc8ccd08db4dc721caaa3b8bcd760eb9ab3aa5",
+      "measuredSourceCenter": [
+        625.6781189385832,
+        624.3394346893391
+      ],
+      "measuredSourceVertices": [
+        [
+          627.9035227555198,
+          30.420814536545684
+        ],
+        [
+          1156.0523081607944,
+          350.01787134286633
+        ],
+        [
+          1155.4918905634388,
+          898.6407387663069
+        ],
+        [
+          623.9018121766721,
+          1221.0319790269696
+        ],
+        [
+          95.35293375338279,
+          898.5151954082634
+        ],
+        [
+          95.36624622169171,
+          347.41000905508304
+        ]
+      ],
+      "registeredSourceRadius": 576.966296087194,
+      "isotropicScale": 0.887400188663055,
+      "protectedFraction": 0.9422156298675282,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 23,
+      "zipEntry": "수도원 타일/23번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-23.png",
+      "sourceSha256": "2dbd5960ec563108ff3af12bfb747b31718996e802b5c966c82c6a8a0667500e",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-23.png",
+      "outputSha256": "492f5a9dda26f634e797cd66149230db6de4538820b8fb09e93a153ce642d648",
+      "measuredSourceCenter": [
+        625.809842992343,
+        624.4237236837072
+      ],
+      "measuredSourceVertices": [
+        [
+          627.8117017965409,
+          30.210669886048702
+        ],
+        [
+          1156.0,
+          349.84177007310836
+        ],
+        [
+          1156.0,
+          898.6572412478557
+        ],
+        [
+          623.388977666129,
+          1221.622088262942
+        ],
+        [
+          95.98419370703505,
+          898.9758000418623
+        ],
+        [
+          95.67418478435307,
+          347.23477259042596
+        ]
+      ],
+      "registeredSourceRadius": 577.1205809626648,
+      "isotropicScale": 0.8871629550031979,
+      "protectedFraction": 0.9426826913976138,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 24,
+      "zipEntry": "수도원 타일/24번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-24.png",
+      "sourceSha256": "57a631c6a1518eede6d0dc306e80b0244b53fdc873bdd06a08305ecc73a71200",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-24.png",
+      "outputSha256": "bb371e50ba8c07cfd5c4bbbe2b807550f9264bb8eade0bb0b26ccc9e523c4e2c",
+      "measuredSourceCenter": [
+        625.2805347639552,
+        615.6360988059809
+      ],
+      "measuredSourceVertices": [
+        [
+          627.2772398389957,
+          20.07439836130817
+        ],
+        [
+          1160.0,
+          338.72805245367226
+        ],
+        [
+          1160.0,
+          898.3675942193782
+        ],
+        [
+          625.2183707081576,
+          1202.0117280181232
+        ],
+        [
+          90.06412942853422,
+          898.014356990917
+        ],
+        [
+          89.12346860804324,
+          336.6204627924861
+        ]
+      ],
+      "registeredSourceRadius": 582.1916496359187,
+      "isotropicScale": 0.879435492281942,
+      "protectedFraction": 0.9421137863833595,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 25,
+      "zipEntry": "수도원 타일/25번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-25.png",
+      "sourceSha256": "3c473526d5eafc1114474edeb5ab40ee6f8cc46a9553469c55a87efba31d8a5c",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-25.png",
+      "outputSha256": "519c46b900a288687ddd1bdebb86241cb8c574305069a9d9c76b95fa0b31316c",
+      "measuredSourceCenter": [
+        620.7925051676353,
+        594.8999284696655
+      ],
+      "measuredSourceVertices": [
+        [
+          619.006676227706,
+          6.980140729271215
+        ],
+        [
+          1162.0,
+          336.5145925348575
+        ],
+        [
+          1162.0,
+          858.1315909481251
+        ],
+        [
+          617.7483547781062,
+          1180.8165473480078
+        ],
+        [
+          82.0,
+          855.1942044144699
+        ],
+        [
+          82.0,
+          331.76249484326104
+        ]
+      ],
+      "registeredSourceRadius": 568.2003991852763,
+      "isotropicScale": 0.9010905320273267,
+      "protectedFraction": 0.909218709706386,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 26,
+      "zipEntry": "수도원 타일/26번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-26.png",
+      "sourceSha256": "815e0daf8332bf5070f5a236be47db2836c2deaa3e32fd77ac771d020c665f62",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-26.png",
+      "outputSha256": "47fc650e6c6cd9d28dfe2ddfe08e32594842f6c6eef4b659a76e42703e9dc480",
+      "measuredSourceCenter": [
+        625.798089589649,
+        615.6451285817415
+      ],
+      "measuredSourceVertices": [
+        [
+          627.3177965405588,
+          19.6360065115463
+        ],
+        [
+          1161.0301167529249,
+          339.60182902143106
+        ],
+        [
+          1160.9452933278346,
+          897.593951213852
+        ],
+        [
+          625.6571831722777,
+          1203.3832340377696
+        ],
+        [
+          89.84379025533008,
+          897.9483538046314
+        ],
+        [
+          89.99435748896774,
+          335.70739690121826
+        ]
+      ],
+      "registeredSourceRadius": 581.6805191944535,
+      "isotropicScale": 0.8802082639952403,
+      "protectedFraction": 0.9401903714905027,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 27,
+      "zipEntry": "수도원 타일/27번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-27.png",
+      "sourceSha256": "4565b96a76dd1a9e2361e8f909fcfe712f38d46ff09d695e133fb7b8fc8cfa35",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-27.png",
+      "outputSha256": "dd06c700dc216c5580e59c05915b0f26c9fc360100a739d98ccb8836573a0c48",
+      "measuredSourceCenter": [
+        608.9443830848691,
+        585.770544261689
+      ],
+      "measuredSourceVertices": [
+        [
+          611.8286373256509,
+          6.094920581373176
+        ],
+        [
+          1148.0,
+          322.99152044024953
+        ],
+        [
+          1148.0,
+          850.4485094234179
+        ],
+        [
+          607.8376611835636,
+          1162.7775200519718
+        ],
+        [
+          69.0,
+          847.7724695114156
+        ],
+        [
+          69.0,
+          324.5383255617058
+        ]
+      ],
+      "registeredSourceRadius": 569.3722034568444,
+      "isotropicScale": 0.8992360303005327,
+      "protectedFraction": 0.9132251540152512,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 28,
+      "zipEntry": "수도원 타일/28번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-28.png",
+      "sourceSha256": "c8d4592c887cd13905993d523c3d53b8bdf773e2ff5cae9d8bd0a56761b4ffc5",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-28.png",
+      "outputSha256": "12a98a867e551cf0a47ee6f43bef24b1a84e65f75d49953914b850fbeea9f71c",
+      "measuredSourceCenter": [
+        620.1405611837041,
+        590.9613886107978
+      ],
+      "measuredSourceVertices": [
+        [
+          621.6081409643516,
+          3.030676186937787
+        ],
+        [
+          1163.1736850654815,
+          329.0987024038014
+        ],
+        [
+          1161.3118011487802,
+          859.2424515415184
+        ],
+        [
+          616.7497399236111,
+          1173.8286576255787
+        ],
+        [
+          79.0,
+          854.9685157188017
+        ],
+        [
+          79.0,
+          325.5993281881489
+        ]
+      ],
+      "registeredSourceRadius": 572.4663166985003,
+      "isotropicScale": 0.8943757651153718,
+      "protectedFraction": 0.9161582195711755,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    },
+    {
+      "number": 29,
+      "zipEntry": "수도원 타일/29번.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-29.png",
+      "sourceSha256": "c69772b3e830db95bb479955e444daac504a98c48fb586e22b4a5fcc02e60c99",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "file": "monastery-29.png",
+      "outputSha256": "bef1eb944486e6db4b41f970d1bb82a93ab26e9623b2c811baf858156148d5de",
+      "measuredSourceCenter": [
+        625.6819210814073,
+        624.3541571123156
+      ],
+      "measuredSourceVertices": [
+        [
+          627.8901146908916,
+          30.348949557642264
+        ],
+        [
+          1156.0,
+          349.64389662320025
+        ],
+        [
+          1156.0,
+          898.9442359045271
+        ],
+        [
+          624.1346170328259,
+          1220.9107505070995
+        ],
+        [
+          95.01753649722718,
+          898.6102257708375
+        ],
+        [
+          95.049258267499,
+          347.66688431058765
+        ]
+      ],
+      "registeredSourceRadius": 577.4956808077552,
+      "isotropicScale": 0.8865867174692198,
+      "protectedFraction": 0.9425117891430539,
+      "alphaBounds": [
+        69,
+        0,
+        955,
+        1024
+      ]
+    }
+  ]
+}

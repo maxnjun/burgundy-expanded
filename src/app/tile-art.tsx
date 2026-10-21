@@ -12,6 +12,7 @@ import { TileResourceEffect } from "./tile-effect";
 import standard from "./tile-standard.json";
 import beigeTiles from "../../public/assets/tiles/beige/final/manifest.json";
 import animalTiles from "../../public/assets/tiles/animals/final/manifest.json";
+import monasteryTiles from "../../public/assets/tiles/monastery/final/manifest.json";
 
 export const terrainPaint: Record<TileType, string> = {
   castle: "#247654", ship: "#277f9b", mine: "#8f9188",
@@ -28,22 +29,23 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
   const building = tile.type === "building" ? tile.building : null;
   const beige = building ? beigeTiles.assets.find(asset=>asset.buildingType===building) : undefined;
   const animal = tile.type === "livestock" ? animalTiles.assets.find(asset=>asset.species===tile.species&&asset.count===tile.count) : undefined;
+  const monastery = tile.type === "monastery" ? monasteryTiles.assets.find(asset=>asset.number===tile.number) : undefined;
   const tower = building === "watchtower" || building === "church";
   const assetName = tile.type === "castle" || tile.type === "mine" || tile.type === "ship" ? tile.type : tile.type==="monastery"&&(tile.number===27||tile.number===28)?`monastery-${tile.number}` as "monastery-27"|"monastery-28":null;
   const asset = assetName ? illustrations.assets[assetName] : null;
   const centerName=building==="crane"?"crane":tile.type==="livestock"&&tile.species==="geese"?"goose":null;
-  const framedSource = animal ? `/assets/tiles/animals/final/${animal.file}` : beige ? `/assets/tiles/beige/final/${beige.file}` : assetName ? `/tiles/${assetName}.png` : centerName?`/tiles/${centerName}.png`:null;
-  const candidate = animal ? `${framedSource}?v=${animal.outputSha256.slice(0,12)}` : beige ? `${framedSource}?v=${beige.outputSha256.slice(0,12)}` : assetName&&asset ? `/tiles/illustrations/${assetName}.png?v=${asset.outputSha256.slice(0,12)}` : (centerName?`/tiles/illustrations/${centerName}.png?v=${centerIllustrations.assets[centerName].outputSha256.slice(0,12)}`:null);
+  const framedSource = monastery ? `/assets/tiles/monastery/final/${monastery.file}` : animal ? `/assets/tiles/animals/final/${animal.file}` : beige ? `/assets/tiles/beige/final/${beige.file}` : assetName ? `/tiles/${assetName}.png` : centerName?`/tiles/${centerName}.png`:null;
+  const candidate = monastery ? `${framedSource}?v=${monastery.outputSha256.slice(0,12)}` : animal ? `${framedSource}?v=${animal.outputSha256.slice(0,12)}` : beige ? `${framedSource}?v=${beige.outputSha256.slice(0,12)}` : assetName&&asset ? `/tiles/illustrations/${assetName}.png?v=${asset.outputSha256.slice(0,12)}` : (centerName?`/tiles/illustrations/${centerName}.png?v=${centerIllustrations.assets[centerName].outputSha256.slice(0,12)}`:null);
   const [failedIllustration,setFailedIllustration]=useState<string|null>(null);
   // An SSR image may fail before hydration attaches onError. Probe again after mount.
   useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
   const illustration=failedIllustration===candidate?null:candidate;
-  const fullTile=!!asset||!!beige||!!animal;
-  const bakedFrame=!!beige&&!!illustration;
+  const fullTile=!!asset||!!beige||!!animal||!!monastery;
+  const bakedFrame=(!!beige||!!monastery)&&!!illustration;
   const estateHeight=ESTATE_ART_HEIGHT,offset=(estateHeight-standard.vectorHeight)/2,centerWidth=standard.centerIllustrationWidth;
   const palette=animal?animalTiles.palette:asset?.palette??{dark:"#5d5b36",base:terrainPaint[tile.type],light:"#fff7bf"};
   // Every isolated asset shares one square canvas and the same SVG hex geometry.
-  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} data-baked-tile-frame={bakedFrame?"approved-beige":undefined} viewBox={`0 0 100 ${estateHeight}`} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?(framedSource??candidate):undefined} {...props}>
+  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} data-baked-tile-frame={bakedFrame?(monastery?"approved-monastery":"approved-beige"):undefined} viewBox={`0 0 100 ${estateHeight}`} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?(framedSource??candidate):undefined} {...props}>
     <defs><clipPath id={clipId}><polygon points={tileHexPoints(bakedFrame?0:TILE_FRAME_INSET)}/></clipPath></defs>
     {!bakedFrame&&<TileFrame palette={palette} surface={animal?[animalTiles.surface,animalTiles.surface,animalTiles.surface]:asset?.surface} layer="backdrop"/>}
     <g clipPath={`url(#${clipId})`}><g transform={`translate(0 ${offset})`}>
@@ -108,10 +110,10 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
       <circle cx={standard.effect.numberX} cy={standard.effect.numberY} r={standard.effect.numberRadius} fill="#fff0b1" stroke="#8a7135"/><text x={standard.effect.numberX} y={standard.effect.numberY+5} textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
-    {illustration && <image data-tile-art-png={framedSource??illustration} data-approved-building={bakedFrame?beige?.buildingType:undefined} data-approved-animal={animal?`${animal.species}-${animal.count}`:undefined} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
+    {illustration && <image data-tile-art-png={framedSource??illustration} data-approved-building={bakedFrame?beige?.buildingType:undefined} data-approved-monastery={monastery?.number} data-approved-animal={animal?`${animal.species}-${animal.count}`:undefined} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
     {tile.type === "livestock" && <g><circle cx="50" cy="16" r="7" fill="#f2e6b5" stroke="#687348"/><text x="50" y="20" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
-    {tile.back === "black" && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
-    {tile.type==="monastery"&&tile.number===14&&<TileResourceEffect resource="worker" from={2} to={4}/>}
+    {tile.back === "black" && !(monastery&&illustration) && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
+    {!illustration&&tile.type==="monastery"&&tile.number===14&&<TileResourceEffect resource="worker" from={2} to={4}/>}
     </g>
     </g>{!bakedFrame&&<TileFrame palette={palette} layer="rim"/>}
   </svg>;
