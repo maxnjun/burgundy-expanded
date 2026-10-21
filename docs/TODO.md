@@ -4,7 +4,7 @@
 - [x] 공유 TileArt 연결·기존 SVG 중복 제거·읽기전용 갤러리
 - [x] 실제게임29종 번호/검은 공급·보관/영지·선택·3배율·누락PNG복구 검사
 - [x] 전체PC127/127·코어433/433·보드33/33·최종 타입/린트/빌드·화면 직접 확인
-- [ ] 이번73경로만 main Commit/Push 및 원격 SHA 확인
+- [x] 이번73경로만 main Commit/Push 및 원격 SHA 확인 (a527a57)
 - 상세: docs/MONASTERY_TILE_IMPORT_NOTES.md. 기존 PNG27/28·asset-inbox 타 작업·여관 문서 변경 제외. 모바일 정밀QA는 기존 최종 통합 단계 유지.
 
 ---
