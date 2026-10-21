@@ -1,4 +1,5 @@
 "use client";
+import {tileHelpId} from "../game/tile-help";
 
 import {GoodsSpace,type GoodsOption} from "./goods-space";
 import { ResourceGlyph } from "./resource-icon";
@@ -58,7 +59,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   shieldSelection?: {slotId:string|null;onSelect:(id:string)=>void;cost:(id:string)=>GameAction|null};
 
 }) {
-  const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} data-tile-id={id} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
+  const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} data-tile-id={id} data-tile-help={tileHelpId(game.tiles[id])} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
     <title>{`${label}${!actionFor(id)?game.turn.pendingChoice?" · 현재 효과에서 선택할 수 없는 타일입니다.":" · 주사위 선택, 일꾼 및 보관 공간을 확인하세요.":" · 클릭하면 획득합니다."}${game.tiles[id].back==="black" ? " · 검은 뒷면" : ""}`}</title>
     <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
     <TileArt tile={game.tiles[id]} x={x-width/2} y={y-width/Math.sqrt(3)} width={width} height={width*2/Math.sqrt(3)}/>

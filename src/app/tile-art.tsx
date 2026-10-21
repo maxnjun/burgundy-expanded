@@ -13,6 +13,7 @@ import standard from "./tile-standard.json";
 import beigeTiles from "../../public/assets/tiles/beige/final/manifest.json";
 import animalTiles from "../../public/assets/tiles/animals/final/manifest.json";
 import monasteryTiles from "../../public/assets/tiles/monastery/final/manifest.json";
+import {tileHelpId} from "../game/tile-help";
 
 export const terrainPaint: Record<TileType, string> = {
   castle: "#247654", ship: "#277f9b", mine: "#8f9188",
@@ -22,7 +23,7 @@ export const terrainPaint: Record<TileType, string> = {
 
 /** Shared geometry; approved full faces already include their own border. */
 export function TileArt(props: { tile: Tile; estate?:boolean } & SVGProps<SVGSVGElement>) {
-  return props.tile.type === "inn" ? <InnArt {...props}/> : <BaseTileArt {...props} tile={props.tile}/>;
+  return props.tile.type === "inn" ? <InnArt {...props} data-tile-help={tileHelpId(props.tile)}/> : <BaseTileArt {...props} tile={props.tile} data-tile-help={tileHelpId(props.tile)}/>;
 }
 function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?:boolean } & SVGProps<SVGSVGElement>) {
   const clipId=`tile-art-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;

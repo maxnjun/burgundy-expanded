@@ -1,4 +1,6 @@
 "use client";
+import {TileEncyclopedia} from "./tile-encyclopedia";
+import {tileHelpId} from "../game/tile-help";
 import { LIVESTOCK_NAMES } from "../game/tile-help";
 import { ResourceIcon } from "./resource-icon";
 import {VineyardBoard,VineyardSupply} from "./vineyard-board";
@@ -88,6 +90,7 @@ export default function GameScreen() {
   const dispatched=useRef<GameState|null>(null);
   const [confirmation,setConfirmation]=useState<GameAction|null>(null);
   const [specialMode,setSpecialMode]=useState(false);
+  const [purchaseMode,setPurchaseMode]=useState(false);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
   const [globalZoom, setGlobalZoom] = useState(1);
   const [commonZoom, setCommonZoom] = useState(1);
@@ -102,7 +105,7 @@ export default function GameScreen() {
     dispatched.current=null;
     setSelectedVineTileId(null);
     setHistory(restoreTurnHistory(cachedHistory,saved.game,saved.logs));
-    setConfirmation(null);setSpecialMode(false);
+    setConfirmation(null);setSpecialMode(false);setPurchaseMode(false);
     setShieldPreview(!!shieldLayout(saved.game)&&!shieldLayout(saved.game)?.effectsActive);setShieldRules(!!shieldLayout(saved.game)?.effectsActive);
     setSaveBlocked(false); setGame(saved.game); setComputerPlayerIds(saved.view.computerPlayerIds ?? []); setComputerPaused(saved.view.computerPaused ?? false); setLogs([...saved.logs]); setGlobalZoom(saved.view.zoom); setCommonZoom(saved.view.commonZoom ?? 1); setFocus(saved.view.focus); setTableView(shieldLayout(saved.game) ? true : saved.view.table ?? true); setBoardZooms({ ...saved.view.boardZooms });
     setSelectedShieldSlot(null);
@@ -163,7 +166,7 @@ export default function GameScreen() {
     if(id&&active.vineyardReserve?.some(r=>r.tileId===id)){setSelectedVineTileId(id);return;}
     setSelectedShieldSlot(null);setSelectedTileId(selectedTileId===id?null:id);
   }
-  function selectDie(i:number){setSpecialMode(false);setDieIndex(dieIndex===i?-1:i);setSelectedShieldSlot(null);setConfirmation(null);}
+  function selectDie(i:number){setSpecialMode(false);setPurchaseMode(false);setDieIndex(dieIndex===i?-1:i);setSelectedShieldSlot(null);setConfirmation(null);}
   const costLabel=(action:GameAction|null)=>action?`일꾼 ${directCost(game,action)}`:"불가";
   const workersAction=dieAction(i=>i.kind==="take-workers");
   function run(action: GameAction) {
@@ -180,7 +183,7 @@ export default function GameScreen() {
     const nextLogs=[`${tradeLog}${fortressLog?fortressLog+" · ":""}${before.name} · ${label}${action.type === "use-die" || action.type === "buy-black-tile" || action.type === "resolve-choice" || action.type === "use-monastery-six" ? ` (${delta.join(" · ")})` : ""}`, ...logs].slice(0, 60);
     setHistory(h=>recordTurnAction(h,game,result.value.state,action,logs,nextLogs));
     setLogs(nextLogs);
-    setSelectedShieldSlot(null);setGame(result.value.state); setNotice(`${before.name} · ${label} (${delta.join(" · ")})`);setConfirmation(null);setSpecialMode(false);
+    setSelectedShieldSlot(null);setGame(result.value.state); setNotice(`${before.name} · ${label} (${delta.join(" · ")})`);setConfirmation(null);setSpecialMode(false);setPurchaseMode(false);
     setDieIndex(-1);
     setSelectedTileId(null);
 
@@ -233,7 +236,7 @@ export default function GameScreen() {
         const mounted=occupied?.type==="castle"?shields?.mounted.find(m=>m.playerId===player.id&&m.cellId===cell.id):null;
         const canPlace=!!placement||!!shield;
         const select=()=>{if(canPlace)activate(shield??placement);else if(mounted)setDetailShield(mounted.shieldNumber);};
-        return <g key={cell.id} data-estate-cell={cell.id} data-q={cell.coord.q} data-r={cell.coord.r} role="button" tabIndex={canPlace||mounted?0:-1} aria-disabled={!canPlace&&!mounted} aria-label={`${player.name} ${cell.id} ${tileInfo[cell.terrain].name} ${cell.number}${occupied ? ` 배치됨 ${titleFor(cell.tileId!)}` : " 빈칸"}${canPlace ? ` 배치 가능 ${costLabel(shield??placement)}` : ""}${mounted?` · 장착 방패 ${mounted.shieldNumber}`:""}`} onClick={select} onKeyDown={e => { if (["Enter", " "].includes(e.key)) { e.preventDefault(); select(); } }} className={`hex-cell${canPlace?" direct-legal":""}`}>
+        return <g key={cell.id} data-estate-cell={cell.id} data-tile-help={mounted?`shield:${mounted.shieldNumber}`:occupied?tileHelpId(occupied):undefined} data-q={cell.coord.q} data-r={cell.coord.r} role="button" tabIndex={canPlace||mounted?0:-1} aria-disabled={!canPlace&&!mounted} aria-label={`${player.name} ${cell.id} ${tileInfo[cell.terrain].name} ${cell.number}${occupied ? ` 배치됨 ${titleFor(cell.tileId!)}` : " 빈칸"}${canPlace ? ` 배치 가능 ${costLabel(shield??placement)}` : ""}${mounted?` · 장착 방패 ${mounted.shieldNumber}`:""}`} onClick={select} onKeyDown={e => { if (["Enter", " "].includes(e.key)) { e.preventDefault(); select(); } }} className={`hex-cell${canPlace?" direct-legal":""}`}>
           <polygon data-estate-fill="true" points={estatePoints(cell.coord)} fill={tableView ? tableColors[occupied?.type === "inn" ? cell.terrain : occupied?.type ?? cell.terrain] : tileInfo[occupied?.type === "inn" ? cell.terrain : occupied?.type ?? cell.terrain].color} fillOpacity={1} stroke="none"/>
           {occupied ? <EstateTile tile={occupied} coord={cell.coord}/> : tableView ? <BoardDie x={x} y={y} value={cell.number}/> : <text x={x} y={y + 6} className="hex-number">{cell.number}</text>}{mounted&&<MountedShield number={mounted.shieldNumber} tileId={cell.tileId!} x={x} y={y}/>}{!occupied && <text x={x} y={y + 27} className="hex-label">{tileInfo[cell.terrain].name}</text>}
         </g>;
@@ -249,13 +252,15 @@ export default function GameScreen() {
     const restored=undoTurn(history,game,kind);if(!restored)return;
     dispatched.current=game;setSelectingGoods(false);setSelectedVineTileId(null);
     setGame(restored.snapshot.game);setLogs([...restored.snapshot.logs]);setHistory(restored.history);
-    setDieIndex(-1);setSelectedTileId(null);setSelectedShieldSlot(null);setConfirmation(null);setSpecialMode(false);setNotice(kind==='turn'?'이번 차례 시작 상태로 복원했습니다.':'이전 행동으로 복원했습니다.');
+    setDieIndex(-1);setSelectedTileId(null);setSelectedShieldSlot(null);setConfirmation(null);setSpecialMode(false);setPurchaseMode(false);setNotice(kind==='turn'?'이번 차례 시작 상태로 복원했습니다.':'이전 행동으로 복원했습니다.');
   }
   const fallbackChoices=game.turn.pendingChoice?.options.filter(o=>{const t=boardTarget(game,{type:"resolve-choice",playerId:actorId,choiceId:game.turn.pendingChoice!.id,optionId:o.id});return !t.intent&&!t.goods&&!t.shield;})??[];
   const guidance=actionGuidance(game,actions,{dieId:die?.id,tileId:selectedTileId,vineTileId:selectedVineTileId,shieldNumber:selectedShield?.shieldNumber,special:specialMode,replacement:!!confirmation,goodsTypes:selectingGoods,computer:computerPlayerIds.includes(actorId)?(computerPaused?"paused":"playing"):undefined});
   const endReason=!saveReady||saveBlocked?"게임 상태를 먼저 불러오세요.":computerPlayerIds.includes(actorId)?"AI 차례는 자동 진행됩니다.":confirmation||selectedTileId||selectedShieldSlot||selectedVineTileId||specialMode?"현재 선택을 완료하거나 취소하세요.":!canEndTurn(actions)?"두 주사위와 필수 후속 선택을 먼저 해결하세요.":"";
   const boards = focus ? [active, ...game.players.filter(p => p.id !== actorId)] : game.players;
-  return <main data-game-revision={game.revision} data-shields-active={shields?.effectsActive||undefined} className={`app-shell direct-input ${tableView ? "table-view" : ""}`}>
+  const touchBrowse=!die&&!confirmation&&!selectedTileId&&!selectedShieldSlot&&!selectedVineTileId&&!specialMode&&!selectingGoods&&!purchaseMode&&!game.turn.pendingChoice&&!game.turn.pendingEffects.length;
+  const canPurchase=!computerTurn&&actions.some(a=>a.type==="buy-black-tile"||a.type==="extension"&&a.extensionId==="vineyards"&&(a.payload as {source?:string}).source==="store");
+  return <main data-tile-help-touch-browse={touchBrowse} data-game-revision={game.revision} data-shields-active={shields?.effectsActive||undefined} className={`app-shell direct-input ${tableView ? "table-view" : ""}`}>
     <header className="topbar"><Link href="/" className="brand"><span className="brand-mark">♜</span><span>BURGUNDY <b>EXPANDED</b><small>THE ART OF BUILDING AN ESTATE</small></span></Link><div className="header-right"><Link className="outline-button" href="/online">2인 온라인 방</Link><span className="demo-tag">부분 기본판 · 연습 공급</span><button className="outline-button" disabled={!!shieldLayout(game)} title={shieldLayout(game)?"방패 검증 모드는 공용 보드의 테이블 보기를 사용합니다.":undefined} onClick={() => setTableView(v => !v)}>{tableView ? "기존 디자인 보기" : "테이블 보기"}</button><button className="settings-button" disabled={!saveReady} aria-expanded={settings} onClick={() => setSettings(!settings)}>⚙ 게임 준비</button></div></header>
     <section className="intro"><div><div className="eyebrow">THE LOIRE VALLEY · 15TH CENTURY</div><h1>위대한 영지는, 작은 선택에서.</h1><p>{game.turn.stage === "round-setup" ? "라운드를 준비하고 있습니다." : game.status === "finished" ? "E단계까지 마쳤습니다. 최종 점수와 승자를 확인하세요." : game.turn.stage === "phase-end" ? "단계 수입과 필수 효과를 처리합니다." : `${active.name}의 차례 · 남은 주사위 ${dice.filter(d => !d.used).length}개`}</p></div><div className="round-display"><span>단계 · 라운드</span><strong>{game.turn.phase} · {game.turn.round}<em> / 5</em></strong></div></section>
     <details className="live-scope"><summary>기본판 연습 · 규칙 지원 범위와 공급 안내</summary>{hasShield(game,actorId,9)&&monasteryNumbers(game,active).includes(3)&&<p>사용자 확정 프로젝트 규칙: 방패9 판매 은화에 수도원3의 은화 1개를 추가합니다.</p>}<p>공식 전체 게임 준비는 아직 지원하지 않습니다. 공식 영지 {officialOptions.length}개 검증 완료 · {game.config.catalogId === "project:base-160-v1" ? "사용자 지정 가축 구성" : "공급 타일은 연습 구성"} · {game.config.marketRecipeId === "se:main:2" ? "사진 기준 2인 슬롯 · 프로젝트 타일 160개" : game.config.marketRecipeId ? "3·4인 공식 슬롯" : "자체 연습 슬롯"} · 시작 플레이어 선택 가능 · 진행·보기 설정 자동 저장.</p><p>{game.config.extensions.some(e=>e.id==="additional-hexes") ? "선택 추가 타일: 수도원27/28·기중기·하프물범 활성. " : ""}지원: 네 가지 행동·전체 기본 타일 효과·성/시청 연쇄·수도원1~26. A~E 진행과 최종 정산을 지원하며 2인은 사용자 지정 타일 구성으로 보충합니다.</p></details>
@@ -268,7 +273,7 @@ export default function GameScreen() {
     {saveIssue&&<p role="alert" className="live-scope">자동 저장 실패: {saveIssue} · 저장 파일 내보내기로 진행을 보관하세요.</p>}
     {detailShield!==null&&<ShieldDetails number={detailShield} active={!!shields?.effectsActive} onClose={()=>setDetailShield(null)}/>}
     {notice && <p role="status" className="direct-toast">{notice}</p>}
-    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><div className="direct-resources"><strong>{active.name}</strong><div className="direct-dice">{dice.map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={computerTurn||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice&&!isCastleAction(game)} onClick={()=>selectDie(i)}>{["","⚀","⚁","⚂","⚃","⚄","⚅"][d.value]}</button>)}</div><button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span>{(selectedTileId||selectedShield||selectedVineTileId)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedVineTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special"><summary aria-label="추가 행동" title="추가 행동">⋯</summary><label><input type="checkbox" checked={specialMode} onChange={e=>{setSpecialMode(e.target.checked);setDieIndex(-1);}}/>수도원6 · 일꾼2 건물 획득</label><button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button></details></div><p className="action-guidance" role="status" aria-live="polite" aria-label="현재 행동 안내">{guidance}</p><TurnControls state={game} undoReason={undoReason} stepReason={stepReason} endReason={endReason} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId})}/></section>}
+    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><div className="direct-resources"><strong>{active.name}</strong><div className="direct-dice">{dice.map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={computerTurn||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice&&!isCastleAction(game)} onClick={()=>selectDie(i)}>{["","⚀","⚁","⚂","⚃","⚄","⚅"][d.value]}</button>)}</div><button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span>{(selectedTileId||selectedShield||selectedVineTileId)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedVineTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special"><summary aria-label="추가 행동" title="추가 행동">⋯</summary><label className="tile-help-touch-purchase"><input type="checkbox" checked={purchaseMode} disabled={!purchaseMode&&!canPurchase} onChange={e=>{setPurchaseMode(e.target.checked);setDieIndex(-1);}}/>보드에서 은화 구매 선택</label><label><input type="checkbox" checked={specialMode} onChange={e=>{setSpecialMode(e.target.checked);setDieIndex(-1);}}/>수도원6 · 일꾼2 건물 획득</label><button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button></details></div><p className="action-guidance" role="status" aria-live="polite" aria-label="현재 행동 안내">{guidance}</p><TurnControls state={game} undoReason={undoReason} stepReason={stepReason} endReason={endReason} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId})}/></section>}
 
     {confirmation&&<section role="alertdialog" aria-label="교체 확인" className="direct-confirm"><p>기존 타일 또는 방패가 영구 제거됩니다. 교체하시겠습니까?</p><button onClick={()=>{const a=confirmation;setConfirmation(null);run(a);}}>교체 확정</button><button onClick={()=>setConfirmation(null)}>취소</button></section>}
     <div className="game-layout">
@@ -287,6 +292,7 @@ export default function GameScreen() {
 
     </div>
     <details className="panel compact-log"><summary>행동과 점수 기록 · {logs.length}개</summary><div className="logs live-logs">{logs.map((message,i)=><p key={i}>{message}</p>)}</div></details>
+    <TileEncyclopedia/>
     <footer><span>♜ BURGUNDY EXPANDED</span><p>자체 SVG · 연습 공급 · 공식 기본판 전체 게임 미완성</p><span>모든 행동은 규칙 검사 후 실행됩니다.</span></footer>
   </main>;
 }
