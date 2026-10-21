@@ -1,3 +1,4 @@
+import {actionGuidance} from "../game/action-guidance";
 import { LIVESTOCK_NAMES } from "../game/tile-help";
 import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
@@ -21,7 +22,7 @@ export interface RoomView {
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
   shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
   vineyards?:GameState["vineyards"];finalScores:GameState["finalScores"];tradeRoutes?:GameState["tradeRoutes"];
-  id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
+  guidance:string;id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:string;round:number;status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
   depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];inns?:GameState["market"]["inns"];dice:GameState["dice"];
   actions:readonly {action:GameAction;label:string;group:string}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
@@ -128,7 +129,7 @@ export class RoomStore {
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    return {boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 

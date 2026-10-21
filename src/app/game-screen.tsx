@@ -19,6 +19,8 @@ import { EstateTile, EstateGrid } from "./estate-tile";
 import { estateCenter, estatePoints } from "./estate-geometry";
 import { BoardViewport } from "./board-viewport";
 import { TurnControls } from "./turn-controls";
+import {actionGuidance,canEndTurn} from "../game/action-guidance";
+import {restoreTurnHistory,serializeTurnHistory} from "../game/turn-history-cache";
 import {beginHistory,recordTurnAction,undoTurn,canUndoTurn} from "../game/turn-history";
 import { CommonBoard } from "./common-board";
 import { GoodsArt, TileArt } from "./tile-art";
@@ -82,7 +84,8 @@ export default function GameScreen() {
   const estateArea = useRef<HTMLDivElement>(null);
   const [seed, setSeed] = useState("burgundy-practice-1");
   const [dieIndex, setDieIndex] = useState(-1);
-  const [endRequest,setEndRequest]=useState(0);
+  const [selectedVineTileId,setSelectedVineTileId]=useState<string|null>(null);
+  const dispatched=useRef<GameState|null>(null);
   const [confirmation,setConfirmation]=useState<GameAction|null>(null);
   const [specialMode,setSpecialMode]=useState(false);
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null);
@@ -94,8 +97,11 @@ export default function GameScreen() {
   const [saveReady, setSaveReady] = useState(false);
   const [saveBlocked, setSaveBlocked] = useState(false);
   const storageKey = "burgundy-expanded:local-v1";
-  function restore(saved: SavedGame) {
-    setHistory(beginHistory(saved.game,saved.logs));
+  const historyKey = "burgundy-expanded:turn-history-v1";
+  function restore(saved: SavedGame, cachedHistory:string|null=null) {
+    dispatched.current=null;
+    setSelectedVineTileId(null);
+    setHistory(restoreTurnHistory(cachedHistory,saved.game,saved.logs));
     setConfirmation(null);setSpecialMode(false);
     setShieldPreview(!!shieldLayout(saved.game)&&!shieldLayout(saved.game)?.effectsActive);setShieldRules(!!shieldLayout(saved.game)?.effectsActive);
     setSaveBlocked(false); setGame(saved.game); setComputerPlayerIds(saved.view.computerPlayerIds ?? []); setComputerPaused(saved.view.computerPaused ?? false); setLogs([...saved.logs]); setGlobalZoom(saved.view.zoom); setCommonZoom(saved.view.commonZoom ?? 1); setFocus(saved.view.focus); setTableView(shieldLayout(saved.game) ? true : saved.view.table ?? true); setBoardZooms({ ...saved.view.boardZooms });
@@ -104,16 +110,18 @@ export default function GameScreen() {
   }
   useEffect(() => {
     let saved: SavedGame | undefined;
+    let cachedHistory:string|null=null;
     let message = "";
-    try { const text = localStorage.getItem(storageKey); if (text) saved = parseSavedGame(text); }
+    try { const text = localStorage.getItem(storageKey); if (text) saved = parseSavedGame(text); cachedHistory=localStorage.getItem(historyKey); }
     catch { message = "기존 자동 저장을 읽지 못했습니다. 저장 원본은 유지했습니다."; }
-    startTransition(() => { if (saved) restore(saved); if (message) { setNotice(message); setSaveBlocked(true); } setSaveReady(true); });
+    startTransition(() => { if (saved) restore(saved,cachedHistory); if (message) { setNotice(message); setSaveBlocked(true); } setSaveReady(true); });
   }, []);
   useEffect(() => {
     if (!saveReady || saveBlocked) return;
-    try { localStorage.setItem(storageKey, serializeSavedGame({ format: "burgundy-local-v1", randomAlgorithm: "counter-v1", game, logs, view: { zoom: globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, table: tableView } }));startTransition(()=>setSaveIssue("")); }
+    try { localStorage.setItem(storageKey, serializeSavedGame({ format: "burgundy-local-v1", randomAlgorithm: "counter-v1", game, logs, view: { zoom: globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, table: tableView } }));
+      localStorage.setItem(historyKey,serializeTurnHistory(game,logs,history));startTransition(()=>setSaveIssue("")); }
     catch (error) { startTransition(() => setSaveIssue(error instanceof Error?error.message:"자동 저장 실패")); }
-  }, [game, logs, globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, tableView, saveReady, saveBlocked]);
+  }, [game, logs, history, globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, tableView, saveReady, saveBlocked]);
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(""),6000);return()=>clearTimeout(timer);},[notice]);
   function exportSave() {
     try {
@@ -155,10 +163,11 @@ export default function GameScreen() {
   function selectDie(i:number){setSpecialMode(false);setDieIndex(dieIndex===i?-1:i);setSelectedShieldSlot(null);setConfirmation(null);}
   const costLabel=(action:GameAction|null)=>action?`일꾼 ${directCost(game,action)}`:"불가";
   const workersAction=dieAction(i=>i.kind==="take-workers");
-  function run(action: GameAction, confirmedEnd=false) {
-    if(action.type==="end-turn"&&!computerPlayerIds.includes(action.playerId)&&!confirmedEnd){setEndRequest(n=>n+1);return;}
+  function run(action: GameAction) {
+    if(dispatched.current===game)return;
     const result = applyCoreAction(game, action);
     if (!result.ok) { setNotice(result.issues.some(i => i.code === "unresolved-rule") ? "이 효과는 아직 지원하지 않습니다." : "차례, 주사위 눈, 일꾼과 보관 공간을 확인해 주세요."); return; }
+    dispatched.current=game;setSelectedVineTileId(null);
     const before = game.players.find(p=>p.id===action.playerId)!, after = result.value.state.players.find(p => p.id === action.playerId)!;
     const delta = [`승점 ${after.victoryPoints - before.victoryPoints >= 0 ? "+" : ""}${after.victoryPoints - before.victoryPoints}`,
       `은화 ${after.silver - before.silver >= 0 ? "+" : ""}${after.silver - before.silver}`, `일꾼 ${after.workers - before.workers >= 0 ? "+" : ""}${after.workers - before.workers}`];
@@ -198,7 +207,7 @@ export default function GameScreen() {
       const next = createPracticeSession({ names: names.slice(0, count), seed, boardIds: boardIds.slice(0, count), startingCastleIds: startingCastleIds.slice(0,count), firstSeat, colors: colors.slice(0,count), officialSlots: true, fullEffects: true, additionalHexes, whiteCastles, inns, tradeRoutes, vineyards, excludedGrapes:vineyards?excludedGrapes.slice(0,count===2?2:count===3?1:0):[], geese, borderPosts, shieldPreview, shieldRules });
       if(shieldPreview||shieldRules)setTableView(true);
       setSelectedShieldSlot(null);
-      setHistory(beginHistory(next,[]));setConfirmation(null);setSaveBlocked(false); setGame(next); setComputerPlayerIds(shieldPreview?[]:playMode === "demo" ? next.players.map(p=>p.id) : playMode === "computer" ? next.players.slice(1).map(p=>p.id) : []); setComputerPaused(false);
+      dispatched.current=null;setSelectedVineTileId(null);setHistory(beginHistory(next,[]));setConfirmation(null);setSaveBlocked(false); setGame(next); setComputerPlayerIds(shieldPreview?[]:playMode === "demo" ? next.players.map(p=>p.id) : playMode === "computer" ? next.players.slice(1).map(p=>p.id) : []); setComputerPaused(false);
       setLogs([`새 연습을 시작했습니다. 첫 차례는 ${next.players[firstSeat].name}입니다.`]); setNotice(""); setSettings(false);  setDieIndex(-1); setSelectedTileId(null);
     } catch (error) { setNotice(error instanceof Error ? error.message : "연습 준비에 실패했습니다."); }
   }
@@ -225,19 +234,22 @@ export default function GameScreen() {
           <polygon data-estate-fill="true" points={estatePoints(cell.coord)} fill={tableView ? tableColors[occupied?.type === "inn" ? cell.terrain : occupied?.type ?? cell.terrain] : tileInfo[occupied?.type === "inn" ? cell.terrain : occupied?.type ?? cell.terrain].color} fillOpacity={1} stroke="none"/>
           {occupied ? <EstateTile tile={occupied} coord={cell.coord}/> : tableView ? <BoardDie x={x} y={y} value={cell.number}/> : <text x={x} y={y + 6} className="hex-number">{cell.number}</text>}{mounted&&<MountedShield number={mounted.shieldNumber} tileId={cell.tileId!} x={x} y={y}/>}{!occupied && <text x={x} y={y + 27} className="hex-label">{tileInfo[cell.terrain].name}</text>}
         </g>;
-      })}<EstateGrid cells={player.duchy.cells} legal={legal} framed={player.duchy.cells.filter(c=>c.tileId&&hasTileFrame(game.tiles[c.tileId])).map(c=>c.id)}/>{legal.map(id=>{const cell=player.duchy.cells.find(c=>c.id===id)!,{x,y}=estateCenter(cell.coord),a=cellActions.get(id)!;return <g key={id} pointerEvents="none" className="direct-cost"><rect x={x-29} y={y-45} width="58" height="16" rx="6"/><text x={x} y={y-33} textAnchor="middle">{costLabel(a.shield??a.placement)}</text></g>;})}<FortressMarkers player={player} entries={game.scoreLedger[player.id]}/></svg></BoardViewport></div>{game.vineyards&&<VineyardBoard v={game.vineyards} player={player} actions={player.id===actorId&&!computerTurn?actions:[]} dieId={die?.id} onAction={player.id===actorId&&!computerTurn?activate:undefined}/>}</div>{<div className="estate-keyspaces" aria-label={`${player.name} 타일 보관함`}>{player.storage.map((id,i) => <button key={i} className={`keyspace ${id && selectedTileId === id ? "selected" : ""}`} aria-label={`${player.name} 개인 보관 ${i+1} ${id ? titleFor(id) : "빈칸"}`} disabled={id === null || player.id !== actorId} onClick={() => selectStorage(id,i)}>{id ? tileFace(id) : <span>{reservedKey(player,i)?"포도 점유":"◇"}</span>}</button>)}</div>}<TradeRoutePanel route={game.tradeRoutes?.routes[player.id]} name={player.name}/><div className="board-bottom"><span>{player.duchy.cells.filter(c => c.tileId).length} / {player.duchy.cells.length} · {player.victoryPoints}점{fortressLinesFor(player.duchy.boardId).length ? ` · 요새 줄 ${game.scoreLedger[player.id].filter(e=>e.id.startsWith("fortress:")).length}/3` : ""}</span><div className="live-zoom"><button aria-label={`${player.name} 영지 축소`} onClick={() => setBoardZooms(z => ({ ...z, [player.id]: Math.max(.5, +(Number(z[player.id] ?? 1) - .1).toFixed(2)) }))}>−</button><span>{Math.round((boardZooms[player.id] ?? 1) * 100)}%</span><button aria-label={`${player.name} 영지 확대`} onClick={() => setBoardZooms(z => ({ ...z, [player.id]: Math.min(2, +(Number(z[player.id] ?? 1) + .1).toFixed(2)) }))}>+</button></div></div></section>;
+      })}<EstateGrid cells={player.duchy.cells} legal={legal} framed={player.duchy.cells.filter(c=>c.tileId&&hasTileFrame(game.tiles[c.tileId])).map(c=>c.id)}/>{legal.map(id=>{const cell=player.duchy.cells.find(c=>c.id===id)!,{x,y}=estateCenter(cell.coord),a=cellActions.get(id)!;return <g key={id} pointerEvents="none" className="direct-cost"><rect x={x-29} y={y-45} width="58" height="16" rx="6"/><text x={x} y={y-33} textAnchor="middle">{costLabel(a.shield??a.placement)}</text></g>;})}<FortressMarkers player={player} entries={game.scoreLedger[player.id]}/></svg></BoardViewport></div>{game.vineyards&&<VineyardBoard v={game.vineyards} player={player} actions={player.id===actorId&&!computerTurn?actions:[]} dieId={die?.id} onAction={player.id===actorId&&!computerTurn?activate:undefined} onSelection={player.id===actorId?setSelectedVineTileId:undefined} selection={player.id===actorId?selectedVineTileId:null}/>}</div>{<div className="estate-keyspaces" aria-label={`${player.name} 타일 보관함`}>{player.storage.map((id,i) => <button key={i} className={`keyspace ${id && selectedTileId === id ? "selected" : ""}`} aria-label={`${player.name} 개인 보관 ${i+1} ${id ? titleFor(id) : "빈칸"}`} disabled={id === null || player.id !== actorId} onClick={() => selectStorage(id,i)}>{id ? tileFace(id) : <span>{reservedKey(player,i)?"포도 점유":"◇"}</span>}</button>)}</div>}<TradeRoutePanel route={game.tradeRoutes?.routes[player.id]} name={player.name}/><div className="board-bottom"><span>{player.duchy.cells.filter(c => c.tileId).length} / {player.duchy.cells.length} · {player.victoryPoints}점{fortressLinesFor(player.duchy.boardId).length ? ` · 요새 줄 ${game.scoreLedger[player.id].filter(e=>e.id.startsWith("fortress:")).length}/3` : ""}</span><div className="live-zoom"><button aria-label={`${player.name} 영지 축소`} onClick={() => setBoardZooms(z => ({ ...z, [player.id]: Math.max(.5, +(Number(z[player.id] ?? 1) - .1).toFixed(2)) }))}>−</button><span>{Math.round((boardZooms[player.id] ?? 1) * 100)}%</span><button aria-label={`${player.name} 영지 확대`} onClick={() => setBoardZooms(z => ({ ...z, [player.id]: Math.min(2, +(Number(z[player.id] ?? 1) + .1).toFixed(2)) }))}>+</button></div></div></section>;
   }
 
-  const undoBlocked=computerPlayerIds.includes(actorId)?"AI 차례는 되돌릴 수 없습니다.":confirmation||selectedTileId||selectedShieldSlot||dieIndex>=0||specialMode||game.turn.pendingChoice||game.turn.pendingEffects.length?"현재 선택을 취소하거나 필수 후속 선택을 먼저 완료하세요.":"";
+  const undoBlocked=computerPlayerIds.includes(actorId)?"AI 차례는 되돌릴 수 없습니다.":confirmation||selectedTileId||selectedShieldSlot||selectedVineTileId||dieIndex>=0||specialMode||game.turn.pendingChoice||game.turn.pendingEffects.length?"현재 선택을 취소하거나 필수 후속 선택을 먼저 완료하세요.":"";
   const stepReason=undoBlocked||(!canUndoTurn(history,game,'action')?"이 차례에서 취소할 행동이 없습니다.":"");
   const undoReason=stepReason||(!history.start?"불러온 차례의 시작 기록이 없습니다. 다음 차례부터 지원합니다.":"");
   function restoreTurn(kind:'turn'|'action'){
     if(kind==='turn'?undoReason:stepReason)return;
-    if(kind==='turn'&&!window.confirm('이번 차례의 모든 행동을 취소할까요?'))return;
+    if(dispatched.current===game)return;
     const restored=undoTurn(history,game,kind);if(!restored)return;
+    dispatched.current=game;setSelectedVineTileId(null);
     setGame(restored.snapshot.game);setLogs([...restored.snapshot.logs]);setHistory(restored.history);
     setDieIndex(-1);setSelectedTileId(null);setSelectedShieldSlot(null);setConfirmation(null);setSpecialMode(false);setNotice(kind==='turn'?'이번 차례 시작 상태로 복원했습니다.':'이전 행동으로 복원했습니다.');
   }
+  const guidance=actionGuidance(game,actions,{dieId:die?.id,tileId:selectedTileId,vineTileId:selectedVineTileId,shieldNumber:selectedShield?.shieldNumber,special:specialMode,replacement:!!confirmation,computer:computerPlayerIds.includes(actorId)?(computerPaused?"paused":"playing"):undefined});
+  const endReason=!saveReady||saveBlocked?"게임 상태를 먼저 불러오세요.":computerPlayerIds.includes(actorId)?"AI 차례는 자동 진행됩니다.":confirmation||selectedTileId||selectedShieldSlot||selectedVineTileId||specialMode?"현재 선택을 완료하거나 취소하세요.":!canEndTurn(actions)?"두 주사위와 필수 후속 선택을 먼저 해결하세요.":"";
   const boards = focus ? [active, ...game.players.filter(p => p.id !== actorId)] : game.players;
   return <main data-game-revision={game.revision} data-shields-active={shields?.effectsActive||undefined} className={`app-shell direct-input ${tableView ? "table-view" : ""}`}>
     <header className="topbar"><Link href="/" className="brand"><span className="brand-mark">♜</span><span>BURGUNDY <b>EXPANDED</b><small>THE ART OF BUILDING AN ESTATE</small></span></Link><div className="header-right"><Link className="outline-button" href="/online">2인 온라인 방</Link><span className="demo-tag">부분 기본판 · 연습 공급</span><button className="outline-button" disabled={!!shieldLayout(game)} title={shieldLayout(game)?"방패 검증 모드는 공용 보드의 테이블 보기를 사용합니다.":undefined} onClick={() => setTableView(v => !v)}>{tableView ? "기존 디자인 보기" : "테이블 보기"}</button><button className="settings-button" disabled={!saveReady} aria-expanded={settings} onClick={() => setSettings(!settings)}>⚙ 게임 준비</button></div></header>
@@ -252,7 +264,7 @@ export default function GameScreen() {
     {saveIssue&&<p role="alert" className="live-scope">자동 저장 실패: {saveIssue} · 저장 파일 내보내기로 진행을 보관하세요.</p>}
     {detailShield!==null&&<ShieldDetails number={detailShield} active={!!shields?.effectsActive} onClose={()=>setDetailShield(null)}/>}
     {notice && <p role="status" className="direct-toast">{notice}</p>}
-    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><strong>{active.name}</strong><div className="direct-dice">{dice.map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={computerTurn||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice} onClick={()=>selectDie(i)}>{["","⚀","⚁","⚂","⚃","⚄","⚅"][d.value]}</button>)}</div><button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span><small className="direct-selection">{selectedShield?`방패 ${selectedShield.shieldNumber} → 성 선택`:selectedTileId?titleFor(selectedTileId):die?`주사위 ${die.value} → 대상 터치`:"주사위를 선택하세요"}</small>{(selectedTileId||selectedShield)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special"><summary>특수 행동</summary><label><input type="checkbox" checked={specialMode} onChange={e=>{setSpecialMode(e.target.checked);setDieIndex(-1);}}/>수도원6 · 일꾼2 건물 획득</label><button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button></details><TurnControls endState={saveReady&&!saveBlocked&&!computerPlayerIds.includes(actorId)?game:null} endRequest={endRequest} purchaseAvailable={actions.some(a=>a.type==="buy-black-tile")} undoReason={undoReason} stepReason={stepReason} endReason={!computerPlayerIds.includes(actorId)&&!confirmation&&!selectedTileId&&!selectedShieldSlot&&!specialMode&&permitted({type:"end-turn",playerId:actorId})?"":"현재 선택을 완료하고 두 주사위와 필수 후속 선택을 먼저 해결하세요."} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId},true)}/></section>}
+    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><div className="direct-resources"><strong>{active.name}</strong><div className="direct-dice">{dice.map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={computerTurn||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice} onClick={()=>selectDie(i)}>{["","⚀","⚁","⚂","⚃","⚄","⚅"][d.value]}</button>)}</div><button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span>{(selectedTileId||selectedShield||selectedVineTileId)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedVineTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special"><summary aria-label="추가 행동" title="추가 행동">⋯</summary><label><input type="checkbox" checked={specialMode} onChange={e=>{setSpecialMode(e.target.checked);setDieIndex(-1);}}/>수도원6 · 일꾼2 건물 획득</label><button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button></details></div><p className="action-guidance" role="status" aria-live="polite" aria-label="현재 행동 안내">{guidance}</p><TurnControls state={game} undoReason={undoReason} stepReason={stepReason} endReason={endReason} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId})}/></section>}
     <div className="direct-goods" aria-label="판매 상품">{active.goods.map(g=>{const a=dieAction(i=>i.kind==="sell-goods"&&i.goodsType===g.type),reward=goodsSaleReward(game,active,g.tiles.length);return <button key={g.type} aria-label={`${g.type}번 상품 ${g.tiles.length}개 판매`} disabled={!a} onClick={()=>activate(a)}><GoodsArt value={g.type}/><span>×{g.tiles.length}<small>{die?`${costLabel(a)} · `:""}은화+{reward.silver} · {reward.points}점</small></span></button>;})}</div>
     {confirmation&&<section role="alertdialog" aria-label="교체 확인" className="direct-confirm"><p>기존 타일 또는 방패가 영구 제거됩니다. 교체하시겠습니까?</p><button onClick={()=>{const a=confirmation;setConfirmation(null);run(a);}}>교체 확정</button><button onClick={()=>setConfirmation(null)}>취소</button></section>}
     <div className="game-layout">

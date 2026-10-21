@@ -24,7 +24,7 @@ test("actual shield UI completes all 25 rounds, phase choices and final score",a
     else {const options=listCoreActionOptions(g,actor);expect(options.ok).toBe(true);if(!options.ok)throw new Error("legal options");if(automaticAction(g,options.value.actions)){await expect.poll(async()=>{await page.clock.runFor(400);return (await current(page)).revision;}).toBeGreaterThan(g.revision);continue;}const action=options.value.actions.find(a=>a.type==="roll-round"||a.type==="advance-phase")??options.value.actions.find(a=>a.type==="use-die"&&a.intent.kind==="take-workers")??options.value.actions.find(a=>a.type==="end-turn");if(!action)throw new Error("No UI progression action");
       if(action.type==="roll-round")await page.getByRole("button",{name:"공용 보드 주사위 굴리기",exact:true}).click();
       else if(action.type==="advance-phase")await page.getByRole("button",{name:g.turn.phase==="E"?"E단계 수입 · 최종 정산":"단계 수입 · 다음 단계 준비",exact:true}).click();
-      else if(action.type==="end-turn")await page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true}).getByRole("button",{name:"턴 종료",exact:true}).click();
+      else if(action.type==="end-turn")await page.getByLabel("차례 제어",{exact:true}).getByRole("button",{name:"턴 종료",exact:true}).click();
       else if(action.type==="use-die"){const i=g.dice.players[actor].findIndex(d=>d.id===action.dieId);await page.getByRole("button",{name:new RegExp(`^행동 주사위 ${i+1} 눈`)}).click();await page.getByRole("button",{name:"일꾼 자원",exact:true}).click();}
     }
     await changed(page,g.revision);if(n===65)await page.reload();
