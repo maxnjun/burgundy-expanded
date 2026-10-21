@@ -5,16 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/server.mjs",
     "lint": "eslint",
     "test:boards": "node tests/boards/run.mjs",
     "test:core": "node tests/core/run.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:deployment": "node --test tests/deployment/*.test.mjs"
   },
   "dependencies": {
     "next": "16.4.2",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "ws": "^8.22.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -26,5 +28,8 @@
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }

@@ -1,4 +1,4 @@
-import {chooseOnlineStart} from "./starting-castles";
+import {chooseOnlineStart,startOnlineLobby} from "./starting-castles";
 import { isolatedRooms } from "./isolated-rooms";
 import { test, expect } from "@playwright/test";
 
@@ -14,7 +14,7 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
     await page.goto("/online");await page.getByLabel("온라인 이름").fill("온라인A");const created=page.waitForResponse(r=>r.url().endsWith("/api/rooms")&&r.request().method()==="POST");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();expect((await created).status()).toBe(200);
     const code=await page.getByLabel("공유할 방 코드").inputValue();expect(code).toMatch(/^[a-f0-9]{24}$/);
     await guest.goto("http://127.0.0.1:3000/online");await guest.getByLabel("온라인 이름").fill("온라인B");await guest.getByLabel("방 코드",{exact:true}).fill(code);await guest.getByRole("button",{name:"방 참가",exact:true}).click();
-    await chooseOnlineStart(page);await chooseOnlineStart(guest);
+    await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);
     await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toBeVisible();
     await expect(page.getByRole("button",{name:"되돌리기",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"이전 행동으로",exact:true})).toBeDisabled();await expect(page.getByText("온라인 되돌리기 미지원 · 공개 정보와 무작위 결과 보호",{exact:true})).toBeVisible();
     await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();

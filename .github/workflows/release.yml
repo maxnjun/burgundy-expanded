@@ -1,0 +1,78 @@
+name: Game release
+on:
+  workflow_run:
+    workflows: [Game CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full successful main CI commit SHA
+        required: true
+      mode:
+        type: choice
+        options: [production, rollback]
+        default: production
+      confirmation:
+        description: Type DEPLOY to request production approval
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: game-release
+  cancel-in-progress: false
+jobs:
+  staging:
+    if: vars.ENABLE_DEPLOYMENTS == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: node scripts/deploy-render.mjs
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          SITE_URL: ${{ vars.SITE_URL }}
+  production-check:
+    if: vars.ENABLE_DEPLOYMENTS == 'true' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful CI before executing the requested commit
+        run: |
+          node --input-type=module <<'NODE'
+          const sha=process.env.DEPLOY_SHA;
+          if(!/^[a-f0-9]{40}$/.test(sha))throw Error('Full commit SHA required');
+          const r=await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&event=push&status=success&per_page=20`,{headers:{Authorization:`Bearer ${process.env.GITHUB_TOKEN}`,Accept:'application/vnd.github+json'}});
+          if(!r.ok||!(await r.json()).workflow_runs.some(x=>x.head_sha===sha&&x.head_branch==='main'&&x.conclusion==='success'))throw Error('Successful main CI required');
+          NODE
+        env:
+          DEPLOY_SHA: ${{ inputs.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+  production:
+    needs: production-check
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - run: node scripts/deploy-render.mjs
+        env:
+          DEPLOY_SHA: ${{ inputs.sha }}
+          DEPLOY_MODE: ${{ inputs.mode }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          STAGING_URL: ${{ vars.STAGING_URL }}

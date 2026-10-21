@@ -1,0 +1,51 @@
+import {test,expect,type Route} from "@playwright/test";
+import {readdir} from "node:fs/promises";
+import {isolatedRooms} from "./isolated-rooms";
+import {startOnlineLobby,chooseOnlineStart,waitOnlineFresh} from "./starting-castles";
+import type {RoomView} from "../../src/server/rooms";
+
+test("PC and touch seats use an invite, ready, manual turns and recover offline/closed browsers",async({page,browser},info)=>{
+ test.setTimeout(90_000);
+ const isolated=await isolatedRooms();
+ const route=async(route:Route)=>{const req=route.request(),response=await fetch(isolated.url+new URL(req.url()).pathname,{method:req.method(),headers:{...req.headers(),host:new URL(isolated.url).host,origin:isolated.url},body:req.postData()??undefined});await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});};
+ await page.context().route("**/api/rooms{,/**}",route);
+ await page.context().routeWebSocket("**/api/rooms/*/live",ws=>ws.close());
+ const mobileOptions={viewport:{width:390,height:844},hasTouch:true,isMobile:true};let context=await browser.newContext(mobileOptions);await context.route("**/api/rooms{,/**}",route);await context.routeWebSocket("**/api/rooms/*/live",ws=>ws.close());let guest=await context.newPage();
+ try{
+  await page.goto("/online");await page.getByLabel("온라인 이름").fill("먼 곳 PC");for(const label of ["온라인 방패 확장","온라인 흰 성 확장","온라인 여관 확장","온라인 포도밭 확장","온라인 무역로 확장"])await page.getByLabel(label,{exact:true}).check();
+  await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();const invite=page.getByLabel("초대 링크",{exact:true});await expect(invite).toBeVisible();const link=await invite.inputValue(),code=await page.getByLabel("공유할 방 코드").inputValue();expect(new URL(link).search).toBe(`?room=${code}`);
+  await guest.goto(link);await expect(guest.getByLabel("방 코드",{exact:true})).toHaveValue(code);await guest.getByLabel("온라인 이름").fill("먼 곳 모바일");await guest.getByRole("button",{name:"방 참가",exact:true}).click();
+  await expect(page.getByRole("button",{name:"게임 시작",exact:true})).toBeDisabled();await expect(guest.getByRole("button",{name:"게임 시작",exact:true})).toHaveCount(0);
+  await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
+  for(let n=1;n<=2;n++){await page.getByLabel("온라인 일꾼 획득",{exact:true}).click();await expect(page.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(n);}
+  await expect(page.getByLabel("현재 행동 안내",{exact:true})).toContainText("턴을 종료하시겠습니까?");await waitOnlineFresh(guest);
+  const seat=await guest.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));const current=async()=>{const r=await fetch(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${seat.token}`}});return r.json() as Promise<RoomView>;};
+  const before=await current();await context.setOffline(true);await expect(guest.getByLabel("온라인 연결 상태",{exact:true})).toContainText("연결 끊김");expect((await current()).revision).toBe(before.revision);await context.setOffline(false);await expect(guest.getByLabel("온라인 연결 상태",{exact:true})).toContainText("연결됨");await waitOnlineFresh(guest);
+  const state=await context.storageState();await context.close();context=await browser.newContext({...mobileOptions,storageState:state});await context.route("**/api/rooms{,/**}",route);await context.routeWebSocket("**/api/rooms/*/live",ws=>ws.close());guest=await context.newPage();await guest.goto(link);await waitOnlineFresh(guest);expect(await guest.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!).token)).toBe(seat.token);
+  const tile=guest.locator('.online-estates [data-estate-cell][data-tile-help="castle"]').first();await tile.evaluate(e=>e.scrollIntoView({block:"center",inline:"center"}));const tileBox=(await tile.boundingBox())!;await guest.touchscreen.tap(tileBox.x+tileBox.width/2,tileBox.y+tileBox.height/2);await expect(guest.locator("#tile-effect-tooltip")).toBeVisible();expect((await current()).revision).toBe(before.revision);
+  const popup=(await guest.locator("#tile-effect-tooltip").boundingBox())!;expect(popup.x).toBeGreaterThanOrEqual(0);expect(popup.x+popup.width).toBeLessThanOrEqual(390);await guest.locator("h1").tap();await expect(guest.locator("#tile-effect-tooltip")).toHaveCount(0);
+  for(const viewport of [{width:390,height:844},{width:844,height:390}]){await guest.setViewportSize(viewport);expect(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await guest.screenshot({path:`.local-data/internet-release/${info.project.name}-mobile-${viewport.width}.png`});}
+  await page.getByRole("button",{name:"턴 종료",exact:true}).click();await expect(guest.getByLabel("온라인 일꾼 획득",{exact:true})).toBeEnabled();await guest.getByLabel("온라인 일꾼 획득",{exact:true}).tap();await expect(guest.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(3);
+  const v=await current(),take=v.actions.find(a=>a.action.type==="use-die"&&a.action.intent.kind==="take-tile"&&a.action.adjustment.workersSpent===0);
+  if(!take||take.action.type!=="use-die"||take.action.intent.kind!=="take-tile")throw Error("Expected an affordable supply tile");const die=v.dice.players[v.seat].findIndex(d=>d.id===(take.action as {dieId:string}).dieId);
+  await guest.getByRole("button",{name:`온라인 주사위 ${die+1}`,exact:true}).tap();await guest.getByRole("button",{name:`온라인 ${take.action.intent.depot}번 ${take.action.intent.tileId}`,exact:true}).tap();await expect.poll(async()=> (await current()).players[1].storage).toContain(take.action.intent.tileId);await expect(guest.locator("#tile-effect-tooltip")).toHaveCount(0);
+  await waitOnlineFresh(page);await page.screenshot({path:`.local-data/internet-release/${info.project.name}-online-pair.png`});await guest.locator(".online-supply").screenshot({path:`.local-data/internet-release/${info.project.name}-mobile-board.png`});await guest.setViewportSize({width:390,height:844});await guest.locator(".online-supply").screenshot({path:`.local-data/internet-release/${info.project.name}-mobile-board-portrait.png`});await guest.locator(".online-estates .estate-panel").last().screenshot({path:`.local-data/internet-release/${info.project.name}-mobile-estate.png`});
+  if(browser.browserType().name()==="chromium"){
+   const row=guest.locator(".estate-vineyard-row").last();await row.evaluate(e=>e.scrollIntoView({block:"center"}));const box=(await row.boundingBox())!,cdp=await context.newCDPSession(guest),y=Math.max(100,box.y+180),x=box.x+box.width*.8,revision=(await current()).revision;
+   for(let swipe=0;swipe<3&&await row.evaluate(e=>e.scrollLeft)<80;swipe++){await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x,y,id:1}]});for(let n=1;n<=6;n++){await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:x-30*n,y,id:1}]});await guest.waitForTimeout(25);}await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});}
+   await info.attach("native-scroll-metrics",{body:JSON.stringify(await row.evaluate((e,p)=>({width:e.clientWidth,content:e.scrollWidth,left:e.scrollLeft,display:getComputedStyle(e).display,target:document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,180),children:[...e.children].map(c=>({class:c.className,width:c.clientWidth,content:c.scrollWidth,display:getComputedStyle(c).display})),viewports:[...e.querySelectorAll('.live-board-scroll')].map(v=>({width:v.clientWidth,content:v.scrollWidth,left:v.scrollLeft,touch:getComputedStyle(v).touchAction,overscroll:getComputedStyle(v).overscrollBehaviorX}))}),{x,y})),contentType:"application/json"});
+   await expect.poll(()=>row.evaluate(e=>e.scrollLeft)).toBeGreaterThan(80);expect((await current()).revision).toBe(revision);await expect(guest.locator("#tile-effect-tooltip")).toHaveCount(0);await cdp.detach();await row.screenshot({path:`.local-data/internet-release/${info.project.name}-vineyard-swiped.png`});
+  }
+  const third=await fetch(`${isolated.url}/api/rooms/${code}/join`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:"third"})});expect(third.status).toBe(409);
+ }finally{await context.close();await isolated.close();}
+});
+
+test("lost create response resumes one reserved seat; incompatible server blocks input until refresh",async({page},info)=>{
+ const isolated=await isolatedRooms();let lose=true;
+ await page.route("**/api/rooms{,/**}",async route=>{const req=route.request(),response=await fetch(isolated.url+new URL(req.url()).pathname,{method:req.method(),headers:{...req.headers(),host:new URL(isolated.url).host,origin:isolated.url},body:req.postData()??undefined});if(lose&&req.method()==="POST"&&new URL(req.url()).pathname==="/api/rooms"){lose=false;await route.abort("failed");return;}await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});});
+ try{
+  await page.goto("/online");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();await expect(page.getByRole("alert")).toBeVisible();const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-pending-v1")!));await page.reload();await expect(page.getByLabel("공유할 방 코드")).toHaveValue(pending.id);expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!).token)).toBe(pending.token);expect((await readdir(isolated.directory)).filter(n=>/^[a-f0-9]{24}\.json$/.test(n))).toHaveLength(1);
+  await page.route("**/api/version",route=>route.fulfill({json:{version:"future-test",protocol:2,roomFormat:1}}));await page.evaluate(()=>window.dispatchEvent(new Event("focus")));await expect(page.locator(".release-update")).toBeVisible();await expect(page.getByRole("button",{name:"준비 완료",exact:true})).toBeDisabled();await page.screenshot({path:`.local-data/internet-release/${info.project.name}-update-required.png`});
+  await page.unroute("**/api/version");await page.getByRole("button",{name:"업데이트 새로고침",exact:true}).click();await expect(page.getByRole("button",{name:"준비 완료",exact:true})).toBeEnabled();expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!).token)).toBe(pending.token);
+ }finally{await isolated.close();}
+});

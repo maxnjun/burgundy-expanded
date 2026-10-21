@@ -1,0 +1,52 @@
+name: Game CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PLAYWRIGHT_PRODUCTION: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: npm ci
+      - run: python -m pip install Pillow==12.3.0
+      - run: python scripts/validate-tile-assets.py
+      - run: npm run test:core && npm run test:boards && npm run lint
+      - run: npm run build && npx tsc --noEmit
+      - run: npm run test:deployment
+        env:
+          TEST_GAME_VERSION: ${{ github.sha }}
+      - run: npx playwright install --with-deps msedge webkit
+      - run: sudo apt-get install -y fonts-noto-cjk
+      - run: npm run test:browser -- --project=desktop-1280
+      - run: npm run test:browser -- tests/browser/internet-online.spec.ts tests/browser/tile-help.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=mobile-390
+      - run: npm run test:browser -- tests/browser/internet-online.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=iphone-webkit
+      - name: Verify the deploy-time versioned build
+        run: npm run build && npx tsc --noEmit
+        env:
+          NEXT_PUBLIC_GAME_VERSION: ${{ github.sha }}
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-failures
+          path: test-results/
+          retention-days: 7

@@ -1,3 +1,16 @@
+# 최신 체크포인트 — 모바일 온라인·인터넷 배포 (2026-10-22)
+
+- 기존 2인 RoomStore/Next16.4.2·React19.3·Node24 재사용. 현재 HTTPS폴링/인증/revision/원자JSON 저장, CI/배포설정 없음. 기존 원본/미커밋 보존 baseline .local-data/internet-release/.
+- 순서: ①온라인 점검→②초대/로비/재접속/WS/버전·저장보호→③모바일→④영속디스크 단일Node/Render 설정→⑤CI·staging/production 승인·롤백→⑥전체검사·선별백업.
+- 외부 서비스 가입/유료 생성/비용 발생/실제 배포는 아직 미승인, 실행하지 않음. 먼저 로컬 검증 가능한 구현/설정을 모두 완료한다. 실기기·외부망 검증은 별도 보고. 온라인은 기존2인 제한 유지, 로컬/AI2~4인 유지.
+- 구현: 기존 RoomStore opt-in 로비/각자 준비·방장 시작/초대·중복 생성복구/WS·폴링 재접속/오프라인 잠금/버전426. JSON fsync·이전8revision·부팅스냅샷/체크섬·빈경로 복원, 단일Node 영속디스크 설정. 게임규칙/이미지/구저장 유지.
+- 설정: Render2환경 Blueprint(미생성), GitHub CI·CI후staging/정식수동승인·동일SHA/호환검사·rollback, /updates·버전표시. 상세 docs/deployment/ONLINE_DEPLOYMENT.md. 외부 Secret·환경 보호·비용 승인은 미실행.
+- 최종 검사: 전체코어455/455·보드33/33, PC145건=142통과/터치전용3제외(13-production-full-pc.log). 최종 PC/Chrome터치/WebKit 관련9/9·기존모바일도움말5통과/PC전용2제외(29-*). 실제 프로덕션 WS·동시중복·재시작·빈경로 복원/배포보호3/3. 최종27번 타입/린트/빌드 exit0, 에셋6/아이콘2 경고0·YAML 통과·runtime audit0.
+- 해결: 개발 HMR/테스트 소유 서버 종료는 프로덕션 상시서버/CI모드 분리. WS는 인증된 state 후에만 live, 막힌 WS는 정상HTTP 조작을 잠그지 않음. 고정포도보상 전송 유실/인증대기 폴링복구. 모바일 영지 pan-x/중첩overscroll 차단해제→실제 CDP 가로스와이프·revision불변·팝업미발생 확인. 실패로그19/23/25/26 보존, 검증 삭제/완화 없음.
+- 실제 캡처 확인: .local-data/internet-release/*mobile-board-portrait.png, *mobile-estate.png, *vineyard-swiped.png 및 *online-pair/*update-required. 기존 그림/좌표/게임규칙/구저장 유지. 원본SHA·기존 문서꼬리 보존/민감패턴0 사전검사 완료.
+- 현재: 이번46경로 및 문서 접두만 선별 백업 준비. 기존 origin 공개main/이전 사용자 Push 허용/원격시작0a890e1 확인. localhost3000 최종 프로덕션 유지, 로컬기존방50개 보존(한도 도달, 삭제 안함). 다음은 diff·Commit/일반Push·원격SHA/CI 확인 후 실제 Render 생성 승인 요청. 전체 목표의 외부망/실기기/유료 배포/외부백업은 미완료다.
+
+---
 # 최신 체크포인트 — 수정사항 프롬프트 통합 (2026-10-22)
 
 - 루트 문서 전체/후순위 지시 구현 완료. 상품 보유 수량은 실물 겹침, 누적 판매 수량만 숫자로 표시. 전체 프로젝트 완료 아님.

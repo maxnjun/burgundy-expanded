@@ -1,3 +1,5 @@
+import {roomChanged} from "./room-events";
+import {serverRelease} from "./release";
 import {boardTarget,type BoardTarget} from "../game/direct-actions";
 import {isCastleAction} from "../game/castle-actions";
 import {automaticVineReward} from "../game/core/vineyard-effects";
@@ -7,7 +9,7 @@ import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
 import type { ScoreEntry } from "../game/types";
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile, open, unlink } from "node:fs/promises";
 import { replaceRoomFile } from "./atomic-write";
 import { join } from "node:path";
 import { createPracticeSession } from "../game/practice";
@@ -20,8 +22,9 @@ import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
 export class RoomError extends Error {
   constructor(public status:number,message:string){super(message);this.name="RoomError";}
 }
-interface StoredRoom { draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
+interface StoredRoom { lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export interface RoomView {
+  release?:ReturnType<typeof serverRelease>;lobby?:{ready:readonly boolean[];started:boolean;capacity:number};
   automaticChoice?:GameAction|null;
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
   shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
@@ -34,7 +37,7 @@ export interface RoomView {
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
 const name=(value:unknown)=>typeof value==="string"&&value.trim().length>0&&value.trim().length<=30 ? value.trim() : (()=>{throw new RoomError(400,"이름은1~30자로 입력하세요.");})();
 
-/** Single-process, file-backed development rooms. No third-party service or public deployment.
+/** Single-process persistent rooms; deploy one Node instance with a durable disk.
  * Only hashed seat tokens are persisted; full engine state never leaves the server.
  */
 export class RoomStore {
@@ -47,10 +50,11 @@ export class RoomStore {
   }
   private path(id:string){if(!/^[a-f0-9]{24}$/.test(id))throw new RoomError(404,"방을 찾을 수 없습니다.");return join(this.directory,`${id}.json`);}
   private async read(id:string):Promise<StoredRoom>{
-    let raw:string;try{raw=await readFile(this.path(id),"utf8");}catch(error){if(error instanceof RoomError)throw error;throw new RoomError(404,"방을 찾을 수 없습니다.");}
+    let raw:string;try{raw=await readFile(this.path(id),"utf8");}catch(error){if(error instanceof RoomError)throw error;throw new RoomError((error as NodeJS.ErrnoException).code==="ENOENT"?404:500,"방을 읽을 수 없습니다. 기존 저장은 변경하지 않습니다.");}
     if(raw.length>2_100_000)throw new RoomError(500,"방 데이터 검증 실패");
     const room=JSON.parse(raw) as StoredRoom;
     if(room.version!==1||room.id!==id||room.tokens.length!==2||room.tokens.some(t=>t!==null&&!/^[a-f0-9]{64}$/.test(t)))throw new RoomError(500,"방 데이터 검증 실패");
+    if(room.lobby&&(!Array.isArray(room.lobby.ready)||room.lobby.ready.length!==2||room.lobby.ready.some(r=>typeof r!=="boolean")||typeof room.lobby.started!=="boolean"))throw new RoomError(500,"방 준비 데이터 검증 실패");
     if(room.draft&&!validBoardDraft(room.draft,["seat-1","seat-2"]))throw new RoomError(500,"영지 후보 검증 실패");
     room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
     if(room.draft&&draftReady(room.draft)&&room.draft.seats.some((s,i)=>s.selected!==room.game.players[i].duchy.boardId))throw new RoomError(500,"선택 영지와 게임 상태가 일치하지 않습니다.");
@@ -59,8 +63,15 @@ export class RoomStore {
   private async write(room:StoredRoom){
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
-    await writeFile(temporary,JSON.stringify(room),{encoding:"utf8",mode:0o600,flag:"wx"});
-    await replaceRoomFile(temporary,destination);
+    try{
+      const previous=await readFile(destination,"utf8"),revision=JSON.parse(previous).game.revision;
+      const archive=join(this.directory,"backups",room.id);await mkdir(archive,{recursive:true});
+      try{await writeFile(join(archive,`${revision}.json`),previous,{mode:0o600,flag:"wx"});}catch(e){if((e as NodeJS.ErrnoException).code!=="EEXIST")throw e;}
+      const old=(await readdir(archive)).filter(n=>/^\d+\.json$/.test(n)).sort((a,b)=>Number(b.split('.')[0])-Number(a.split('.')[0]));
+      for(const file of old.slice(8))await unlink(join(archive,file));
+    }catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}
+    const file=await open(temporary,"wx",0o600);try{await file.writeFile(JSON.stringify(room));await file.sync();}finally{await file.close();}
+    await replaceRoomFile(temporary,destination);roomChanged(room.id);
   }
   private seat(room:StoredRoom,token:string){
     if(typeof token!=="string"||token.length<32||token.length>128)throw new RoomError(401,"좌석 인증이 필요합니다.");
@@ -68,7 +79,7 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[],chooseStartingCastles:unknown=false){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[],chooseStartingCastles:unknown=false,connection:unknown={}){return this.serial("create",async()=>{
     if(boardRange!==null&&!["base","fortress","all"].includes(boardRange as string))throw new RoomError(400,"영지 범위를 확인하세요.");
     if(!Array.isArray(excludedGrapes)||excludedGrapes.length>2||new Set(excludedGrapes).size!==excludedGrapes.length||excludedGrapes.some(g=>!GRAPES.includes(g))||(!vineyards&&excludedGrapes.length))throw new RoomError(400,"포도 품종 축소 설정을 확인하세요.");
     if(typeof chooseStartingCastles!=="boolean")throw new RoomError(400,"시작 성 선택 설정을 확인하세요.");
@@ -78,22 +89,29 @@ export class RoomStore {
     if(typeof whiteCastles!=="boolean")throw new RoomError(400,"흰 성 설정은 참/거짓이어야 합니다.");
 
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
+    if(!connection||typeof connection!=="object"||Array.isArray(connection))throw new RoomError(400,"연결 정보를 확인하세요.");
+    const c=connection as {id?:unknown;token?:unknown;lobby?:unknown};
+    if(c.lobby!==undefined&&typeof c.lobby!=="boolean"||((c.id===undefined)!==(c.token===undefined))||c.id!==undefined&&(typeof c.id!=="string"||!/^[a-f0-9]{24}$/.test(c.id)||typeof c.token!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(c.token)))throw new RoomError(400,"연결 정보를 확인하세요.");
+    const id=c.id as string|undefined??randomBytes(12).toString("hex"),token=c.token as string|undefined??randomBytes(32).toString("base64url"),now=Date.now();
+    if(c.id){try{const old=await this.read(id);if(old.tokens[0]!==digest(token))throw new RoomError(409,"이미 사용 중인 방 코드입니다.");return {id,token};}catch(e){if(!(e instanceof RoomError)||e.status!==404)throw e;}}
     await mkdir(this.directory,{recursive:true});
-    if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
-    const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
+    if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"서버의 방 저장 한도에 도달했습니다.");
     const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
-    const room:StoredRoom={...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
+    const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
-  async joinRoom(id:string,guestName:unknown){return this.serial(id,async()=>{
-    const room=await this.read(id);if(room.tokens[1])throw new RoomError(409,"이미 두 좌석이 사용 중입니다.");
-    const guest=name(guestName),token=randomBytes(32).toString("base64url");
+  async joinRoom(id:string,guestName:unknown,reconnectToken:unknown=undefined){return this.serial(id,async()=>{
+    if(reconnectToken!==undefined&&(typeof reconnectToken!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(reconnectToken)))throw new RoomError(400,"재접속 정보를 확인하세요.");
+    const room=await this.read(id);if(room.tokens[1]){if(typeof reconnectToken==="string"&&room.tokens[1]===digest(reconnectToken))return {id,token:reconnectToken};throw new RoomError(409,"이미 두 좌석이 사용 중입니다.");}
+    if(typeof reconnectToken==="string"&&room.tokens[0]===digest(reconnectToken))throw new RoomError(409,"다른 자리와 같은 인증 정보는 사용할 수 없습니다.");
+    const guest=name(guestName),token=typeof reconnectToken==="string"?reconnectToken:randomBytes(32).toString("base64url");
     room.tokens[1]=digest(token);room.game={...room.game,revision:room.game.revision+1,players:room.game.players.map((p,i)=>i===1?{...p,name:guest}:p),config:{...room.game.config,players:room.game.config.players.map((p,i)=>i===1?{...p,name:guest}:p)}};
     room.logs=["두 플레이어가 참가했습니다.",...room.logs];room.updatedAt=Date.now();await this.write(room);return {id,token};
   });}
   async view(id:string,token:string){const room=await this.read(id);return this.publicView(room,this.seat(room,token));}
   async act(id:string,token:string,revision:unknown,action:unknown){return this.serial(id,async()=>{
     const room=await this.read(id),seat=this.seat(room,token),player=room.game.players[seat];
+    if(room.lobby&&!room.lobby.started)throw new RoomError(409,"모두 준비한 뒤 방장이 게임을 시작해야 합니다.");
     if(room.draft&&!draftReady(room.draft))throw new RoomError(409,"양쪽 영지를 선택해야 게임을 시작합니다.");
     if(!room.tokens[1])throw new RoomError(409,"다른 플레이어의 참가를 기다리세요.");
     if(!Number.isSafeInteger(revision)||revision!==room.game.revision)throw new RoomError(409,"다른 행동이 먼저 반영되었습니다. 최신 상태에서 다시 선택하세요.");
@@ -106,6 +124,19 @@ export class RoomStore {
     room.logs=[`${fortress?fortress+" · ":""}${player.name} · ${label} · 승점 ${after.victoryPoints-player.victoryPoints>=0?"+":""}${after.victoryPoints-player.victoryPoints}`,...room.logs].slice(0,60);
     room.game=next.value.state;room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}
+  async control(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
+    const room=await this.read(id),seat=this.seat(room,token),c=command as {command?:string;ready?:unknown;playerId?:string};
+    if(!room.lobby||room.lobby.started)throw new RoomError(409,"이미 시작된 방입니다.");
+    if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인 준비만 변경할 수 있습니다.");
+    if(revision!==room.game.revision)throw new RoomError(409,"최신 준비 상태에서 다시 선택하세요.");
+    if(c.command==="ready"&&typeof c.ready==="boolean")room.lobby.ready[seat]=c.ready;
+    else if(c.command==="start"){
+      if(seat!==0)throw new RoomError(403,"방장만 시작할 수 있습니다.");
+      if(!room.tokens[1]||!room.lobby.ready.every(Boolean)||room.draft&&!draftReady(room.draft))throw new RoomError(409,"두 플레이어의 준비와 영지 선택을 완료하세요.");room.lobby.started=true;
+    }else throw new RoomError(400,"준비 명령을 확인하세요.");
+    room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
+  });}
+  async checkStorage(){await mkdir(this.directory,{recursive:true});for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.read(file.slice(0,-5));}
   async chooseBoard(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
     const room=await this.read(id),seat=this.seat(room,token),playerId=room.game.players[seat].id;
     if(!room.draft||draftReady(room.draft))throw new RoomError(409,"영지 선택이 이미 종료되었습니다.");
@@ -130,12 +161,12 @@ export class RoomStore {
     for(const d of s.market.numberedDepots)for(const slot of d.slots)if(slot.tileId)visible.add(slot.tileId);
     for(const id of [...s.market.blackDepot,...(s.market.inns?.stack??[])])if(id)visible.add(id);
     const ending=checkCoreGameEnd(s);
-    const legal=room.tokens[1]&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
+    const legal=room.tokens[1]&&(!room.lobby||room.lobby.started)&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
     const automatic=automaticVineReward(s);
-    return {automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 
