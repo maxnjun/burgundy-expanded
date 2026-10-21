@@ -34,7 +34,10 @@ function knownRoomError(error:unknown):error is RoomError{
 export async function respond(task:()=>Promise<unknown>){
   const headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Game-Version":serverRelease().version};
   try{return Response.json(await task(),{headers});}
-  catch(error){return Response.json({error:knownRoomError(error)?error.message:"서버 저장 또는 검증에 실패했습니다. 진행은 기존 저장에서 보존됩니다."},{status:knownRoomError(error)?error.status:500,headers});}
+  catch(error){
+    const full=["ENOSPC","EDQUOT"].includes((error as NodeJS.ErrnoException)?.code??"");
+    return Response.json({error:knownRoomError(error)?error.message:full?"서버 저장 공간이 부족합니다. 기존 방은 삭제하지 않습니다. 관리자에게 저장 공간 점검을 요청하세요.":"서버 저장 또는 검증에 실패했습니다. 진행은 기존 저장에서 보존됩니다.",...(knownRoomError(error)&&error.code?{code:error.code}:{})},{status:knownRoomError(error)?error.status:full?503:500,headers});
+  }
 }
 
 /** Shared handlers allow integration tests to inject an isolated store, never live rooms. */

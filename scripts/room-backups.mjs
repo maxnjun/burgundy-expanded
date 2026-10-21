@@ -1,21 +1,34 @@
-import {mkdir,readdir,readFile,writeFile,lstat} from "node:fs/promises";
+import {mkdir,readdir,readFile,writeFile,lstat,statfs} from "node:fs/promises";
+import {gunzipSync} from "node:zlib";
 import {join,resolve} from "node:path";
 import {createHash,randomBytes} from "node:crypto";
 import {pathToFileURL} from "node:url";
 
 const hash=raw=>createHash("sha256").update(raw).digest("hex");
-async function roomFile(directory,name){
- if(!/^[a-f0-9]{24}\.json$/.test(name)||(await lstat(join(directory,name))).isSymbolicLink())throw Error("Invalid room path");
- const raw=await readFile(join(directory,name));if(raw.length>2_100_000)throw Error("Room too large");
+async function roomFile(directory,name,archived=false){
+ if(!/^[a-f0-9]{24}\.json$/.test(name))throw Error("Invalid room path");
+ const path=archived?join(directory,"archive",name+".gz"):join(directory,name);
+ if((await lstat(path)).isSymbolicLink())throw Error("Invalid room path");
+ let raw=await readFile(path);if(archived)raw=gunzipSync(raw,{maxOutputLength:2_100_000});if(raw.length>2_100_000)throw Error("Room too large");
  let room;try{room=JSON.parse(raw);}catch{throw Error("Invalid private room JSON");}if(!room||room.version!==1||`${room.id}.json`!==name||!room.game||!Array.isArray(room.tokens)||room.tokens.length!==2)throw Error("Unsupported room format; keep the original data and stop deployment");
  return raw;
+}
+async function roomFiles(directory){
+ const live=(await readdir(directory)).filter(n=>/^[a-f0-9]{24}\.json$/.test(n));
+ const archived=(await readdir(join(directory,"archive")).catch(e=>{if(e.code!=="ENOENT")throw e;return [];})).filter(n=>/^[a-f0-9]{24}\.json\.gz$/.test(n)).map(n=>n.slice(0,-3));
+ return [...new Set([...live,...archived])].sort().map(name=>({name,archived:!live.includes(name)}));
+}
+export async function roomStorageStatus(directory){
+ const files=await roomFiles(directory),disk=await statfs(directory),status={rooms:files.length,ongoing:0,waiting:0,finished:0,archived:files.filter(f=>f.archived).length,roomBytes:0,availableBytes:disk.bavail*disk.bsize};
+ for(const {name,archived} of files){const raw=await roomFile(directory,name,archived),room=JSON.parse(raw);status.roomBytes+=raw.length;status[room.game.status==="finished"?"finished":room.tokens[1]?"ongoing":"waiting"]++;}
+ return status;
 }
 async function emptyDirectory(directory){await mkdir(directory,{recursive:true,mode:0o700});if((await readdir(directory)).length)throw Error("Destination must be empty; existing data is never overwritten");}
 export async function snapshotRooms(source,destination){
  source=resolve(source);destination=resolve(destination);if(source===destination)throw Error("Separate backup destination required");
  await mkdir(source,{recursive:true,mode:0o700});
- const files=(await readdir(source)).filter(n=>/^[a-f0-9]{24}\.json$/.test(n)).sort();
- const entries=await Promise.all(files.map(async name=>({name,raw:await roomFile(source,name)})));
+ const files=await roomFiles(source);
+ const entries=await Promise.all(files.map(async({name,archived})=>({name,raw:await roomFile(source,name,archived)})));
  await emptyDirectory(destination);const manifest={format:1,roomFormat:1,createdAt:new Date().toISOString(),files:[]};
  for(const {name,raw} of entries){await writeFile(join(destination,name),raw,{flag:"wx",mode:0o600});manifest.files.push({name,sha256:hash(raw)});}
  await writeFile(join(destination,"manifest.json"),JSON.stringify(manifest),{flag:"wx",mode:0o600});return manifest.files.length;
@@ -31,6 +44,8 @@ export async function startupSnapshot(directory){
  const count=await snapshotRooms(directory,destination);console.info(JSON.stringify({event:"room-snapshot",rooms:count}));
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
- try{const [, ,command,source,destination]=process.argv;if(!source||!destination||!["snapshot","restore"].includes(command))throw Error("Usage: node scripts/room-backups.mjs snapshot|restore SOURCE EMPTY_DESTINATION");
- const count=await(command==="snapshot"?snapshotRooms:restoreRooms)(source,destination);console.info(JSON.stringify({event:command,rooms:count}));}catch(error){console.error(error.message);process.exitCode=1;}
+ try{const [, ,command,source,destination]=process.argv;
+ if(command==="status"&&source){console.info(JSON.stringify(await roomStorageStatus(resolve(source))));}else{
+ if(!source||!destination||!["snapshot","restore"].includes(command))throw Error("Usage: node scripts/room-backups.mjs status SOURCE | snapshot|restore SOURCE EMPTY_DESTINATION");
+ const count=await(command==="snapshot"?snapshotRooms:restoreRooms)(source,destination);console.info(JSON.stringify({event:command,rooms:count}));}}catch(error){console.error(error.message);process.exitCode=1;}
 }

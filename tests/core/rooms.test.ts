@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname, basename } from "node:path";
 import { RoomError, RoomStore } from "../../src/server/rooms";
@@ -54,5 +54,9 @@ test("two authenticated clients finish a complete server game without hidden sta
       const selected=[...current.actions].sort((x,y)=>(rank(x.group)<0?99:rank(x.group))-(rank(y.group)<0?99:rank(y.group)))[0];
       assert.ok(selected);await f.store.act(f.owner.id,token,current.revision,selected.action);
     }
+    const path=join(f.directory,f.owner.id+".json"),room=JSON.parse(await readFile(path,"utf8"));room.updatedAt=Date.now()-2*86400_000;const raw=JSON.stringify(room);await writeFile(path,raw);
+    const final=await f.store.view(f.owner.id,f.owner.token);assert.equal(await f.store.maintain(),1);
+    assert.deepEqual(await new RoomStore(f.directory).view(f.owner.id,f.owner.token),final);assert.deepEqual((await new RoomStore(f.directory).view(f.owner.id,f.guest.token)).finalScores,final.finalScores);
+    assert.equal(await f.store.maintain(),0);
   }finally{await f.cleanup();}
 });

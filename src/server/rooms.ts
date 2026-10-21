@@ -9,7 +9,9 @@ import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
 import type { ScoreEntry } from "../game/types";
 import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile, open, unlink } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile, open, unlink, statfs } from "node:fs/promises";
+import {gzip,gunzip} from "node:zlib";
+import {promisify} from "node:util";
 import { replaceRoomFile } from "./atomic-write";
 import { join } from "node:path";
 import { createPracticeSession } from "../game/practice";
@@ -20,7 +22,12 @@ import { parseSavedGame } from "../game/save";
 import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
 
 export class RoomError extends Error {
-  constructor(public status:number,message:string){super(message);this.name="RoomError";}
+  constructor(public status:number,message:string,public code?:string){super(message);this.name="RoomError";}
+}
+const compress=promisify(gzip),decompress=promisify(gunzip);
+const ROOM_BYTES=2_100_000,WRITE_RESERVE=ROOM_BYTES*4,ARCHIVE_AGE=24*60*60*1000;
+export function requireRoomSpace(available:number){
+  if(available<WRITE_RESERVE)throw new RoomError(503,"서버 디스크의 남은 저장 공간이 부족하여 새 방을 만들 수 없습니다. 기존 방은 보존됩니다. 관리자에게 저장 공간 점검을 요청하세요.","ROOM_STORAGE_FULL");
 }
 interface StoredRoom { lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export interface RoomView {
@@ -49,9 +56,19 @@ export class RoomStore {
     try{return await current;}finally{if(this.locks.get(key)===current)this.locks.delete(key);}
   }
   private path(id:string){if(!/^[a-f0-9]{24}$/.test(id))throw new RoomError(404,"방을 찾을 수 없습니다.");return join(this.directory,`${id}.json`);}
+  private archivePath(id:string){this.path(id);return join(this.directory,"archive",`${id}.json.gz`);}
+  private async raw(id:string):Promise<string>{
+    try{return await readFile(this.path(id),"utf8");}catch(error){
+      if((error as NodeJS.ErrnoException).code!=="ENOENT")throw error;
+      try{return (await decompress(await readFile(this.archivePath(id)),{maxOutputLength:ROOM_BYTES})).toString("utf8");}catch(archivedError){
+        if((archivedError as NodeJS.ErrnoException).code!=="ENOENT")throw archivedError;
+        return readFile(this.path(id),"utf8");
+      }
+    }
+  }
   private async read(id:string):Promise<StoredRoom>{
-    let raw:string;try{raw=await readFile(this.path(id),"utf8");}catch(error){if(error instanceof RoomError)throw error;throw new RoomError((error as NodeJS.ErrnoException).code==="ENOENT"?404:500,"방을 읽을 수 없습니다. 기존 저장은 변경하지 않습니다.");}
-    if(raw.length>2_100_000)throw new RoomError(500,"방 데이터 검증 실패");
+    let raw:string;try{raw=await this.raw(id);}catch(error){if(error instanceof RoomError)throw error;throw new RoomError((error as NodeJS.ErrnoException).code==="ENOENT"?404:500,"방을 읽을 수 없습니다. 기존 저장은 변경하지 않습니다.");}
+    if(Buffer.byteLength(raw)>ROOM_BYTES)throw new RoomError(500,"방 데이터 검증 실패");
     const room=JSON.parse(raw) as StoredRoom;
     if(room.version!==1||room.id!==id||room.tokens.length!==2||room.tokens.some(t=>t!==null&&!/^[a-f0-9]{64}$/.test(t)))throw new RoomError(500,"방 데이터 검증 실패");
     if(room.lobby&&(!Array.isArray(room.lobby.ready)||room.lobby.ready.length!==2||room.lobby.ready.some(r=>typeof r!=="boolean")||typeof room.lobby.started!=="boolean"))throw new RoomError(500,"방 준비 데이터 검증 실패");
@@ -64,15 +81,34 @@ export class RoomStore {
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
     try{
-      const previous=await readFile(destination,"utf8"),revision=JSON.parse(previous).game.revision;
+      const previous=await this.raw(room.id),revision=JSON.parse(previous).game.revision;
       const archive=join(this.directory,"backups",room.id);await mkdir(archive,{recursive:true});
       try{await writeFile(join(archive,`${revision}.json`),previous,{mode:0o600,flag:"wx"});}catch(e){if((e as NodeJS.ErrnoException).code!=="EEXIST")throw e;}
       const old=(await readdir(archive)).filter(n=>/^\d+\.json$/.test(n)).sort((a,b)=>Number(b.split('.')[0])-Number(a.split('.')[0]));
       for(const file of old.slice(8))await unlink(join(archive,file));
     }catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}
     const file=await open(temporary,"wx",0o600);try{await file.writeFile(JSON.stringify(room));await file.sync();}finally{await file.close();}
-    await replaceRoomFile(temporary,destination);roomChanged(room.id);
+    await replaceRoomFile(temporary,destination);
+    try{await unlink(this.archivePath(room.id));}catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}
+    roomChanged(room.id);
   }
+  async maintain(){return this.serial("maintenance",async()=>{
+    await mkdir(this.directory,{recursive:true});let archived=0;
+    for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.serial(file.slice(0,-5),async()=>{
+      const id=file.slice(0,-5),raw=await this.raw(id),room=JSON.parse(raw) as StoredRoom;
+      // Keep every ongoing game; only cold finished games and untouched one-seat lobbies qualify.
+      if(!Number.isFinite(room.updatedAt)||Date.now()-room.updatedAt<ARCHIVE_AGE||!(room.game.status==="finished"||!room.tokens[1]&&!room.lobby?.started&&room.game.revision===0))return;
+      await this.read(id);
+      const destination=this.archivePath(id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
+      await mkdir(join(this.directory,"archive"),{recursive:true});
+      const compressed=await compress(raw),handle=await open(temporary,"wx",0o600);
+      try{await handle.writeFile(compressed);await handle.sync();}finally{await handle.close();}
+      await replaceRoomFile(temporary,destination);
+      if((await decompress(await readFile(destination),{maxOutputLength:ROOM_BYTES})).toString("utf8")!==raw)throw new RoomError(500,"방 보관 검증에 실패했습니다. 원본 방은 유지됩니다.");
+      await unlink(this.path(id));archived++;
+    });
+    return archived;
+  });}
   private seat(room:StoredRoom,token:string){
     if(typeof token!=="string"||token.length<32||token.length>128)throw new RoomError(401,"좌석 인증이 필요합니다.");
     const hash=Buffer.from(digest(token),"hex");
@@ -95,7 +131,9 @@ export class RoomStore {
     const id=c.id as string|undefined??randomBytes(12).toString("hex"),token=c.token as string|undefined??randomBytes(32).toString("base64url"),now=Date.now();
     if(c.id){try{const old=await this.read(id);if(old.tokens[0]!==digest(token))throw new RoomError(409,"이미 사용 중인 방 코드입니다.");return {id,token};}catch(e){if(!(e instanceof RoomError)||e.status!==404)throw e;}}
     await mkdir(this.directory,{recursive:true});
-    if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"서버의 방 저장 한도에 도달했습니다.");
+    name(ownerName);
+    await this.maintain();
+    const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);
     const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
@@ -136,7 +174,12 @@ export class RoomStore {
     }else throw new RoomError(400,"준비 명령을 확인하세요.");
     room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}
-  async checkStorage(){await mkdir(this.directory,{recursive:true});for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.read(file.slice(0,-5));}
+  async checkStorage(){
+    await mkdir(this.directory,{recursive:true});
+    for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.read(file.slice(0,-5));
+    const archived=await readdir(join(this.directory,"archive")).catch((e:NodeJS.ErrnoException)=>{if(e.code!=="ENOENT")throw e;return [];});
+    for(const file of archived)if(/^[a-f0-9]{24}\.json\.gz$/.test(file))await this.read(file.slice(0,24));
+  }
   async chooseBoard(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
     const room=await this.read(id),seat=this.seat(room,token),playerId=room.game.players[seat].id;
     if(!room.draft||draftReady(room.draft))throw new RoomError(409,"영지 선택이 이미 종료되었습니다.");
