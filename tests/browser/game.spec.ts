@@ -1,3 +1,4 @@
+import {chooseLocalStarts} from "./starting-castles";
 import { test, expect } from "@playwright/test";
 import { createPracticeSession } from "../../src/game/practice";
 import { chooseComputerAction } from "../../src/game/computer";
@@ -7,6 +8,7 @@ import { serializeSavedGame } from "../../src/game/save";
 test("fresh game rolls, adjusts workers, selects supply and preserves zoom after reload",async({page})=>{
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));await page.goto("/");
   await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();await expect(page.getByRole("button",{name:"저장 파일 내보내기",exact:true})).toBeVisible();await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();
+  await chooseLocalStarts(page,2);
   const die=page.getByRole("button",{name:/^행동 주사위 1 눈/});await expect(die).toBeEnabled();await die.click();
   const target=page.locator('.supply-art-tile[aria-disabled="false"]').first();await target.click();
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.players[0].storage.filter(Boolean).length)).toBe(1);
@@ -108,7 +110,7 @@ test("three and four player local practice seats each finish a round",async({pag
   await page.goto("/");
   for(const count of [3,4]){
     await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();await page.getByLabel("플레이어 수",{exact:true}).selectOption(String(count));
-    await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();await expect(page.locator(".live-estates>.estate-panel")).toHaveCount(count);
+    await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();await expect(page.locator(".live-estates>.estate-panel")).toHaveCount(count);await chooseLocalStarts(page,count);
     await expect(page.getByRole("button",{name:/^행동 주사위 1 눈/})).toBeEnabled();
     for(let seat=0;seat<count;seat++){
       for(let die=0;die<2;die++){await page.getByRole("button",{name:new RegExp(`^행동 주사위 ${die+1} 눈`)}).click();await page.getByLabel("일꾼 자원",{exact:true}).click();}

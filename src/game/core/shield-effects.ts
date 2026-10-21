@@ -138,7 +138,7 @@ export function castleShieldOptions(state:GameState,player:PlayerState):PendingC
   return layout.slots.filter(s=>s.shieldNumber!==null).flatMap(slot=>player.duchy.cells.filter(c=>c.tileId&&state.tiles[c.tileId].type==="castle").map(c=>{
     const old=layout.mounted.find(m=>m.playerId===player.id&&m.cellId===c.id)?.shieldNumber??null;
     const shield={slotId:slot.id,castleCellId:c.id,replaceShieldNumber:old};
-    return {id:`castle-shield:${slot.id}:${c.id}`,label:`방패11 · 방패${slot.shieldNumber} → 성 ${c.id}${old?` (방패${old} 제거·교체)`:""}`,payload:json({shield})};
+    return {id:`castle-shield:${slot.id}:${c.id}`,label:`방패11 · 방패${slot.shieldNumber} → 성 ${c.id}${old?` (방패${old} 반환·교체)`:""}`,payload:json({shield})};
   }));
 }
 export function resolveCastleShield(state:GameState,payload:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}):GameState {

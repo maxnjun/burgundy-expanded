@@ -51,7 +51,7 @@ export function parseSavedGame(text: string): SavedGame {
   }
   // Save v1 supports only this application's known practice setup, not arbitrary catalogs or extensions.
   if (!["practice:non-official-supply", "project:base-160-v1"].includes(game.config.catalogId) || game.config.seed.length > 128 ||
-    !["playing", "finished"].includes(game.status) || !["round-setup", "player-turn", "phase-end", "finished"].includes(game.turn.stage) ||
+    !["setup", "playing", "finished"].includes(game.status) || !["setup", "round-setup", "player-turn", "phase-end", "finished"].includes(game.turn.stage) ||
     typeof game.turn.blackPurchaseUsed !== "boolean" || typeof game.turn.monasterySixUsed !== "boolean" ||
     typeof game.dice.rolledForRound !== "boolean" || typeof game.dice.roundGoodsDistributed !== "boolean" ||
     ((game.turn.pendingChoice !== null || game.turn.pendingEffects.length > 0) && !validPendingChoice(game))) return reject();

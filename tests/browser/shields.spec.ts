@@ -77,6 +77,7 @@ for(const count of [2,3,4])test(`shield groups ${count}p preserve geometry, touc
 
 test("shield preview can be started from setup and explicitly stays local-only",async({page})=>{
   await page.goto("/");await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();
+  await expect(page.getByLabel("방패 UI 검증 모드 (능력·유지비 미구현, 로컬 전용)",{exact:true})).not.toBeVisible();await page.getByText("개발자 설정",{exact:true}).click();
   await page.getByLabel("방패 UI 검증 모드 (능력·유지비 미구현, 로컬 전용)",{exact:true}).check();
   await expect(page.getByLabel("플레이 방식",{exact:true})).toHaveValue("local");
   await expect(page.getByLabel("플레이 방식",{exact:true})).toBeDisabled();

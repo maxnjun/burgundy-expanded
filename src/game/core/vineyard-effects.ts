@@ -1,4 +1,4 @@
-import type {GameState,PendingChoice,PendingEffect,PlayerState,JsonValue} from '../types';
+import type {GameAction,GameState,PendingChoice,PendingEffect,PlayerState,JsonValue} from '../types';
 import {VINE_SLOTS,vineLayers,vineSlots,VINE_BONUS_NAMES,GRAPES,GRAPE_NAMES,vineIntents,vineTakeIssue,executeVine,keyOccupant,discardStored,type VineIntent} from '../vineyards';
 import {immediateOptions} from './effects';
 import {destinationIssue} from './intents';
@@ -27,6 +27,8 @@ export function resumeVineyards(s:GameState):GameState {
  if(top){
   if(top.active!==null){v={...v,stack:v.stack.map((f,i)=>i===v.stack.length-1?{...f,active:null}:f)};s={...s,vineyards:v};top=v.stack.at(-1);}
   const x=v.players[pid].placed.find(x=>x.slotId===top!.slotId)!;
+  const automatic=VINE_SLOTS.find(slot=>slot.id===x.slotId)!.cells.findIndex((c,i)=>!x.used.includes(i)&&['bank','boarding-house','watchtower'].includes(c.bonus));
+  if(automatic>=0)return resumeVineyards(applyVineBenefit(s,x.slotId,automatic));
   if(x.used.length<2)return wrap(s,`vine-order:${pid}:${x.slotId}:${x.used.length}`,pid,{vineChoice:'order',slotId:x.slotId},orderOptions(s,pid,x.slotId));
   v={...v,stack:v.stack.slice(0,-1)};s={...s,vineyards:v};
  }
@@ -54,21 +56,13 @@ export function resolveVineChoice(s:GameState,optionId:string):GameState {
  if(!validVineChoice(s))throw new Error('Invalid vineyard choice');
  const opt=s.turn.pendingChoice!.options.find(o=>o.id===optionId);if(!opt)throw new Error('Unknown vineyard option');
  const payload=s.turn.pendingEffects[0].payload as {vineChoice:string;slotId:string;layer:number};
- let n={...s,turn:{...s.turn,pendingChoice:null,pendingEffects:[]}} as GameState;let v=n.vineyards!;const pid=s.turn.activePlayerId!,p=n.players.find(p=>p.id===pid)!;
+ let n={...s,turn:{...s.turn,pendingChoice:null,pendingEffects:[]}} as GameState;const v=n.vineyards!;const pid=s.turn.activePlayerId!,p=n.players.find(p=>p.id===pid)!;
  if(payload.vineChoice==='token'){
   const grape=(opt.payload as {grape:import('../vineyards').Grape}).grape;
   return {...n,vineyards:{...v,pool:{...v.pool,[grape]:v.pool[grape]-1},players:{...v.players,[pid]:{...v.players[pid],tokens:[...v.players[pid].tokens,grape],layers:[...v.players[pid].layers,payload.layer]}}}};
  }
  if(payload.vineChoice==='order'){
-  const index=(opt.payload as {index:number}).index,slot=VINE_SLOTS.find(x=>x.id===payload.slotId)!,kind=slot.cells[index].bonus;
-  v={...v,stack:v.stack.map((f,i)=>i===v.stack.length-1?{...f,active:index}:f),players:{...v.players,[pid]:{...v.players[pid],placed:v.players[pid].placed.map(x=>x.slotId===slot.id?{...x,used:[...x.used,index]}:x)}}};n={...n,vineyards:v};
-  const id=`vine-benefit:${pid}:${slot.id}:${index}`;
-  if(kind==='bank'||kind==='boarding-house'||kind==='watchtower'){
-   const points=kind==='watchtower'?4:0;return rewardShieldWorkerGain({...n,players:n.players.map(x=>x.id===pid?{...x,silver:x.silver+(kind==='bank'?2:0),workers:x.workers+(kind==='boarding-house'?4:0),victoryPoints:x.victoryPoints+points}:x),scoreLedger:points?{...n.scoreLedger,[pid]:[...n.scoreLedger[pid],{id,category:'extension',extensionId:'vineyards',points,source}]}:n.scoreLedger},pid,kind==='boarding-house'?4:0);
-  }
-  if(kind==='black-get')return wrap(n,id,pid,{vineChoice:kind},blackOptions(n,p));
-  if(kind==='vine-get')return wrap(n,id,pid,{vineChoice:kind},[...vineIntents(n,p).filter(i=>i.command==='take').map(intent=>({id:JSON.stringify(intent),label:`포도 공급대 ${intent.tileId} 획득`,payload:{intent} as unknown as JsonValue})),{id:'skip',label:'효과 사용하지 않기',payload:null}]);
-  return {...n,turn:{...n.turn,pendingEffects:[{id,playerId:pid,kind:'tile-benefit',source,payload:{kind,vineRewardId:id}}],pendingChoice:{id,playerId:pid,source,options:immediateOptions(n,p,kind)}}};
+  return applyVineBenefit(n,payload.slotId,(opt.payload as {index:number}).index);
  }
  if(opt.id==='skip')return n;
  const data=opt.payload as unknown as {intent?:VineIntent;vineBlack?:{tileId:string;storageSlot:number;discardTileId?:string}};
@@ -82,4 +76,26 @@ export function refreshVineChoice(s:GameState):GameState {
  if(!s.vineyards||!c||!p||!x?.vineChoice)return s;
  const options=x.vineChoice==='order'?orderOptions(s,p.id,x.slotId!):x.vineChoice==='token'?tokenOptions(s):x.vineChoice==='black-get'?blackOptions(s,p):[...vineIntents(s,p).filter(i=>i.command==='take').map(intent=>({id:JSON.stringify(intent),label:`포도 공급대 ${intent.tileId} 획득`,payload:{intent} as unknown as JsonValue})),{id:'skip',label:'효과 사용하지 않기',payload:null}];
  return {...s,turn:{...s.turn,pendingChoice:{...c,options}}};
+}
+
+/** Old saves can already be paused before a now-automatic fixed reward. */
+export function automaticVineReward(s:GameState):Extract<GameAction,{type:"resolve-choice"}>|null {
+ const payload=s.turn.pendingEffects[0]?.payload as {vineChoice?:string;slotId?:string}|null;
+ if(payload?.vineChoice!=='order'||!validVineChoice(s))return null;
+ const slot=VINE_SLOTS.find(x=>x.id===payload.slotId)!,choice=s.turn.pendingChoice!;
+ const option=choice.options.find(o=>['bank','boarding-house','watchtower'].includes(slot.cells[(o.payload as {index:number}).index].bonus));
+ return option?{type:'resolve-choice',playerId:choice.playerId,choiceId:choice.id,optionId:option.id}:null;
+}
+
+function applyVineBenefit(n:GameState,slotId:string,index:number):GameState {
+ let v=n.vineyards!;const pid=n.turn.activePlayerId!,p=n.players.find(p=>p.id===pid)!;
+ const slot=VINE_SLOTS.find(x=>x.id===slotId)!,kind=slot.cells[index].bonus;
+  v={...v,stack:v.stack.map((f,i)=>i===v.stack.length-1?{...f,active:index}:f),players:{...v.players,[pid]:{...v.players[pid],placed:v.players[pid].placed.map(x=>x.slotId===slot.id?{...x,used:[...x.used,index]}:x)}}};n={...n,vineyards:v};
+  const id=`vine-benefit:${pid}:${slot.id}:${index}`;
+  if(kind==='bank'||kind==='boarding-house'||kind==='watchtower'){
+   const points=kind==='watchtower'?4:0;return rewardShieldWorkerGain({...n,players:n.players.map(x=>x.id===pid?{...x,silver:x.silver+(kind==='bank'?2:0),workers:x.workers+(kind==='boarding-house'?4:0),victoryPoints:x.victoryPoints+points}:x),scoreLedger:points?{...n.scoreLedger,[pid]:[...n.scoreLedger[pid],{id,category:'extension',extensionId:'vineyards',points,source}]}:n.scoreLedger},pid,kind==='boarding-house'?4:0);
+  }
+  if(kind==='black-get')return wrap(n,id,pid,{vineChoice:kind},blackOptions(n,p));
+  if(kind==='vine-get')return wrap(n,id,pid,{vineChoice:kind},[...vineIntents(n,p).filter(i=>i.command==='take').map(intent=>({id:JSON.stringify(intent),label:`포도 공급대 ${intent.tileId} 획득`,payload:{intent} as unknown as JsonValue})),{id:'skip',label:'효과 사용하지 않기',payload:null}]);
+  return {...n,turn:{...n.turn,pendingEffects:[{id,playerId:pid,kind:'tile-benefit',source,payload:{kind,vineRewardId:id}}],pendingChoice:{id,playerId:pid,source,options:immediateOptions(n,p,kind)}}};
 }

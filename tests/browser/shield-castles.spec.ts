@@ -27,17 +27,15 @@ test("mounted shield stays on its physical castle through touch, zoom, pan and r
  if(info.project.name==="mobile-390")await page.screenshot({path:info.outputPath("castle-mounted-shields.png"),fullPage:true});
 });
 
-test("occupied castle replacement requires confirmation and cancellation spends nothing",async({page},info)=>{
+test("occupied castle replacement immediately returns the old shield to its source slot",async({page},info)=>{
  const g=mount(setup(),8);await load(page,g);const slot=await selectShield(page,info);
  const castle=page.getByRole("button",{name:/^규칙A .*배치 가능.*장착 방패 8/});await press(castle,info);
- await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toBeVisible();expect((await current(page)).revision).toBe(g.revision);
- await page.getByRole("button",{name:"취소",exact:true}).click();expect((await current(page)).players[0].workers).toBe(g.players[0].workers);await expect(page.locator('[data-mounted-shield="8"]')).toHaveCount(1);
- await press(castle,info);await page.getByRole("button",{name:"교체 확정",exact:true}).click();await expect(page.locator('[data-mounted-shield="8"]')).toHaveCount(0);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);await expect(page.locator(`[data-shield-slot="${slot}"]`)).toHaveAttribute("data-empty","true");
- const next=await current(page);expect(shieldLayout(next)!.removed).toContain(8);expect(shieldLayout(next)!.mounted[0].castleTileId).toBe(shieldLayout(g)!.mounted[0].castleTileId);await page.reload();await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
+ await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toHaveCount(0);await expect(page.locator('[data-mounted-shield="8"]')).toHaveCount(0);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);await expect(page.locator(`[data-shield-slot="${slot}"]`)).toHaveAttribute("data-empty","false");
+ const next=await current(page);expect(shieldLayout(next)!.removed).not.toContain(8);expect(shieldLayout(next)!.slots.find(s=>s.id===slot)!.shieldNumber).toBe(8);expect(shieldLayout(next)!.mounted[0].castleTileId).toBe(shieldLayout(g)!.mounted[0].castleTileId);await page.reload();await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
 });
 
-test("castle11 free replacement also waits for confirmation before acquiring",async({page})=>{
+test("castle11 free replacement returns its previous shield immediately",async({page})=>{
  let g=placed(mount(setup(),11),0,{type:"castle",back:"matching-color"});const id=g.players[0].duchy.cells.filter(c=>c.tileId&&g.tiles[c.tileId].type==="castle").at(-1)!.tileId!;g=prepareTileEffect(g,"seat-1",id);await load(page,g);
  const option=g.turn.pendingChoice!.options.find(o=>(o.payload as {shield?:{replaceShieldNumber:number|null}}|null)?.shield?.replaceShieldNumber===11)!;
- await clickChoice(page,g,option);await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toBeVisible();expect((await current(page)).revision).toBe(g.revision);await page.getByRole("button",{name:"교체 확정",exact:true}).click();await expect(page.locator('[data-mounted-shield="11"]')).toHaveCount(0);const next=await current(page);expect(shieldLayout(next)!.removed).toContain(11);expect(next.players[0].workers).toBe(g.players[0].workers);expect(next.dice).toEqual(g.dice);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
+ await clickChoice(page,g,option);await expect(page.getByRole("alertdialog",{name:"교체 확인",exact:true})).toHaveCount(0);await expect(page.locator('[data-mounted-shield="11"]')).toHaveCount(0);const next=await current(page);expect(shieldLayout(next)!.removed).not.toContain(11);expect(shieldLayout(next)!.slots.some(s=>s.shieldNumber===11)).toBe(true);expect(next.players[0].workers).toBe(g.players[0].workers);expect(next.dice).toEqual(g.dice);await expect(page.locator("[data-mounted-shield]")).toHaveCount(1);
 });

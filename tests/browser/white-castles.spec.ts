@@ -8,7 +8,7 @@ test("white-die choice shows worker cost, executes once and persists on reload",
  await page.addInitScript(saved=>{if(!localStorage.getItem('burgundy-expanded:local-v1'))localStorage.setItem('burgundy-expanded:local-v1',saved);},saved);
  await page.goto('/');const panel=page.getByRole('region',{name:'타일 효과 선택'});
  await expect(panel.getByRole('heading',{name:'흰 성 · 흰 주사위 추가 행동'})).toBeVisible();
- const sale=page.locator('.estate-panel').filter({has:page.getByRole('heading',{name:/^흰성A의 영지/})}).getByRole('button',{name:/^1번 상품 .* 판매$/});await expect(sale).toBeVisible();
+ const sale=page.locator('.estate-panel').filter({has:page.getByRole('heading',{name:/^흰성A의 영지/})}).getByRole('button',{name:/ 1번 상품 .* 판매$/});await expect(sale).toBeVisible();
  await page.screenshot({path:'.local-data/qa/white-castle-choice.png',fullPage:true});await sale.click();
  await expect(panel).toHaveCount(0);
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.players[0].workers)).toBe(1);

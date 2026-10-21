@@ -8,7 +8,7 @@ const state=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burg
 test('direct multi-goods sale fills one cell and renders collapsed/expanded, matched reward and reload',async({page})=>{
  const g=tradeFixture('bank');await load(page,g);const panel=page.getByRole('region',{name:'무역1 커스텀 무역로',exact:true});await expect(panel.locator('[data-trade-card]')).toHaveCount(1);await expect(panel.locator('[data-trade-next=true]')).toHaveCount(1);
  await panel.screenshot({path:'.local-data/qa/custom-trade-collapsed.png'});await panel.getByRole('button',{name:'전체 무역로 펼치기'}).click();await expect(panel.locator('[data-trade-card]')).toHaveCount(5);await panel.screenshot({path:'.local-data/qa/custom-trade-expanded.png'});await panel.getByRole('button',{name:'무역로 접기'}).click();
- await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();const type=g.dice.players['seat-1'][0].value;await page.getByRole('button',{name:`${type}번 상품 3개 판매`,exact:true}).click();
+ await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();const type=g.dice.players['seat-1'][0].value;await page.getByRole('button',{name:new RegExp(` ${type}번 상품 3개 판매$`)}).click();
  await expect(panel.locator('[data-trade-status=resolved]')).toHaveCount(1);await expect(panel.locator('[data-trade-cell="1"]')).toHaveAttribute('data-trade-next','true');expect((await state(page)).players[0].silver-g.players[0].silver).toBe(3);await panel.screenshot({path:'.local-data/qa/custom-trade-sale.png'});await page.reload();await expect(panel.getByText(/1\/15칸 완료/)).toBeVisible();
 });
 test('mismatches show goods back, card transition and final route stay visible with no skipped slots',async({page})=>{

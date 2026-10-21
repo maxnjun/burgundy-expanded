@@ -20,6 +20,7 @@ function effectGuidance(game:GameState):string {
 export interface GuidanceSelection {dieId?:string;tileId?:string|null;vineTileId?:string|null;shieldNumber?:number|null;special?:boolean;replacement?:boolean;goodsTypes?:boolean;computer?:'playing'|'paused'}
 /** Display only: legality and effect order always belong to the engine. */
 export function actionGuidance(game:GameState,actions:readonly GameAction[],selection:GuidanceSelection={}):string {
+ if(game.status==='setup')return '시작 성 타일을 배치할 위치를 선택하세요.';
  if(game.status==='finished')return '게임이 종료되었습니다.';
  const player=game.players.find(p=>p.id===game.turn.activePlayerId);
  if(selection.computer)return `${player?.name??'AI'}의 차례${selection.computer==='paused'?'가 일시정지되었습니다.':'를 진행하고 있습니다.'}`;

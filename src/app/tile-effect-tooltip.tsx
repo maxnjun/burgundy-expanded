@@ -4,7 +4,7 @@ import {usePathname} from "next/navigation";
 import {getTileHelp,type TileHelp} from "../game/tile-help";
 import {TileHelpContent} from "./tile-help-content";
 
-type Popup={help:TileHelp;mode:"mouse"|"touch"};
+type Popup={help:TileHelp;mode:"mouse"|"touch";terrain?:string};
 function sourceFor(target:EventTarget|null):Element|null {
  if(!(target instanceof Element)||target.closest("[data-tile-help-inline]"))return null;
  return target.closest('[data-estate-cell][data-tile-help^="shield:"]')??target.closest("[data-tile-help]")??target.closest('button,[role="button"]')?.querySelector("[data-tile-help]")??null;
@@ -42,10 +42,11 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   const browsing=(source:Element)=>source.closest("[data-tile-help-touch-browse]")?.getAttribute("data-tile-help-touch-browse")!=="false";
   const show=(source:Element,x:number,y:number,mode:Popup["mode"])=>{
    const help=getTileHelp(source.getAttribute("data-tile-help")??"");if(!help)return;
+   const terrain=help.kind==="inn"?source.closest("[data-tile-help-terrain]")?.getAttribute("data-tile-help-terrain")??undefined:undefined;
    anchor.current={source,x,y};
    const owner=source.closest('button,[role="button"]')??source;
    if(described.current?.element!==owner){restoreDescription();const previous=owner.getAttribute("aria-describedby");described.current={element:owner,previous};owner.setAttribute("aria-describedby",[previous,"tile-effect-tooltip"].filter(Boolean).join(" "));}
-   if(current.current?.help.id!==help.id||current.current.mode!==mode){current.current={help,mode};setPopup(current.current);}
+   if(current.current?.help.id!==help.id||current.current.mode!==mode||current.current.terrain!==terrain){current.current={help,mode,terrain};setPopup(current.current);}
    position();
   };
   const over=(e:PointerEvent)=>{if(e.pointerType!=="mouse"||e.buttons)return;const source=sourceFor(e.target);if(source)show(source,e.clientX,e.clientY,"mouse");else if(current.current?.mode==="mouse")close();};
@@ -92,8 +93,8 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   const listeners:readonly [string,EventListener][]=[["pointerover",over as EventListener],["pointerout",out as EventListener],["pointerdown",down as EventListener],["pointermove",move as EventListener],["pointerup",up as EventListener],["pointercancel",cancel as EventListener],["click",click as EventListener],["contextmenu",context as EventListener],["scroll",scroll],["wheel",scroll],["keydown",key as EventListener],["focusin",focus as EventListener],["focusout",blur as EventListener]];
   for(const [type,listener] of listeners)document.addEventListener(type,listener,true);
   window.addEventListener("resize",resize);
-  const observer=new MutationObserver(()=>{const a=anchor.current;if(a&&(!a.source.isConnected||a.source.getAttribute("data-tile-help")!==current.current?.help.id||current.current?.mode==="touch"&&!browsing(a.source)))close();});
-  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["data-tile-help","data-tile-help-touch-browse"]});
+  const observer=new MutationObserver(()=>{const a=anchor.current;if(a&&(!a.source.isConnected||a.source.getAttribute("data-tile-help")!==current.current?.help.id||current.current?.mode==="touch"&&!browsing(a.source)))close();else if(a&&current.current)show(a.source,a.x,a.y,current.current.mode);});
+  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["data-tile-help","data-tile-help-touch-browse","data-tile-help-terrain"]});
   return()=>{for(const [type,listener] of listeners)document.removeEventListener(type,listener,true);window.removeEventListener("resize",resize);observer.disconnect();cancelTap();restoreDescription();};
  },[ref,position,close,cancelTap,restoreDescription]);
  return {popup,close};
@@ -103,7 +104,7 @@ function Tooltip(){
  if(!popup)return null;
  return <div ref={ref} id="tile-effect-tooltip" data-tile-help-inline data-help-mode={popup.mode} role={popup.mode==="touch"?"dialog":"tooltip"} aria-label={popup.mode==="touch"?"타일 효과 설명":undefined} aria-labelledby={popup.mode==="mouse"?"tile-effect-title":undefined} className={`tile-effect-tooltip ${popup.mode}`}>
   {popup.mode==="touch"&&<button type="button" className="tile-help-close" onClick={close} aria-label="타일 설명 닫기">×</button>}
-  <TileHelpContent help={popup.help} headingId="tile-effect-title"/>
+  <TileHelpContent terrain={popup.terrain} help={popup.help} headingId="tile-effect-title"/>
  </div>;
 }
 export function TileEffectTooltip(){const pathname=usePathname();return <Tooltip key={pathname}/>;}

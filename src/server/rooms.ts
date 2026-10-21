@@ -1,5 +1,6 @@
 import {boardTarget,type BoardTarget} from "../game/direct-actions";
 import {isCastleAction} from "../game/castle-actions";
+import {automaticVineReward} from "../game/core/vineyard-effects";
 import {actionGuidance} from "../game/action-guidance";
 import { LIVESTOCK_NAMES } from "../game/tile-help";
 import {GRAPES,type Grape} from "../game/vineyards";
@@ -21,6 +22,7 @@ export class RoomError extends Error {
 }
 interface StoredRoom { draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export interface RoomView {
+  automaticChoice?:GameAction|null;
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
   shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
   vineyards?:GameState["vineyards"];finalScores:GameState["finalScores"];tradeRoutes?:GameState["tradeRoutes"];
@@ -66,9 +68,10 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[]){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[],chooseStartingCastles:unknown=false){return this.serial("create",async()=>{
     if(boardRange!==null&&!["base","fortress","all"].includes(boardRange as string))throw new RoomError(400,"영지 범위를 확인하세요.");
     if(!Array.isArray(excludedGrapes)||excludedGrapes.length>2||new Set(excludedGrapes).size!==excludedGrapes.length||excludedGrapes.some(g=>!GRAPES.includes(g))||(!vineyards&&excludedGrapes.length))throw new RoomError(400,"포도 품종 축소 설정을 확인하세요.");
+    if(typeof chooseStartingCastles!=="boolean")throw new RoomError(400,"시작 성 선택 설정을 확인하세요.");
     if(typeof vineyards!=="boolean")throw new RoomError(400,"포도밭 설정은 참/거짓이어야 합니다.");
     if(typeof tradeRoutes!=="boolean")throw new RoomError(400,"무역로 설정은 참/거짓이어야 합니다.");
     if(typeof inns!=="boolean")throw new RoomError(400,"여관 설정은 참/거짓이어야 합니다.");
@@ -78,7 +81,7 @@ export class RoomStore {
     await mkdir(this.directory,{recursive:true});
     if((await readdir(this.directory)).filter(f=>f.endsWith(".json")).length>=50)throw new RoomError(503,"개발 서버 방 저장 한도에 도달했습니다.");
     const id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("base64url"),now=Date.now();
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -116,7 +119,7 @@ export class RoomStore {
     const nextRevision=room.game.revision+1;
     if(draftReady(room.draft)){
       const g=room.game;
-      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,excludedGrapes:g.vineyards?.excluded,vineyards:g.config.extensions.some(e=>e.id==="vineyards"),tradeRoutes:g.config.extensions.some(e=>e.id==="trade-routes"),inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
+      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,chooseStartingCastles:g.status==="setup",boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,excludedGrapes:g.vineyards?.excluded,vineyards:g.config.extensions.some(e=>e.id==="vineyards"),tradeRoutes:g.config.extensions.some(e=>e.id==="trade-routes"),inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
       room.logs=["양쪽 영지 선택 완료 · 게임 준비 완료",...room.logs].slice(0,60);
     }
     room.game={...room.game,revision:nextRevision};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
@@ -131,12 +134,14 @@ export class RoomStore {
     const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)})) : [];
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    return {castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    const automatic=automaticVineReward(s);
+    return {automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 
 const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${LIVESTOCK_NAMES[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
 export function actionLabel(s:GameState,a:GameAction):string{
+  if(a.type==="place-starting-castle")return `시작 성 배치 · ${a.cellId}`;
   if(a.type==="roll-round")return "라운드 주사위 굴리기";
   if(a.type==="end-turn")return "차례 종료";
   if(a.type==="advance-phase")return s.turn.phase==="E"?"최종 정산":"단계 수입·보충";
@@ -147,7 +152,7 @@ export function actionLabel(s:GameState,a:GameAction):string{
     if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
     if(a.command==="change-die")return `방패16 · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
     const number=shieldLayout(s)?.slots.find(slot=>slot.id===payload.slotId)?.shieldNumber;
-    return `방패${number} 획득 · 성 ${payload.castleCellId} · 두 주사위 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 제거·교체`:""}`;
+    return `방패${number} 획득 · 성 ${payload.castleCellId} · 두 주사위 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 반환·교체`:""}`;
   }
   if(a.type==="extension"&&a.extensionId==="vineyards")return "포도 상점 구매 · 은화2";
   if(a.type==="use-die"&&a.intent.kind==="vineyard")return `포도 ${a.intent.command==="take"?"획득":"배치"} ${a.intent.slotId??a.intent.tileId}${a.intent.command==="place"?(a.intent.flipped?" · 뒤집은 방향":" · 기본 방향"):a.intent.discardIds?.length?` · 폐기 ${a.intent.discardIds.join(", ")}`:""} · 일꾼${a.adjustment.workersSpent}`;

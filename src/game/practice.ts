@@ -1,3 +1,4 @@
+import {deferStartingCastles} from "./starting-castles";
 import {setupVineyards,type Grape} from "./vineyards";
 import {setupCustomTrade} from "./custom-trade-routes";
 import { supplyInn } from "./inns";
@@ -35,7 +36,7 @@ export function practiceBoard(variant = 0): BoardDefinition {
   return board;
 }
 
-export interface PracticeConfig { readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly tradeRoutes?:boolean; readonly vineyards?:boolean;readonly excludedGrapes?:readonly Grape[]; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+export interface PracticeConfig { readonly chooseStartingCastles?:boolean; readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly tradeRoutes?:boolean; readonly vineyards?:boolean;readonly excludedGrapes?:readonly Grape[]; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
 
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
@@ -214,7 +215,8 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules);
     Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:config.shieldRules?{rules:true}:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
   }
-  const ready = setupVineyards(setupCustomTrade(supplyInn(state, "A")),config.excludedGrapes);
+  const prepared = setupVineyards(setupCustomTrade(supplyInn(state, "A")),config.excludedGrapes);
+  const ready=config.chooseStartingCastles?deferStartingCastles(prepared):prepared;
   const valid = validateCoreState(ready);
   if (!valid.valid) throw new Error(valid.issues.map(i => i.message).join(", "));
   return ready;

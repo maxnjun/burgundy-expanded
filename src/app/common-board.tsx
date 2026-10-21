@@ -101,7 +101,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <Die x={x+(depot.number===2||depot.number===3?46:depot.number===5||depot.number===6?-46:0)} y={y+(depot.number===1||depot.number===4?-46:0)} value={depot.number}/>
         {depot.slots.map((slot,i)=>{const [tx,ty]=slotCenter(depot.number,i,depot.slots.length);return slot.tileId ? selected(slot.tileId,tx,ty,tileWidth,`${depot.number}번 공급처 ${titleFor(slot.tileId)}`) : <g key={slot.id}><polygon points={hex(tx,ty,tileWidth)} fill={terrainPaint[slot.requiredType]} fillOpacity=".45" stroke="#b4ac85" strokeDasharray="3 3"/><title>{`${terrainNames[slot.requiredType]} 빈 공급 칸`}</title></g>;})}
       </g>;})}
-      <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
+      <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack width={tileWidth} game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
       <g data-black-depot="true">
         <text x={playCenter.x} y={playCenter.y-tileHeight*1.25-5} textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
         {game.market.blackDepot.map((id,i)=>{const [x,y]=blackSlots[i];return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}

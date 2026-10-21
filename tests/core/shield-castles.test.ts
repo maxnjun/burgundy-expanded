@@ -21,7 +21,7 @@ test("one castle acquisition binds its physical tile ID atomically and replaceme
  assert.equal(shieldLayout(next)!.slots.find(s=>s.id===a.payload.slotId)!.shieldNumber,null);
  const ready={...next,dice:g.dice},replacement=actions(ready)[0];assert.equal(replacement.payload.replaceShieldNumber,m.shieldNumber);
  const before=JSON.stringify(ready);assert.equal(applyCoreAction(ready,{...replacement,payload:{...replacement.payload,replaceShieldNumber:null}}).ok,false);assert.equal(JSON.stringify(ready),before);
- const replaced=step(ready,replacement);assert.equal(shieldLayout(replaced)!.mounted.length,1);assert.equal(shieldLayout(replaced)!.mounted[0].castleTileId,m.castleTileId);assert.ok(shieldLayout(replaced)!.removed.includes(m.shieldNumber));assert.deepEqual(roundtrip(replaced),replaced);
+ const replaced=step(ready,replacement);assert.equal(shieldLayout(replaced)!.mounted.length,1);assert.equal(shieldLayout(replaced)!.mounted[0].castleTileId,m.castleTileId);assert.ok(!shieldLayout(replaced)!.removed.includes(m.shieldNumber));assert.equal(shieldLayout(replaced)!.slots.find(s=>s.id===replacement.payload.slotId)!.shieldNumber,m.shieldNumber);assert.deepEqual(roundtrip(replaced),replaced);
 });
 test("multiple castles each hold one shield; filling an empty castle preserves the other",()=>{
  const g=placed(setup(),0,{type:"castle",back:"matching-color"}),a=actions(g)[0],first=step(g,a),ready={...first,dice:g.dice};

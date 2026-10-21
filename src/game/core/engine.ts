@@ -1,3 +1,4 @@
+import {startingCastleCells,placeStartingCastle} from "../starting-castles";
 import {vineIntents,vineTakeIssue,vineValues,executeVine,keyOccupant,discardStored} from "../vineyards";
 import {isCastleAction,suspendCastleAction} from "../castle-actions";
 import {resumeVineyards,vineStoreIntents} from "./vineyard-effects";
@@ -27,6 +28,7 @@ export function adjustedDie(value: DieValue, steps: readonly (1 | -1)[]): DieVal
 
 
 function actionIssue(state: GameState, action: GameAction, pendingValid?: boolean): EngineResult<never> | null {
+  if(action.type==="place-starting-castle")return state.status==="setup"&&startingCastleCells(state,action.playerId).includes(action.cellId)&&state.players.find(p=>p.id===action.playerId)?.duchy.cells.some(c=>c.id===action.cellId&&c.tileId===null)?null:failure("illegal-action","Choose a valid starting castle cell of your pending board");
   if (state.status !== "playing") return failure("illegal-action", "Game is not playing");
   if(action.type==="use-die"&&isCastleAction(state)){
     if(!(pendingValid??validPendingChoice(state)))return failure("unresolved-rule","Invalid castle action");
@@ -155,7 +157,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   let pages = [6];
   let payload: JsonValue = { actionType: action.type };
   try {
-    if(action.type==="extension"&&action.extensionId==="vineyards"){
+    if(action.type==="place-starting-castle"){draft=structuredClone(placeStartingCastle(draft,action.playerId,action.cellId)) as Draft;} else if(action.type==="extension"&&action.extensionId==="vineyards"){
       draft=structuredClone(executeVine(draft,action.playerId,action.payload as unknown as import("../vineyards").VineIntent)) as Draft;draft.players.find(p=>p.id===action.playerId)!.silver-=2;draft.turn.blackPurchaseUsed=true;draft=structuredClone(refreshPendingChoice(draft)) as Draft;
     } else if (action.type === "extension") {
       draft=structuredClone(action.command==="choose-monastery-target"||action.command==="change-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
@@ -248,6 +250,7 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   const valid = validateCoreState(state);
   if (!valid.valid) return { ok: false, issues: valid.issues };
   if (!state.players.some(p => p.id === playerId)) return failure("illegal-action", "Unknown player");
+  if(state.status==="setup")return {ok:true,value:{actions:startingCastleCells(state,playerId).map(cellId=>({type:"place-starting-castle" as const,playerId,cellId})),unsupported:[]}};
   const candidates: GameAction[] = [{type:"buy-workers",playerId},{ type: "roll-round", playerId }, { type: "end-turn", playerId }, { type: "advance-phase", playerId }];
   const player = state.players.find(p => p.id === playerId)!;
   if (state.turn.pendingChoice) for (const option of state.turn.pendingChoice.options) candidates.push({ type: "resolve-choice", playerId, choiceId: state.turn.pendingChoice.id, optionId: option.id });

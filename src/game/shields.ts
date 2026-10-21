@@ -80,7 +80,7 @@ export function shieldAcquireIssue(game: GameState, action: Extract<GameAction,{
   const cell=player?.duchy.cells.find(c=>c.id===payload.castleCellId);
   if(!slot?.shieldNumber||!player||!cell?.tileId||game.tiles[cell.tileId]?.type!=="castle")return "Select an occupied shield and your placed castle";
   const mounted=layout.mounted.find(m=>m.playerId===player.id&&m.cellId===cell.id);
-  if((mounted?.shieldNumber??null)!==payload.replaceShieldNumber)return "Explicit replacement confirmation required";
+  if((mounted?.shieldNumber??null)!==payload.replaceShieldNumber)return "Replacement shield identity mismatch";
   const dice=game.dice.players[player.id];let cost=0;
   for(let i=0;i<2;i++){
     const steps=payload.steps[i];if(!Array.isArray(steps)||steps.length>5||steps.some(s=>s!==1&&s!==-1)||dice[i].used)return "Two unused dice required";
@@ -93,9 +93,9 @@ export function acquireShieldPreview(game: GameState, action: ShieldAcquireActio
   const layout=shieldLayout(game)!;const slot=layout.slots.find(s=>s.id===action.payload.slotId)!;
   const cost=action.payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
   return {...game,extensionStates:{...game.extensionStates,shields:{...layout,
-    slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:null}:s),
+    slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:action.payload.replaceShieldNumber}:s),
     mounted:[...layout.mounted.filter(m=>!(m.playerId===action.playerId&&m.cellId===action.payload.castleCellId)),{shieldNumber:slot.shieldNumber!,playerId:action.playerId,cellId:action.payload.castleCellId,castleTileId:game.players.find(p=>p.id===action.playerId)!.duchy.cells.find(c=>c.id===action.payload.castleCellId)!.tileId!}],
-    removed:action.payload.replaceShieldNumber===null?layout.removed:[...layout.removed,action.payload.replaceShieldNumber],
+    ...((layout.rules)?{rules:{...layout.rules,monasteryTarget:action.payload.replaceShieldNumber===6||slot.shieldNumber===6?null:layout.rules.monasteryTarget}}:{}),
   } as unknown as JsonValue}, players:game.players.map(p=>p.id===action.playerId?{...p,workers:p.workers-(free?0:cost)}:p),
     dice:free?game.dice:{...game.dice,players:{...game.dice.players,[action.playerId]:game.dice.players[action.playerId].map((d,i)=>({...d,used:true,value:slot.depot, id:game.dice.players[action.playerId][i].id})) as unknown as GameState["dice"]["players"][string]}}};
 }

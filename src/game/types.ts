@@ -96,6 +96,7 @@ export interface DieAdjustment {
   readonly monasteryNumber?: MonasteryNumber;
 }
 export type GameAction =
+  | { readonly type: "place-starting-castle"; readonly playerId:PlayerId; readonly cellId:CellId }
   | { readonly type: "buy-workers"; readonly playerId: PlayerId }
   | { readonly type: "advance-phase"; readonly playerId: PlayerId }
   | { readonly type: "roll-round"; readonly playerId: PlayerId }

@@ -7,7 +7,7 @@ export async function clickChoice(page:Page,g:GameState,o:PendingChoice['options
  const player=g.players.find(x=>x.id===g.turn.activePlayerId)!;
  if(p?.intent){const i=p.intent;
   if(i.kind==='take-workers'){await page.getByLabel('일꾼 자원',{exact:true}).click();return;}
-  if(i.kind==='sell-goods'){await page.locator('.estate-panel').filter({has:page.getByRole('heading',{name:new RegExp(`^${player.name}의 영지`)})}).getByRole('button',{name:new RegExp(`^${i.goodsType}번 상품 .* 판매$`)}).click();return;}
+  if(i.kind==='sell-goods'){await page.locator('.estate-panel').filter({has:page.getByRole('heading',{name:new RegExp(`^${player.name}의 영지`)})}).getByRole('button',{name:new RegExp(` ${i.goodsType}번 상품 .* 판매$`)}).click();return;}
   if(i.kind==='take-tile'){await page.locator(`[data-tile-id="${i.tileId}"]`).click();if(i.discardTileId){await page.getByRole('button',{name:new RegExp(`^${player.name} 개인 보관 ${i.storageSlot+1} `)}).click();}return;}
   if(i.kind==='place-tile'){const n=player.storage.indexOf(i.tileId)+1;await page.getByRole('button',{name:new RegExp(`^${player.name} 개인 보관 ${n} `)}).click();await page.getByRole('button',{name:new RegExp(`^${player.name} ${i.cellId} `)}).click();return;}
  }

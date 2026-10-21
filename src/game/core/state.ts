@@ -1,3 +1,4 @@
+import {startingCastlePending,validStartingSetup} from "../starting-castles";
 import {validVineyards} from "../vineyards";
 import {validCastleActions} from "../castle-actions";
 import {validCustomTrade} from "../custom-trade-routes";
@@ -34,6 +35,7 @@ export function validateCoreState(state: GameState): ValidationResult {
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
       state.random.seed !== state.config.seed || !isCount(state.random.cursor)) issue("Invalid schema, revision or random state");
     if (!["A", "B", "C", "D", "E"].includes(state.turn.phase) || !Number.isInteger(state.turn.round) || state.turn.round < 1 || state.turn.round > 5) issue("Invalid phase/round");
+    if(!validStartingSetup(state))issue("Invalid starting castle setup");
     const ids = state.players.map(p => p.id);
     if (ids.some(id => !id) || new Set(ids).size !== ids.length || state.config.players.length !== ids.length ||
       new Set(state.config.players.map(p => p.id)).size !== ids.length || state.config.players.some(p => !ids.includes(p.id))) issue("Player/config IDs must match uniquely");
@@ -80,7 +82,7 @@ export function validateCoreState(state: GameState): ValidationResult {
         if (cell.tileId !== null) tileLocations.push(cell.tileId);
       }
       const start = player.duchy.cells.find(c => c.id === player.duchy.startingCastleCellId);
-      if (!start || start.terrain !== "castle" || start.tileId === null || state.tiles[start.tileId]?.type !== "castle") issue("Missing starting castle");
+      if (!startingCastlePending(state,player.id)&&(!start || start.terrain !== "castle" || start.tileId === null || state.tiles[start.tileId]?.type !== "castle")) issue("Missing starting castle");
       if (player.goods.length > 3 || new Set(player.goods.map(g => g.type)).size !== player.goods.length) issue("At most three distinct goods stacks are allowed");
       for (const stack of player.goods) {
         if (!isDie(stack.type) || !stack.tiles.length || stack.tiles.some(t => t.type !== stack.type)) issue("Invalid goods stack");

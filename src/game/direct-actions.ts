@@ -3,6 +3,7 @@ import { orderedPlayers } from "./core/state";
 import { shieldLayout, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAction } from "./shields";
 import type { ActionIntent, GameAction, GameState } from "./types";
 import {isCastleAction} from './castle-actions';
+import {automaticVineReward} from './core/vineyard-effects';
 
 export interface BoardTarget {intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}
 /** Public click targets are projections of canonical engine options, never executable UI payloads. */
@@ -38,8 +39,9 @@ export function directCost(game:GameState,action:GameAction):number{
  if(action.type==="extension"&&action.extensionId==="shields"&&["acquire","acquire-preview"].includes(action.command))return (action as ShieldAcquireAction).payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
  return 0;
 }
-/** Human turns always need confirmation; only round/phase setup is automatic. */
+/** Human turns end manually; setup and fixed rewards are automatic. */
 export function automaticAction(game:GameState,actions:readonly GameAction[]):GameAction|null{
+ const reward=automaticVineReward(game);if(reward)return actions.find(a=>a.type==='resolve-choice'&&a.choiceId===reward.choiceId&&a.optionId===reward.optionId)??null;
  if(game.status!=="playing"||game.turn.pendingChoice||game.turn.pendingEffects.length)return null;
  const playerId=game.turn.activePlayerId??orderedPlayers(game)[0];
  if(game.turn.stage==="round-setup"||game.turn.stage==="phase-end")return actions.find(a=>a.playerId===playerId&&(a.type==="roll-round"||a.type==="advance-phase"))??null;

@@ -22,6 +22,7 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
   const choices = options.value.actions;
   if (!choices.length) return { ok: false, issues: [{ code: "illegal-action", message: "No legal computer action in this state" }] };
   const value = (action: GameAction): number => {
+    if(action.type==="place-starting-castle")return action.cellId===player.duchy.startingCastleCellId?11000:10000;
     if (action.type === "roll-round" || action.type === "advance-phase") return 10000;
     if (action.type === "end-turn") return -100;
     if (action.type === "buy-workers") return player.workers<2?10:-190;
