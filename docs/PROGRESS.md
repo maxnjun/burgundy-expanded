@@ -5,7 +5,8 @@
 - 최종 로컬 검사: 코어468/468(10), 보드33/33(11), HTTP/WSS·파일/Upstash REST모의 재시작/Undo/시작 성7/7(13), PC15/15(24), Chrome터치/WebKit8/8(25), 타입26·린트23·빌드22 exit0. 실제 화면 PC/모바일 캡처 확인, 안정 경로 screenshots/pc-online-{starting-preview,undo-ready,direct-controls}.png. 기존56방/1,778,806bytes 유지.
 - 초기 실패 기록: 01/05/14/21 타입 테스트/nullable 입력 보완, 06/12/16은 롤 응답/로비 참가 완료 대기·고정3000·과거 게스트 선행 확정 기대를 새 흐름에 맞게 수정. 18은 빌드와 브라우저가 겹친 불완전 실행(15통과 후 중지)으로 구분하고22빌드 후24/25 순차 재검증. 검증 삭제/완화 없음.
 - 배포보호: release workflow는 head commit의 [no-deploy] 표시를 존중하도록 추가. 이번 모든 Push는 이 표시 사용. 기존 CI 경로/무료서버/저장소 유지, 사이트 실제 배포는 별도 사용자 확인 전 금지. 유료/계정설정 변경 없음.
-- 백업 준비/다음: 이번20경로/문서접두만 [no-deploy] Commit/일반Push→GitHub 전체 CI 성공 및 release skip 확인. 기존 공개 origin/main은 이전 사용자 Push 허용 유지. 운영사이트 미배포·실제 외부망/실기기/실Upstash 재검증은 승인 뒤에만 진행. 기능/한계/조작은 docs/ONLINE_CONTROLS.md, 버그는 docs/BUGS.md의 ONLINE-002~004.
+- 백업/CI 완료(2026-10-24): a5ffb547c39d505c1a88cd1be0975fe63351b29f 일반Push·원격main 일치 확인. GitHub GameCI39973878632 전체 성공(PC/Chrome터치/WebKit/버전빌드 포함), Game release는 [no-deploy]로 skip. 원본/미커밋 보존. 이 기록만 문서 전용 [skip ci] 체크포인트로 백업하며 게임 소스는 검증한 a5ffb54와 동일하다.
+- 다음: 사용자 배포 확인 뒤에만 검증된 a5ffb54 SHA를 기존 Render Free 서비스에 적용하고 두 브라우저를 새로고침해 운영 검증한다. 운영사이트 미배포, 실제 외부망/실기기/실Upstash 재검증은 남아 있다. localhost3000은 파일모드·기존56방으로 실행/health200 확인, 운영Upstash 미연결.
 
 ---
 # 최신 체크포인트 — 비용0원 Render Free 전환 (2026-10-23)

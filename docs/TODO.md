@@ -4,7 +4,7 @@
 - [x] 서버 턴/행동 스냅샷·권한/revision·재접속·난수/기록 없는 방 제한
 - [x] 서버 시작 성 미리보기·이동/취소·턴종료 확정·차례 제한
 - [x] 로컬 코어468/보드33/배포7/PC15/Chrome터치·WebKit8·타입/린트/빌드 통과
-- [ ] 이번 변경만 [no-deploy] Commit/Push·GitHub CI 성공/release skip 확인
+- [x] a5ffb54 Commit/Push·GitHub CI39973878632 전체 성공·release skip 확인
 - [ ] 사용자 배포 확인 뒤 실제 Render 적용 및 외부사이트 재검증
 
 ---
