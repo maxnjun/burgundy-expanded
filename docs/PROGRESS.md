@@ -6,8 +6,8 @@
 - 시각 확인: PC1280·터치390·WebKit390 캡처를 직접 열어 58px 주사위, 색상·이름·현재 차례 및 버튼 접근성을 확인. 증거 .local-data/online-identity/screenshots/{pc-controls,pc-lobby,pc-game,mobile-controls,webkit-controls}.png. 전체 로그는 같은 상위 폴더의 *.log.
 - 실행 구분: 첫 코어 실행은 Windows 샌드박스 rename EPERM→권한 확장 후 통과. 첫 신규 PC 검사는 native option disabled를 toBeDisabled로 검사한 매처 부적합→disabled JS 속성 직접 검사로 수정 후 PC/Chrome/WebKit 통과(기존 검증 완화 없음).
 - 변경 파일: src/game/{player-colors.ts,types.ts,practice.ts,save.ts}, src/server/{rooms.ts,room-http.ts}, src/app/{online/room-screen.tsx,game-screen.css,game-screen.tsx,common-board.tsx,final-scores.tsx}, tests/{core/online-identity.test.ts,core/run.mjs,browser/online-identity.spec.ts}, .github/workflows/ci.yml, docs/{PROGRESS.md,TODO.md}. CI 모바일/WebKit 목록에도 신규 테스트 포함.
-- 백업: 기존 공개 main Push 허용 지시 적용. 검증 파일만 별도 커밋 예정. [no-deploy]로 Render 배포 경로 차단하며 운영 사이트·실제 Upstash·기존 저장 방·원본 PNG 및 무관한 미커밋 꼬리는 변경하지 않는다. localhost3000은 최종 빌드로 실행 중.
-- 미검증/다음: 실제 Android/iPhone 기기와 외부망 재시험, 운영 Render 적용은 별도 사용자 승인 후. GitHub 전체 CI 결과는 Push 후 확인하며 로컬 관련 회귀와 구분한다.
+- 백업: 기존 공개 main Push 허용 지시 적용. 소스 c0f9589353fe86ec8dbdc2c7384eb605988faa67을 별도 커밋·일반 Push하고 원격 main 일치를 확인했다. [no-deploy]로 Render 배포 경로 차단하며 운영 사이트·실제 Upstash·기존 저장 방·원본 PNG 및 무관한 미커밋 꼬리는 변경하지 않는다. localhost3000은 최종 빌드로 실행 중.
+- 미검증/다음: 실제 Android/iPhone 기기와 외부망 재시험, 운영 Render 적용은 별도 사용자 승인 후. [Game CI40002378709](https://github.com/maxnjun/burgundy-expanded/actions/runs/40002378709)는 진행 중이며 전체 CI 성공으로 보고하지 않는다. 위 결과는 이번 로컬 실행의 통과 범위다. localhost health200 확인.
 
 # 현재 작업 — 온라인 공용 게임판 통합 (2026-10-24)
 
