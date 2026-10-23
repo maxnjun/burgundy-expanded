@@ -72,6 +72,7 @@ test("board drag mode preserves normal scrolling and supports touch pan and pinc
   for(let i=0;i<5;i++)await buttons.click();
   await page.getByRole("button",{name:"영지 드래그 이동",exact:true}).first().click();
   const board=page.getByLabel("영지 이동 영역",{exact:true}).first();await board.scrollIntoViewIfNeeded();
+  await expect(board).toHaveCSS("touch-action","none");
   const box=await board.boundingBox();if(!box)throw new Error("missing board");
   const x=box.x+Math.min(box.width-20,250),y=Math.min(box.y+70,page.viewportSize()!.height-110);
   if(info.project.name.startsWith("mobile")){
@@ -92,7 +93,7 @@ test("board drag mode preserves normal scrolling and supports touch pan and pinc
     if(await board.evaluate(el=>el.scrollWidth>el.clientWidth))expect(await board.evaluate(el=>el.scrollLeft)).toBeGreaterThan(10);
   }
   await page.getByRole("button",{name:"영지 드래그 이동",exact:true}).first().click();
-  await expect(board).toHaveCSS("touch-action","pan-y pinch-zoom");
+  await expect(board).toHaveCSS("touch-action","manipulation");
 });
 
 

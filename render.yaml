@@ -1,11 +1,13 @@
-# Applying this Blueprint creates PAID resources. Obtain the owner's approval first.
+# Applying this Blueprint creates one PAID test service. Obtain the owner's approval first.
 services:
   - type: web
     name: burgundy-expanded-staging
     runtime: node
-    plan: starter
+    plan: 0.5c-512mb
+    region: singapore
     branch: main
     autoDeployTrigger: off
+    numInstances: 1
     buildCommand: npm ci --include=dev && NEXT_PUBLIC_GAME_VERSION=$RENDER_GIT_COMMIT npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -17,26 +19,6 @@ services:
       - key: NODE_VERSION
         value: 24.22.0
       - key: BURGUNDY_DATA_DIR
-        value: /var/data/burgundy
-      - key: TRUST_PROXY
-        value: "1"
-  - type: web
-    name: burgundy-expanded
-    runtime: node
-    plan: starter
-    branch: main
-    autoDeployTrigger: off
-    buildCommand: npm ci --include=dev && NEXT_PUBLIC_GAME_VERSION=$RENDER_GIT_COMMIT npm run build
-    startCommand: npm start
-    healthCheckPath: /api/health
-    disk:
-      name: production-rooms
-      mountPath: /var/data
-      sizeGB: 1
-    envVars:
-      - key: NODE_VERSION
-        value: 24.22.0
-      - key: BURGUNDY_DATA_DIR
-        value: /var/data/burgundy
+        value: /var/data/burgundy-staging
       - key: TRUST_PROXY
         value: "1"

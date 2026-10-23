@@ -1,6 +1,6 @@
 # 모바일 온라인·인터넷 배포 운영안
 
-2026-10-22. 기존 Next16/React19/Node24와 서버 권위의 2인 게임을 재사용한다. 로컬·AI는 기존2~4인이다. 외부 계정 생성·유료 서비스·실제 배포는 아직 실행하지 않았다. 검증 결과는 이 문서 말미에 기록한다.
+2026-10-23. 기존 Next16/React19/Node24와 서버 권위의 2인 게임을 재사용한다. 로컬·AI는 기존2~4인이다. 현재 Blueprint는 테스트 서버 1개만 정의하며 정식 서버는 생성하지 않는다. 외부 계정 연결·유료 서비스·실제 배포는 아직 실행하지 않았다. 과거 로컬 검증 결과는 이 문서 말미에 기록한다.
 
 ## 구성과 보존
 
@@ -11,35 +11,37 @@
 - WS는 인증 후 공개 뷰를 푸시한다. 변경 액션은 기존 POST+좌석 권한+revision+프로세스별 잠금으로 검증한다. 동시/중복/오래된 액션은409, 다른 좌석403, 미인증401. 응답을 못 받은 행동은 자동 재실행하지 않고 최신 상태를 다시 읽는다. 방 생성/참가 응답 유실은 저장해 둔 동일 인증 정보로 재시도한다.
 - 연결 끊김·화면 복귀·네트워크 변경 시 자동 재연결/재조회, WS 차단 시 폴링. 오프라인에서는 행동 잠금. 구 클라이언트의 프로덕션 변경 요청은426으로 차단하고 새로고침 안내. 자동 새로고침/게임 삭제는 하지 않는다.
 - 개인 영지는 모바일에서 세로 정렬, 포도밭은 영지 옆의 내부 스크롤로 유지한다. 원래 보드 확대/이동·단일 터치 설명/주사위 조작 우선·상품 겹침을 재사용한다. OS 실기기와 외부망 검증은 별도다.
+- 테스트 사이트는 전용 빈 `staging-rooms` 디스크에서 시작한다. localhost의 기존 방 파일은 그대로 보존되며 테스트 사이트로 자동 복사되지 않는다. 브라우저 재접속 토큰도 주소별로 분리되므로 기존 localhost 방 코드만으로 테스트 사이트의 좌석에 복귀할 수 없다. 실제 테스트 사이트에서 만든 방은 같은 주소·브라우저 저장소와 서버 디스크를 사용해 재접속한다. 정식 서비스는 추후 별도 디스크를 사용한다.
 
 ## 서비스 비교와 비용
 
-공식 문서 확인일2026-10-22, USD/세전·트래픽 등 초과 비용 제외. 결제 전에 대시보드 견적을 다시 확인한다.
+공식 문서 확인일2026-10-23, USD/세전·트래픽·빌드 초과 비용 제외. 결제 전에 대시보드 견적을 다시 확인한다.
 
 | 서비스 | 현재 프로젝트 적합성 | 초기 예상 |
 |---|---|---|
-| Render Starter+1GB disk | Node/WS와 기존 JSON 영속 저장을 그대로 사용. 같은 URL HTTPS/WSS, 로그·상태 확인 | 한 환경 월$7+$0.25≈$7.25, 테스트/정식 분리 두 환경≈$14.50 |
-| Railway Hobby+volume | 기존 Node 실행/볼륨 가능, 사용량 과금 관리 필요 | 월 최소$5(사용 크레딧 포함), 초과 CPU/RAM/디스크 별도 |
+| Render `0.5c-512mb`+1GB disk | Node/WS와 기존 JSON 영속 저장을 그대로 사용. 같은 URL HTTPS/WSS, 로그·상태 확인 | **테스트 1개 월 약$7.25**($7 컴퓨트+$0.25 디스크). 정식 서버는 지금 만들지 않음 |
+| Railway Hobby+volume | 기존 Node 실행/볼륨 가능하나 배포 설정을 새로 작성해야 함 | 월 최소$5(사용 크레딧 포함), 초과 CPU/RAM/디스크 별도 |
 | Vercel | WebSocket 공개 베타가 있으나 현재 로컬 영속 파일/단일 Node 구조를 그대로 배포하는 구성은 아님. 외부 저장소/서버 어댑터 전환이 더 큼 | 별도 설계·견적 필요 |
 
-Render 무료 웹 서비스는15분 유휴 절전과 영속 디스크 부재 때문에 진행 중 게임 보존용으로 추천하지 않는다. 무료 테스트 환경+유료 정식 한 개로 비용을 줄일 수는 있지만 재시작 복구를 같은 조건으로 검증할 수 없다. 추천은 분리된 유료 환경2개다.
+Render 무료 웹 서비스는15분 유휴 절전과 영속 디스크 부재 때문에 게임방 재시작 복구를 검증할 수 없다. 따라서 **지금은 유료 테스트 환경 1개만** 추천한다. 정식 환경은 별도 승인·디스크·URL로 나중에 만든다. 첫 달 실제 과금과 리소스 사용량은 계정에서 확인한다.
 
-출처: [Render 요금](https://render.com/pricing), [공식 요금 표시](https://render.com/pricing?trk=article-ssr-frontend-pulse_little-text-block), [무료 제한](https://render.com/docs/free), [영속 디스크](https://render.com/docs/disks), [WebSocket 지원](https://render.com/docs/websocket), [Railway 요금](https://docs.railway.com/pricing/plans), [Vercel WebSockets](https://vercel.com/docs/functions/websockets).
+출처: [Render 요금](https://render.com/pricing), [Hobby 작업 공간](https://render.com/docs/new-workspace-plans), [Blueprint 규격](https://render.com/docs/blueprint-spec), [무료 제한](https://render.com/docs/free), [영속 디스크](https://render.com/docs/disks), [WebSocket 지원](https://render.com/docs/websocket), [Railway 요금](https://docs.railway.com/pricing/plans).
 
-## 최초 설정 — 승인 후 함께 진행
+## 최초 설정 — 외부 연결·요금 승인 후
 
-1. 사용자가 Render 사용 및 유료 환경 수/견적을 승인한다. 가입/로그인 후 **New → Blueprint → 기존 maxnjun/burgundy-expanded 연결 → render.yaml 선택**. 비용 확인 화면에서 두 Starter+1GB 디스크를 확인한 뒤 생성한다. 이 파일을 커밋하는 것만으로 서비스가 생성되지는 않는다.
-2. 각 서비스의 **Environment**에는 Blueprint의 Node24, `BURGUNDY_DATA_DIR=/var/data/burgundy`, `TRUST_PROXY=1`이 들어간다. 기본 HTTPS 주소는 Render가 제공한다. 사용자 도메인 사용 시 `APP_ORIGIN=https://실제주소`를 설정한다. 비밀번호/API 키/토큰은 채팅·코드·커밋에 입력하지 않는다. `TRUST_PROXY=1`은 알려진 Render 프록시 뒤에서만 사용한다.
-3. 최초 Blueprint 생성 빌드는 승인된 수동 부트스트랩이다. 두 `/api/health`에서 status ok·버전·protocol1·roomFormat1을 확인한다. 실제 친구2명 외부망/재접속 게임을 테스트 사이트에서 진행한다. 그 전에는 공개 인터넷 검증 완료로 보지 않는다.
-4. GitHub **Settings → Environments**에서 `staging`, `production`을 만든다. 각 환경 Variables에 `SITE_URL`을 해당 HTTPS 주소로 넣는다. production에는 `STAGING_URL`도 넣는다. 각 Render 서비스 **Settings → Deploy Hook**을 복사해 대응 GitHub 환경 Secret `RENDER_DEPLOY_HOOK`에만 저장한다. 훅 값은 배포 권한이므로 공개하지 않는다.
-5. production **Required reviewers**에 승인자를 지정한다. 혼자 운영하면서 본인이 배포 승인할 경우 **Prevent self-review**는 끈다. 다른 승인자가 있을 때만 켠다. GitHub 플랜/저장소 공개 여부에 따라 보호 기능 제공 범위가 다르다. 보호 기능이 없으면 수동 workflow의 DEPLOY 확인만 적용되므로 별도 환경 승인과 같지는 않다. [GitHub 환경 보호](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
-6. 준비가 끝나면 Repository Actions Variable `ENABLE_DEPLOYMENTS=true`를 설정한다. 그 전에는 배포 jobs가 실행되지 않는다. Render의 자동 배포는 `off`를 유지한다. 기존 저장소 visibility는 바꾸지 않는다. 현재 origin은 공개이며 사용자가 앞서 공개 main Push를 허용했다.
+0. **현재 정지 지점:** 이 문서와 설정 파일을 GitHub에 백업할 때에는 외부 서비스나 과금이 생기지 않는다. 먼저 전체 main CI가 성공해야 한다. 계정 연결·유료 리소스 생성은 사용자의 별도 확인을 기다린다.
+1. [Render](https://dashboard.render.com/)에 가입/로그인하고 **Hobby 작업 공간**을 선택한다. Render의 GitHub 연결 화면에서는 기존 `maxnjun/burgundy-expanded` 저장소 **하나만** 허용한다. 공개 URL을 직접 입력하는 연결은 자동 배포 연동에 사용하지 않는다. 비밀번호/토큰은 채팅에 보내지 않는다.
+2. Render **New → Blueprint → 연결된 저장소 선택 → branch `main` → root `render.yaml`**. 미리보기에서 `burgundy-expanded-staging` 웹 서비스 **한 개**, 싱가포르 지역, `0.5c-512mb`, 1GB `staging-rooms` 디스크만 표시되는지 확인한다. 정식 서비스/DB가 표시되면 생성하지 않는다. 월 예상 기본액 **약$7.25**와 추가 사용료를 검토한 뒤 승인이 있을 때만 생성한다.
+3. Blueprint **Settings → Auto Sync: No**로 설정한다. 서비스는 **Auto Deploy: Off**, 인스턴스1개, 디스크 `/var/data`, `BURGUNDY_DATA_DIR=/var/data/burgundy-staging`, `NODE_VERSION=24.22.0`, `TRUST_PROXY=1`, build/start 명령은 `render.yaml` 값인지 확인한다. 기본 `https://...onrender.com` 주소를 사용한다. Blueprint 자동 동기화를 켜면 YAML Push가 CI 배포 게이트를 우회할 수 있다.
+4. 첫 생성 빌드 후 테스트 사이트 `/api/health`의 status ok·버전 전체 SHA·protocol1·roomFormat1을 확인한다. 빌드가 실패하거나 현재 GitHub CI가 실패 중이면 자동 배포를 켜지 않는다. 외부망/실기기 검증 전에는 인터넷 플레이가 검증되었다고 표시하지 않는다.
+5. GitHub 저장소 **Settings → Environments → New environment → `staging`**. 이 환경의 Variables에 `SITE_URL=https://실제-테스트-주소.onrender.com`, Secrets에 Render 테스트 서비스 **Settings → Deploy Hook**의 `RENDER_DEPLOY_HOOK`을 입력한다. 훅 주소 전체는 배포 권한이므로 채팅·코드·로그에 남기지 않는다.
+6. GitHub 저장소 **Settings → Secrets and variables → Actions → Variables → New repository variable**에서 `ENABLE_TEST_DEPLOYMENTS=true`를 설정한다. `ENABLE_PRODUCTION_DEPLOYMENTS`는 만들지 않거나 `false`로 둔다. CI 성공한 main Push만 `staging`으로 정확한 SHA를 배포하고 `/api/health`로 검증한다. 실패한 CI는 배포하지 않는다.
 
-계정 연결·보안 UI에 값 저장은 사용자가 수행하며, Codex는 승인 후 화면/설정 검증·실제 사이트 테스트·다음 배포를 이어서 돕는다. 별도 서버 명령 입력은 일상 운영에 필요 없다.
+이번 단계에는 정식 Render 서비스, 정식 GitHub 환경/훅, 정식 URL을 만들지 않는다. 향후 정식 서버는 별도 디스크와 `BURGUNDY_DATA_DIR=/var/data/burgundy-production`을 사용하고 명시적 승인 뒤에만 `ENABLE_PRODUCTION_DEPLOYMENTS`를 연다. [Render Blueprint 자동 동기화](https://render.com/docs/infrastructure-as-code), [Render GitHub 연결](https://render.com/docs/git-provider), [GitHub 환경](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
 
 ## 이후 업데이트
 
-수정 → main Push → Game CI(코어/보드/타입/린트/이미지/빌드/프로덕션 서버·WS/PC·모바일) → 성공한 **동일 SHA** 테스트 배포 → 실제 테스트 사이트 확인 → GitHub **Actions → Game release → Run workflow → production → SHA 전체40자리 → confirmation DEPLOY** → 환경 승인 → 정식 업데이트. 한 번에 하나의 배포만 실행한다. 고정 SITE_URL은 그대로 유지한다.
+**이번 단계:** 수정 → main Push → Game CI(코어/보드/타입/린트/이미지/빌드/프로덕션 서버·WS/PC·모바일) 성공 → 성공한 **동일 SHA** 테스트 배포 → 실제 테스트 사이트 확인. 이후 Push마다 같은 URL이 갱신된다. CI 실패면 기존 테스트 버전이 유지된다. 정식 배포는 아직 비활성화했다. 향후 별도 승인 후 GitHub **Actions → Game release → Run workflow → production → SHA 전체40자리 → confirmation DEPLOY** → 환경 승인을 사용한다.
 
 배포 스크립트는 성공한 main push CI를 GitHub API로 확인하고, staging의 정확한 SHA와 현재 데이터/통신 형식1을 검사한 뒤 Render 훅에 `ref=SHA`를 전달한다. 테스트 실패/다른 SHA/호환 형식 변경이면 정식 배포를 거부한다. [Blueprint 필드](https://render.com/docs/blueprint-spec), [특정 커밋 배포 훅](https://render.com/docs/deploy-hooks).
 

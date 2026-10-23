@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   staging:
-    if: vars.ENABLE_DEPLOYMENTS == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    if: vars.ENABLE_TEST_DEPLOYMENTS == 'true' && github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -42,7 +42,7 @@ jobs:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           SITE_URL: ${{ vars.SITE_URL }}
   production-check:
-    if: vars.ENABLE_DEPLOYMENTS == 'true' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY'
+    if: vars.ENABLE_PRODUCTION_DEPLOYMENTS == 'true' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY'
     runs-on: ubuntu-latest
     steps:
       - name: Require successful CI before executing the requested commit

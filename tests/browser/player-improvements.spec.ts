@@ -1,4 +1,4 @@
-import {startOnlineLobby} from "./starting-castles";
+import {startOnlineLobby,waitOnlineFresh} from "./starting-castles";
 import {test,expect,type Page} from "@playwright/test";
 import {createPracticeSession} from "../../src/game/practice";
 import {applyCoreAction} from "../../src/game/core";
@@ -61,7 +61,7 @@ test("online each owner picks only their own starting castle, guest can go first
  const route=async(r:import("@playwright/test").Route)=>{const q=r.request(),response=await fetch(isolated.url+new URL(q.url()).pathname,{method:q.method(),headers:{...q.headers(),host:new URL(isolated.url).host,origin:isolated.url},body:q.postData()??undefined});await r.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});};await page.route("**/api/rooms{,/**}",route);await guest.route("**/api/rooms{,/**}",route);
  try{await page.goto("/online");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();const code=await page.getByLabel("공유할 방 코드").inputValue();await guest.goto("/online");await guest.getByLabel("방 코드",{exact:true}).fill(code);await guest.getByRole("button",{name:"방 참가",exact:true}).click();
   await startOnlineLobby(page,guest);await expect(guest.locator('[data-can-start="true"]').first()).toBeVisible();await expect(guest.locator('.online-estates>.estate-panel').first().locator('[data-can-start="true"]')).toHaveCount(0);await expect(page.getByRole("button",{name:"온라인 주사위 1",exact:true})).toBeDisabled();
-  await guest.locator('[data-can-start="true"]').first().click();await expect(guest.locator('[data-can-start="true"]')).toHaveCount(0);await guest.reload();await expect(guest.locator('[data-estate-tile]')).toHaveCount(1);await page.locator('[data-can-start="true"]').first().click();await expect(page.locator('[data-can-start="true"]')).toHaveCount(0);await expect(guest.locator('[data-estate-tile]')).toHaveCount(2);await page.screenshot({path:`.local-data/player-improvements/${info.project.name}-online-starting.png`});
+  await guest.locator('[data-can-start="true"]').first().click();await expect(guest.locator('[data-can-start="true"]')).toHaveCount(0);await guest.reload();await expect(guest.locator('[data-estate-tile]')).toHaveCount(1);await waitOnlineFresh(page);await page.locator('[data-can-start="true"]').first().click();await expect(page.locator('[data-can-start="true"]')).toHaveCount(0);await expect(guest.locator('[data-estate-tile]')).toHaveCount(2);await page.screenshot({path:`.local-data/player-improvements/${info.project.name}-online-starting.png`});
  }finally{await guestContext.close();await isolated.close();}
 });
 test("AI opponents pick their own legal starts after the human chooses",async({page})=>{
