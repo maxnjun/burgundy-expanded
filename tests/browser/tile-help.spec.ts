@@ -105,7 +105,7 @@ test("online reference and tile effects are UI-only with no action requests or r
  try{
   await page.goto("/online");await page.getByRole("checkbox",{name:"방패 확장"}).check();await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();await expect(page.locator(".tile-encyclopedia")).toBeVisible();
   const before=await page.locator(".online-screen").getAttribute("data-game-revision");let actions=0;page.on("request",r=>{if(r.method()==="POST"&&/\/actions$/.test(new URL(r.url()).pathname))actions++;});
-  const source=page.locator(".online-shields button[data-empty=false]").first();await source.scrollIntoViewIfNeeded();
+  const source=page.locator('[data-shield-slot][data-empty="false"]').first();await source.scrollIntoViewIfNeeded();
   if(info.project.use.hasTouch){await source.evaluate(e=>e.scrollIntoView({block:"center",behavior:"instant"}));const cdp=await page.context().newCDPSession(page);await touchStart(page,cdp,source);await touchEnd(cdp);await expect(page.getByRole("dialog",{name:"타일 효과 설명",exact:true})).toBeVisible();await cdp.detach();}else{await source.hover();await expect(page.getByRole("tooltip")).toBeVisible();}
   await page.screenshot({path:artifact(info,"online-tooltip")});await page.locator(".tile-encyclopedia").getByRole("button",{name:"방패 카테고리",exact:true}).click();await page.locator('[data-help-entry="shield:6"]').click();await expect(page.locator(".tile-help-selected")).toContainText(getTileHelp("shield",6)!.details);
   expect(actions).toBe(0);if(before!==null)await expect(page.locator('[data-game-revision]')).toHaveAttribute("data-game-revision",before);

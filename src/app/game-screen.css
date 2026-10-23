@@ -87,6 +87,24 @@
 .common-board-panel .common-board-svg{min-width:0}
 .common-board-panel .shield-depot-link{opacity:.25}
 
+/* Online uses the same spatial game board; narrow screens pan the whole table. */
+.online-common-table{margin:14px 0;background:#ecdfbe;border:2px solid #c4aa76;border-radius:4px;min-width:0}
+.online-common-board-row{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;padding:8px}
+.online-common-board-row>.common-board-panel{flex:1 0 640px;min-width:640px;max-width:none}
+.online-common-board-row>.vineyard-supply.panel{--vine-supply-tile-width:120px;flex:0 0 300px;width:300px;padding:12px;margin:0;border:1px solid #c4aa76;border-radius:3px;background:#fff4d8}
+.online-common-board-row .vineyard-supply .vineyard-depots{gap:8px}
+.online-common-board-row .vineyard-supply .vineyard-depots button{min-height:120px;padding:4px;gap:4px}
+.online-common-board-row .vineyard-supply header{flex-wrap:wrap;gap:4px;margin-bottom:10px}
+.online-common-board-row .vineyard-supply header strong{font-size:14px}
+.online-common-board-row .vineyard-supply p{margin:12px 0 8px}
+.online-common-board-row .vineyard-token-row{gap:5px;margin-top:12px}
+.online-screen .estate-panel .trade-route-panel{margin:0;padding:10px 12px;border:0;border-top:1px solid #c4aa76;border-radius:0}
+.online-screen .trade-route-cards{flex-wrap:nowrap;overflow-x:auto;padding:3px}
+.online-screen .trade-route-card{flex:none}
+.online-screen .trade-route-cell{min-height:94px;border:0;background:#fff9e980}
+.online-screen .trade-route-panel>small{line-height:1.5}
+.online-shared-monastery{display:block;padding:4px 12px;color:#655032}
+
 /* One visual treatment for every turn-control button, including disabled ones. */
 .direct-toolbar .turn-controls,.turn-controls{display:flex;gap:6px;margin-left:auto;flex-shrink:0}
 .direct-toolbar .turn-controls button,.turn-controls button{background:#a83232;border:1px solid #752020;color:#fff3dc;border-radius:4px;min-height:34px;padding:6px 10px;font:600 11px Arial,"Malgun Gothic",sans-serif;white-space:nowrap}

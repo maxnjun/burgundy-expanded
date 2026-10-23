@@ -22,6 +22,12 @@ test("room seat authority, private-state redaction and persisted reconnection",a
     assert.equal(view.joined,true);assert.equal(view.seat,"seat-1");
     const text=JSON.stringify(view);assert.ok(!text.includes("supplyPools"));assert.ok(!text.includes("random"));assert.ok(!text.includes("token"));
     assert.ok(Object.keys(view.tiles).length<160);
+    const saved=JSON.parse(await readFile(join(f.directory,`${f.owner.id}.json`),"utf8")).game;
+    assert.deepEqual(view.commonBoard.orderTrack,saved.turn.orderTrack);
+    assert.deepEqual(view.commonBoard.bonusTiles,saved.market.bonusTiles);
+    assert.equal(view.commonBoard.roundGoodsCount,saved.market.roundGoods.length);
+    for(const phase of ["A","B","C","D","E"] as const)assert.equal(view.commonBoard.phaseGoodsCounts[phase],saved.market.phaseGoods[phase].length);
+    assert.ok(!("roundGoods" in view.commonBoard)&&!("phaseGoods" in view.commonBoard));
     const raw=await readFile(join(f.directory,`${f.owner.id}.json`),"utf8");assert.ok(!raw.includes(f.owner.token));assert.ok(!raw.includes(f.guest.token));
     const restarted=new RoomStore(f.directory);assert.deepEqual(await restarted.view(f.owner.id,f.owner.token),view);
     await assert.rejects(()=>f.store.view(f.owner.id,"x".repeat(43)),(e:unknown)=>e instanceof RoomError&&e.status===401);
