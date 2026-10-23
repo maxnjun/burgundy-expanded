@@ -1,9 +1,9 @@
-# Applying this Blueprint creates one PAID test service. Obtain the owner's approval first.
+# Free test service only. Connect an account-owned Upstash Free database before use.
 services:
   - type: web
     name: burgundy-expanded-staging
     runtime: node
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
     branch: main
     autoDeployTrigger: off
@@ -11,14 +11,16 @@ services:
     buildCommand: npm ci --include=dev && NEXT_PUBLIC_GAME_VERSION=$RENDER_GIT_COMMIT npm run build
     startCommand: npm start
     healthCheckPath: /api/health
-    disk:
-      name: staging-rooms
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: NODE_VERSION
         value: 24.22.0
-      - key: BURGUNDY_DATA_DIR
-        value: /var/data/burgundy-staging
+      - key: BURGUNDY_STORAGE
+        value: upstash
+      - key: BURGUNDY_ROOM_NAMESPACE
+        value: staging
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
       - key: TRUST_PROXY
         value: "1"

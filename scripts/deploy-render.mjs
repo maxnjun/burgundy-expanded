@@ -9,16 +9,19 @@ export async function verifiedCI(repo,sha,token,request=fetch){
  if(!data.workflow_runs?.some(r=>r.head_sha===sha&&r.head_branch==="main"&&r.event==="push"&&r.conclusion==="success"))throw Error("This main commit has no successful full CI run");
 }
 async function health(url,request){const response=await request(new URL("/api/health",url),{cache:"no-store",signal:AbortSignal.timeout(15_000)});if(!response.ok)throw Error("Service health check failed");return response.json();}
+async function wake(url,request,pause){
+ for(let i=0;i<8;i++){try{return await health(url,request);}catch(error){if(i===7)throw error;await pause(10_000);}}
+}
 export async function deployRender({hook,url,sha,staging,rollback=false},request=fetch,pause=delay){
  if(!/^[a-f0-9]{40}$/.test(sha))throw Error("Full commit SHA required");
  const endpoint=new URL(hook),site=new URL(url);
  if(endpoint.origin!=="https://api.render.com"||!/^\/deploy\/srv-[\w-]+$/.test(endpoint.pathname)||!endpoint.searchParams.get("key")||site.protocol!=="https:")throw Error("Invalid secure deployment configuration");
- const current=await health(site,request);if(current.roomFormat!==1||current.protocol!==1)throw Error("Data compatibility changed; deployment requires a separate migration review");
- if(staging&&!rollback){const tested=await health(staging,request);if(tested.version!==sha||tested.roomFormat!==1||tested.protocol!==1)throw Error("Deploy this exact commit to staging first");}
+ const current=await wake(site,request,pause);if(current.roomFormat!==1||current.protocol!==1)throw Error("Data compatibility changed; deployment requires a separate migration review");
+ if(staging&&!rollback){const tested=await wake(staging,request,pause);if(tested.version!==sha||tested.roomFormat!==1||tested.protocol!==1)throw Error("Deploy this exact commit to staging first");}
  endpoint.searchParams.set("ref",sha);
  const response=await request(endpoint,{method:"POST",signal:AbortSignal.timeout(30_000)});if(!response.ok)throw Error("Render rejected deployment; inspect the service dashboard");
- for(let i=0;i<60;i++){await pause(10_000);try{const ready=await health(site,request);if(ready.status==="ok"&&ready.version===sha&&ready.roomFormat===1&&ready.protocol===1)return;}catch{/* Restart downtime is expected with one persistent disk. */}}
- throw Error("Deployment was not verified within 10 minutes; keep the existing volume and inspect Render logs");
+ for(let i=0;i<60;i++){await pause(10_000);try{const ready=await health(site,request);if(ready.status==="ok"&&ready.version===sha&&ready.roomFormat===1&&ready.protocol===1)return;}catch{/* Cold starts and restart downtime can temporarily hide health. */}}
+ throw Error("Deployment was not verified; preserve the room store and inspect Render logs");
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
  try{if(process.env.DEPLOY_MODE==="production"&&!process.env.STAGING_URL)throw Error("Production needs staging verification");const sha=process.env.DEPLOY_SHA;await verifiedCI(process.env.GITHUB_REPOSITORY,sha,process.env.GITHUB_TOKEN);

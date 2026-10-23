@@ -21,9 +21,9 @@ import { directCost } from "../game/direct-actions";
 import { parseSavedGame } from "../game/save";
 import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
 
-export class RoomError extends Error {
-  constructor(public status:number,message:string,public code?:string){super(message);this.name="RoomError";}
-}
+import {RoomError} from "./room-error";
+import type {UpstashRooms} from "./upstash-rooms";
+export {RoomError} from "./room-error";
 const compress=promisify(gzip),decompress=promisify(gunzip);
 const ROOM_BYTES=2_100_000,WRITE_RESERVE=ROOM_BYTES*4,ARCHIVE_AGE=24*60*60*1000;
 export function requireRoomSpace(available:number){
@@ -44,12 +44,13 @@ export interface RoomView {
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
 const name=(value:unknown)=>typeof value==="string"&&value.trim().length>0&&value.trim().length<=30 ? value.trim() : (()=>{throw new RoomError(400,"이름은1~30자로 입력하세요.");})();
 
-/** Single-process persistent rooms; deploy one Node instance with a durable disk.
+/** Single-process rooms; use a durable disk or the external room store.
  * Only hashed seat tokens are persisted; full engine state never leaves the server.
  */
 export class RoomStore {
   private locks=new Map<string,Promise<unknown>>();
-  constructor(private directory:string){}
+  private revisions=new WeakMap<StoredRoom,number>();
+  constructor(private directory:string,private remote?:UpstashRooms){}
   private async serial<T>(key:string,task:()=>Promise<T>):Promise<T>{
     const previous=this.locks.get(key)??Promise.resolve();
     const current=previous.catch(()=>{}).then(task);this.locks.set(key,current);
@@ -58,6 +59,7 @@ export class RoomStore {
   private path(id:string){if(!/^[a-f0-9]{24}$/.test(id))throw new RoomError(404,"방을 찾을 수 없습니다.");return join(this.directory,`${id}.json`);}
   private archivePath(id:string){this.path(id);return join(this.directory,"archive",`${id}.json.gz`);}
   private async raw(id:string):Promise<string>{
+    if(this.remote){const raw=await this.remote.read(id);if(raw===null)throw new RoomError(404,"방을 찾을 수 없습니다.");return raw;}
     try{return await readFile(this.path(id),"utf8");}catch(error){
       if((error as NodeJS.ErrnoException).code!=="ENOENT")throw error;
       try{return (await decompress(await readFile(this.archivePath(id)),{maxOutputLength:ROOM_BYTES})).toString("utf8");}catch(archivedError){
@@ -75,9 +77,10 @@ export class RoomStore {
     if(room.draft&&!validBoardDraft(room.draft,["seat-1","seat-2"]))throw new RoomError(500,"영지 후보 검증 실패");
     room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
     if(room.draft&&draftReady(room.draft)&&room.draft.seats.some((s,i)=>s.selected!==room.game.players[i].duchy.boardId))throw new RoomError(500,"선택 영지와 게임 상태가 일치하지 않습니다.");
-    return room;
+    this.revisions.set(room,room.game.revision);return room;
   }
   private async write(room:StoredRoom){
+    if(this.remote){await this.remote.write(room.id,JSON.stringify(room),this.revisions.get(room)??null);roomChanged(room.id);return;}
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
     try{
@@ -93,6 +96,7 @@ export class RoomStore {
     roomChanged(room.id);
   }
   async maintain(){return this.serial("maintenance",async()=>{
+    if(this.remote)return 0;
     await mkdir(this.directory,{recursive:true});let archived=0;
     for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.serial(file.slice(0,-5),async()=>{
       const id=file.slice(0,-5),raw=await this.raw(id),room=JSON.parse(raw) as StoredRoom;
@@ -130,10 +134,8 @@ export class RoomStore {
     if(c.lobby!==undefined&&typeof c.lobby!=="boolean"||((c.id===undefined)!==(c.token===undefined))||c.id!==undefined&&(typeof c.id!=="string"||!/^[a-f0-9]{24}$/.test(c.id)||typeof c.token!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(c.token)))throw new RoomError(400,"연결 정보를 확인하세요.");
     const id=c.id as string|undefined??randomBytes(12).toString("hex"),token=c.token as string|undefined??randomBytes(32).toString("base64url"),now=Date.now();
     if(c.id){try{const old=await this.read(id);if(old.tokens[0]!==digest(token))throw new RoomError(409,"이미 사용 중인 방 코드입니다.");return {id,token};}catch(e){if(!(e instanceof RoomError)||e.status!==404)throw e;}}
-    await mkdir(this.directory,{recursive:true});
     name(ownerName);
-    await this.maintain();
-    const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);
+    if(!this.remote){await mkdir(this.directory,{recursive:true});await this.maintain();const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);}
     const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
@@ -175,6 +177,7 @@ export class RoomStore {
     room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}
   async checkStorage(){
+    if(this.remote){await this.remote.check();return;}
     await mkdir(this.directory,{recursive:true});
     for(const file of await readdir(this.directory))if(/^[a-f0-9]{24}\.json$/.test(file))await this.read(file.slice(0,-5));
     const archived=await readdir(join(this.directory,"archive")).catch((e:NodeJS.ErrnoException)=>{if(e.code!=="ENOENT")throw e;return [];});

@@ -2,9 +2,10 @@ import { join } from "node:path";
 import { RoomError, RoomStore } from "./rooms";
 import {serverRelease} from "./release";
 import {roomLimit} from "./room-limit";
+import {remoteRooms} from "./upstash-rooms";
 
 const root=globalThis as typeof globalThis & {burgundyRooms?:RoomStore;burgundyReadRoom?:(id:string,token:string)=>Promise<unknown>};
-export const rooms=root.burgundyRooms??=new RoomStore(process.env.BURGUNDY_DATA_DIR||join(process.cwd(),".local-data","rooms"));
+export const rooms=root.burgundyRooms??=new RoomStore(process.env.BURGUNDY_DATA_DIR||join(process.cwd(),".local-data","rooms"),remoteRooms());
 root.burgundyReadRoom=(id,token)=>rooms.view(id,token);
 export function token(request:Request){return request.headers.get("authorization")?.replace(/^Bearer /,"")??"";}
 export async function body(request:Request):Promise<Record<string,unknown>>{
