@@ -110,6 +110,9 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
       <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack width={tileWidth} game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
       <g data-black-depot="true">
         <text x={playCenter.x} y={playCenter.y-tileHeight*1.25-5} textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
+        <g data-market-price="black" aria-label="검은 공급처 가격 · 은화 2개" pointerEvents="none" transform={`translate(${Math.max(playCenter.x,...blackSlots.map(([x])=>x))+tileWidth/2+18} ${playCenter.y-13})`}>
+          <ResourceGlyph type="silver" x={0} y={0} size={26}/><ResourceGlyph type="silver" x={32} y={0} size={26}/>
+        </g>
         {game.market.blackDepot.map((id,i)=>{const [x,y]=blackSlots[i];return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}
       </g>
       <g data-region-score-panel="true" transform={`translate(${layout.panels.left} ${layout.panels.bottom})`}>

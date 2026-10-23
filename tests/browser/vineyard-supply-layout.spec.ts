@@ -23,13 +23,13 @@ for(const count of [2,3,4])test(`vine supply ${count}p shared occupied/empty fra
   expect((await page.locator('.common-board-svg').boundingBox())!.width).toBeCloseTo(940*zoom,1);expect((await page.locator('.common-board-panel').boundingBox())!.width).toBeCloseTo(950,1);expect((await supply.boundingBox())!.width).toBeCloseTo(360,1);
   const main=(await page.locator('.common-board-panel').boundingBox())!,side=(await supply.boundingBox())!;expect(side.x-main.x-main.width).toBeCloseTo(18,1);
   for(const button of await supply.locator('.vineyard-depots button').all()){
-   const art=(await button.locator('svg').boundingBox())!;expect(art.width).toBeCloseTo(140,1);expect(art.height).toBeCloseTo(79.8,1);
+   const art=(await button.locator('.vine-tile-art').boundingBox())!;expect(art.width).toBeCloseTo(140,1);expect(art.height).toBeCloseTo(79.8,1);
    await button.scrollIntoViewIfNeeded();await button.evaluate(el=>{const b=el.getBoundingClientRect();window.scrollBy(0,b.y+b.height/2-innerHeight/2);});
-   expect(await button.evaluate(el=>{const b=el.querySelector('svg')!.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return !!hit&&el.contains(hit);})).toBe(true);
+   expect(await button.evaluate(el=>{const b=el.querySelector('svg.vine-tile-art')!.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return !!hit&&el.contains(hit);})).toBe(true);
   }
  }
  const reset=async()=>{await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),saved);await page.reload();await ready(page,count);};await reset();
- const measure=async(locator:typeof depot)=>locator.evaluate(el=>{const b=el.getBoundingClientRect(),svg=el.querySelector('svg')!,s=svg.getBoundingClientRect();return{button:[b.width,b.height],art:[s.width,s.height],path:svg.querySelector('[data-vine-tile-frame]')!.getAttribute('d')};});
+ const measure=async(locator:typeof depot)=>locator.evaluate(el=>{const b=el.getBoundingClientRect(),svg=el.querySelector('svg.vine-tile-art')!,s=svg.getBoundingClientRect();return{button:[b.width,b.height],art:[s.width,s.height],path:svg.querySelector('[data-vine-tile-frame]')!.getAttribute('d')};});
  const before=await measure(depot),panelHeight=(await supply.boundingBox())!.height;
  await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();await depot.click();await expect(depot.locator('[data-vine-tile="empty"]')).toBeVisible();
  const empty=await measure(depot);expect(empty).toEqual(before);expect((await supply.boundingBox())!.height).toBeCloseTo(panelHeight,1);
