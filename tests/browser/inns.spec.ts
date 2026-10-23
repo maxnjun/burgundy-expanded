@@ -13,7 +13,7 @@ function setup(count:number,zoom=1,seats:2|4=2){
 }
 for(let n=1;n<=5;n++)test(`inn stack${n} at100/160/200 preserves supply hits and purchases top only`,async({page})=>{
  for(const zoom of [1,1.6,2]){
-  const {saved}=setup(n,zoom);await page.goto('/');await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),saved);await page.reload();
+  const {saved}=setup(n,zoom);await page.goto('/updates');await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),saved);await page.goto('/');
   const board=page.getByRole('region',{name:'공용 공급처 보드',exact:true}),stack=board.locator('[data-inn-stack]');await expect(board.getByText('여관1 ◀',{exact:true})).toBeVisible();
   await expect(stack.locator('[data-inn-layer]')).toHaveCount(n);const [innRect,tileRect]=await Promise.all([stack.locator('[data-inn-layer]>svg').last().boundingBox(),board.locator('[data-tile-id]>svg').first().boundingBox()]);expect(innRect!.width).toBeCloseTo(tileRect!.width,1);expect(innRect!.height).toBeCloseTo(tileRect!.height,1);await expect(stack.locator('[data-inn-image]')).toHaveCount(n);await expect(stack).toHaveAttribute('aria-disabled','false');
   await expect(stack.locator('[data-resource-icon="silver"]')).toHaveCount(1);
