@@ -8,7 +8,7 @@
 - 시각 확인: screenshots/{before-pc,before-mobile,before-trade,after-pc,after-mobile,after-trade,after-vineyard,after-inventory,after-webkit-vineyard}.png를 .local-data/dice-readability/ 아래 보존. PC/터치/WebKit 캡처를 직접 열어 확인했다. 초기 seam 주사위가 긴 보상 글자에 닿아 각 육각형 상단으로 옮겼고24칸 모두 경계 검사 통과.
 - 실행 구분: 첫 신규 테스트는 중간 저장 픽스처에 없는 차례 시작 Undo를 기다려 중단, 기존 동작에 맞는 이전 행동으로로 검사 후 통과. 초기 린트 미사용 주사위 함수2개 경고는 중복 구현 삭제로 해결했다. 테스트 삭제/기준 완화·규칙 수정 없음.
 - 변경: src/app/{white-die.tsx,common-board.tsx,game-screen.tsx,online/room-screen.tsx,board-choices.tsx,vineyard-board.tsx,vineyards.css,tile-art.tsx,goods-space.tsx,player-inventory.tsx,trade-route-panel.tsx,game-screen.css}, tests/browser/dice-readability.spec.ts, .github/workflows/ci.yml, docs/{PROGRESS.md,TODO.md}. CI Chrome/WebKit에도 신규 검사 포함.
-- 백업/다음: 기존 공개 main Push 허용 지시에 따라 이번 파일만 [no-deploy]로 백업한다. Render 배포·실제 Upstash 접속·기존 방 삭제는 하지 않는다. localhost3000을 최종 빌드로 열어 둔다. 실제 Android/iPhone 기기·외부망 및 Python PNG 검증은 미실행. GitHub 추가 전체 CI는 Push 후 상태를 기록한다.
+- 백업/다음: 기존 공개 main Push 허용 지시에 따라 이번16개 파일만 e6d1b019aec61d3ba7c0b4f2de3b185330328eb1 [no-deploy]로 커밋·일반 Push하고 원격 main 일치를 확인했다. Render 배포·실제 Upstash 접속·기존 방 삭제는 하지 않는다. localhost3000을 최종 빌드로 열어 둔다. 실제 Android/iPhone 기기·외부망 및 Python PNG 검증은 미실행. localhost health200 확인. [GitHub CI40008849657](https://github.com/maxnjun/burgundy-expanded/actions/runs/40008849657)는 pending이며 로컬 통과 결과와 구분한다.
 
 ## 온라인 2인 이름·색상 및 주사위 UI (2026-10-24)
 
