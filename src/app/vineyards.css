@@ -25,3 +25,5 @@
 .vineyard-supply p{margin:16px 0 10px;line-height:1.6}
 .vineyard-supply .vineyard-token-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0 0;font-size:11px}
 @media(max-width:760px){.common-vineyard-row>.common-board-panel{flex:0 0 calc(100% - 10px);max-width:calc(100% - 10px)}.common-vineyard-row{flex-wrap:wrap}.vineyard-supply.panel{flex:0 0 360px}}
+
+.vineyard-depot-values{display:flex;align-items:center;justify-content:center;gap:6px}.vineyard-depot-values svg{flex:none}

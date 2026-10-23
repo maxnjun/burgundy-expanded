@@ -1,3 +1,15 @@
+## 요구값 주사위·상품·무역로 가독성 (2026-10-24)
+
+- 완료: 공용 보드의 기존 흰색 얼굴을 WhiteDie 하나로 통합했다. 로컬/온라인 빈 영지·후보 보드, 포도밭/공급 요구값, 모든 GoodsArt 및 무역로가 같은 눈금 좌표를 재사용한다. 배치된 칸에는 요구 주사위를 덧그리지 않으며 플레이어 색상 주사위·보상/층/점수 숫자는 유지했다.
+- 크기: 영지36·후보32·포도밭20(각 빈 육각형 위쪽)·공용28 SVG 단위. 상품 저장고40→52 CSS px(슬롯74px, 실제 장수 겹침 유지), 공용 공급23→32 SVG 단위/라운드44→52, 판매 내역64→72 CSS px. 상품칸92→104 SVG 단위로 넓히고 기존 중심은 유지했다. 무역로 셀72→101px·높이110→154px(온라인94→132), 상품30→42px·보상35×40→49×56px, 설명 글자9→13px로 약1.4배. 펼친 카드는 PC/모바일 모두 가로 스크롤한다.
+- 보존: 게임 엔진·서버·저장 형식·난수·판정·보상 데이터 변경 없음. 공용950×1030/영지/포도밭24칸·4층 좌표·원본 PNG와 기존 방·무관한 미커밋 파일 보존. 공용 공급 수량 배지는 타일 우상단, 개인 저장고는 숫자 배지 없이 실제 PNG/SVG 층으로 표시한다.
+- 이번 검증: 전체 코어471/471(core.log)·보드33/33(boards.log), 관련 PC15/15(browser-pc.log), Chrome/WebKit6/6(browser-touch.log), 타일/상품/AI/시작 성/정산 회귀12/12(regression.log), 2·3·4인 방패/겹침100·160·200%3/3(shields.log). 최종 포도밭 배치 조정 후 신규 PC/Chrome터치/WebKit3/3(visual-final.log): 눈금1~6,24칸 요구값,보상 글자 경계 비겹침,상품52px/무역로42px·101px,판매→무역로 진행→행동별 Undo 실상태 복원. 총39회 브라우저 검사 통과이며 중간/최종 실행은 위 로그로 구분한다.
+- 타입/빌드/린트: types-visual-final.log·build-visual-final.log exit0. 전체 lint-final.log 및 마지막 변경의 lint-visual-final.log exit0/경고0. 타일 프레임·혼합 인접 타일의100/160/200% 실제 브라우저 검증 통과. Python 실행 별칭이 정상 실행되지 않아 scripts/validate-tile-assets.py는 이번 로컬에서 실행하지 못했다. PNG/알파 가공 없이 공유 TileArt 사용만 유지했으며 이 한계를 숨기지 않는다.
+- 시각 확인: screenshots/{before-pc,before-mobile,before-trade,after-pc,after-mobile,after-trade,after-vineyard,after-inventory,after-webkit-vineyard}.png를 .local-data/dice-readability/ 아래 보존. PC/터치/WebKit 캡처를 직접 열어 확인했다. 초기 seam 주사위가 긴 보상 글자에 닿아 각 육각형 상단으로 옮겼고24칸 모두 경계 검사 통과.
+- 실행 구분: 첫 신규 테스트는 중간 저장 픽스처에 없는 차례 시작 Undo를 기다려 중단, 기존 동작에 맞는 이전 행동으로로 검사 후 통과. 초기 린트 미사용 주사위 함수2개 경고는 중복 구현 삭제로 해결했다. 테스트 삭제/기준 완화·규칙 수정 없음.
+- 변경: src/app/{white-die.tsx,common-board.tsx,game-screen.tsx,online/room-screen.tsx,board-choices.tsx,vineyard-board.tsx,vineyards.css,tile-art.tsx,goods-space.tsx,player-inventory.tsx,trade-route-panel.tsx,game-screen.css}, tests/browser/dice-readability.spec.ts, .github/workflows/ci.yml, docs/{PROGRESS.md,TODO.md}. CI Chrome/WebKit에도 신규 검사 포함.
+- 백업/다음: 기존 공개 main Push 허용 지시에 따라 이번 파일만 [no-deploy]로 백업한다. Render 배포·실제 Upstash 접속·기존 방 삭제는 하지 않는다. localhost3000을 최종 빌드로 열어 둔다. 실제 Android/iPhone 기기·외부망 및 Python PNG 검증은 미실행. GitHub 추가 전체 CI는 Push 후 상태를 기록한다.
+
 ## 온라인 2인 이름·색상 및 주사위 UI (2026-10-24)
 
 - 완료: 생성/참가 이름(빈 입력은 영주 1/2), 파랑·빨강·초록·노랑·보라·분홍, 로비 본인 정보 수정. 서버가 중복 색상/다른 좌석/시작 후 변경/오래된 revision을 거부하며 수정 시 본인 준비 해제. 응답 유실 재시도는 기존 좌석을 복구하고 이름·색상을 덮어쓰지 않는다.

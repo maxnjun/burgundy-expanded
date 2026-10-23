@@ -1,4 +1,5 @@
 "use client";
+import {WhiteDie} from "./white-die";
 
 import { useEffect, useId, useState, type SVGProps } from "react";
 import type { BaseTile, Tile, TileType } from "../game/types";
@@ -122,7 +123,7 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
 
 export function GoodsArt({ value, ...props }: { value: number } & SVGProps<SVGSVGElement>) {
   const colors = ["", "#795a98", "#9a7549", "#c38c38", "#bf7b8b", "#608568", "#488e9c"];
-  return <svg viewBox="0 0 40 40" aria-hidden="true" {...props}><rect x="1" y="1" width="38" height="38" rx="2" fill={colors[value]} stroke="#776044"/><path d="M5 5H35V35H5Z" fill="none" stroke="#fff0cd" opacity=".65"/><path d="M12 13 20 9 29 14V26L21 31 12 26Z" fill="#e5c48a" stroke="#604d37"/><path d="M12 13 21 18 29 14M21 18V31M16 11 25 16V28" fill="none" stroke="#89643d"/><rect x="3" y="25" width="12" height="12" rx="2" fill="#fff5d6"/><text x="9" y="34" textAnchor="middle" fill="#463e31" fontSize="10" fontWeight="bold">{value}</text></svg>;
+  return <svg data-goods-value={value} viewBox="0 0 40 40" width={52} height={52} aria-hidden="true" {...props}><rect x="1" y="1" width="38" height="38" rx="2" fill={colors[value]} stroke="#776044"/><path d="M5 5H35V35H5Z" fill="none" stroke="#fff0cd" opacity=".65"/><path d="M12 13 20 9 29 14V26L21 31 12 26Z" fill="#e5c48a" stroke="#604d37"/><path d="M12 13 21 18 29 14M21 18V31M16 11 25 16V28" fill="none" stroke="#89643d"/><WhiteDie x={11} y={29} value={value} size={16}/></svg>;
 }
 
 export function GoodsBackArt(props:SVGProps<SVGSVGElement>){return <svg data-goods-back="true" viewBox="0 0 30 30" aria-hidden="true" {...props}><rect x="1" y="1" width="28" height="28" rx="3" fill="#84643c" stroke="#cfb77e"/><path d="M5 15 15 5 25 15 15 25Z" fill="none" stroke="#ead49a"/><path d="M9 15H21M15 9V21" stroke="#ead49a"/></svg>;}
