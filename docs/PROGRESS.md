@@ -6,7 +6,7 @@
 - 완료 검사: 코어468/468(15)·보드33/33(16)·HTTP/WSS/파일·Upstash REST 모의7/7(20), 프로덕션빌드14·타입19/24·린트17/25 exit0. PC 온라인8/8(10), 확대/직접입력3브라우저3/3(13), Chrome터치/WebKit 온라인10/10(21), 실제탭 포함 최종 PC/Chrome터치/WebKit3/3(23). 전체 PC18: 145통과/3모바일 전용 제외/이전 방패 목록 선택자1실패. 선택자를 실제 SVG 방패로 교체 후 최종 빌드27·타입28·린트29 exit0, 관련 PC30은25통과/3모바일 전용 제외, Chrome터치31은2/2·WebKit32는1/1 통과. 동일한 행동요청0/revision불변 검증을 유지했다.
 - 시각 확인: 950×1030 게임판·6방패·중앙시장·4패널·포도 오른쪽 레일을 실제 PC/Chrome터치/WebKit 캡처로 직접 확인. 증거 `.local-data/online-board/screenshots/{before-pc,before-mobile,after-pc-board,after-pc-game,after-mobile-board,after-mobile-vineyards,after-webkit-vineyards}.png`. 모든 방패/타일/상품 100/160/200% hit·겹침 검사 통과.
 - 초기 실행 구분: 01-before는 테스트 HTTP 성공코드201 가정을 실제200으로 바로잡아02 통과. 코어08은 샌드박스 임시파일 rename EPERM→정상 권한15 통과. 22는 PC에서 터치 전용 숨김 구매토글까지 누르던 테스트를 중단한 불완전 실행이며 입력환경을 구분한23으로 재검증. 26 모바일 도움말4통과/2PC전용제외/옛선택자1실패도31에서 해결했다. 최종 소스는 로컬의 기존 선택ID 기반 초기화 키/불가 안내도 유지한다. 테스트 삭제/완화 없음.
-- 남은 절차: 검증한 변경만 [no-deploy] Commit/Push·원격 main 확인. 실제 Render 배포 금지. 기존 미커밋 문서꼬리/수도원27·28/입력 ZIP·PNG는 보존.
+- 백업: 761a17b4d103ec2d91289df12ed77d6c08df395a 일반 Push·원격 main 일치 확인. [Game CI39987233742](https://github.com/maxnjun/burgundy-expanded/actions/runs/39987233742) 전체 성공: 원격 PC146통과/3모바일전용제외, Chrome터치10통과/2PC전용제외, WebKit5통과. 최종 배포 버전 빌드까지 성공. [Game release39989487576](https://github.com/maxnjun/burgundy-expanded/actions/runs/39989487576)는 [no-deploy]로 skipped 확인. 이 결과만 문서 전용 [skip ci] 체크포인트로 추가 백업하며 게임 소스는 검증한761a17b와 동일하다. localhost3000은 최종 빌드/파일모드/기존56방·health200으로 실행 중. 실제 Render/실Upstash/외부망·Android/iPhone 실기기 재검증은 하지 않았다. Render는 사용자 추가 지시 전 배포 금지. 기존 미커밋 문서꼬리/수도원27·28/입력 ZIP·PNG는 보존.
 
 ---
 # 최신 체크포인트 — 온라인 직접 입력·Undo·시작 성 확정 (2026-10-23)

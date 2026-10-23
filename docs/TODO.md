@@ -3,7 +3,8 @@
 - [x] 공유 CommonBoard 연결·공개 표시 DTO·개인 무역로 이동·포도 레일/모바일 공간관계 유지
 - [x] PC/모바일 실제 화면·100/160/200% 클릭/겹침·온라인 동기화·기존 Undo/시작 성 검증
 - [x] 전체 코어/보드/PC·타입/린트/빌드 회귀 (PC의 옛 선택자1건 수정 후 관련25·터치2·WebKit1 재검증)
-- [ ] 검증 변경만 Commit/Push·실제 Render 미배포 확인
+- [x] 검증 변경만 761a17b Commit/Push·원격 main 일치·실제 Render 미배포
+- [x] GitHub CI39987233742 전체 성공·PC146/Chrome터치10/WebKit5·release39989487576 skipped 확인
 
 ---
 
