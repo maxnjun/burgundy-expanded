@@ -1,3 +1,4 @@
+import {isPlayerColor} from "./player-colors";
 import {upgradeVineyards,VINE_SLOTS} from './vineyards';
 import { shieldLayout, setShieldLayout } from "./shields";
 import type { GameState } from "./types";
@@ -62,7 +63,7 @@ export function parseSavedGame(text: string): SavedGame {
       (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29))) return reject();
   }
   const colors = game.players.map(p=>p.color).filter(c=>c!==undefined);
-  if (new Set(colors).size !== colors.length || colors.some(c=>!["blue","red","green","yellow"].includes(c))) return reject();
+  if (new Set(colors).size !== colors.length || colors.some(c=>!isPlayerColor(c))) return reject();
   for (const player of game.players) {
     if (typeof player.name !== "string" || !player.name.trim() || player.name.length > 30) return reject();
     const board = VERIFIED_BOARD_DEFINITIONS.find(b => b.id === player.duchy.boardId) ?? [practiceBoard(0), practiceBoard(1)].find(b => b.id === player.duchy.boardId);

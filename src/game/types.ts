@@ -1,6 +1,6 @@
 ﻿/** Shared v0.2.1 contracts; src/game/core implements an explicit partial runtime separately. */
 export type PlayerId = string;
-export type PlayerColor = "blue" | "red" | "green" | "yellow";
+export type PlayerColor = "blue" | "red" | "green" | "yellow" | "purple" | "pink";
 export type TileId = string;
 export type CellId = string;
 export type DieId = string;

@@ -1,3 +1,4 @@
+import {isPlayerColor} from "./player-colors";
 import {deferStartingCastles} from "./starting-castles";
 import {setupVineyards,type Grape} from "./vineyards";
 import {setupCustomTrade} from "./custom-trade-routes";
@@ -46,7 +47,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
   const firstSeat = config.firstSeat ?? 0;
   if (!Number.isInteger(firstSeat) || firstSeat < 0 || firstSeat >= count) throw new Error("시작 플레이어가 올바르지 않습니다.");
   const colors = config.colors ?? (["blue","red","green","yellow"] as const).slice(0,count);
-  if (colors.length !== count || new Set(colors).size !== count || colors.some(c=>!["blue","red","green","yellow"].includes(c))) throw new Error("플레이어 색상은 서로 달라야 합니다.");
+  if (colors.length !== count || new Set(colors).size !== count || colors.some(c=>!isPlayerColor(c))) throw new Error("플레이어 색상은 서로 달라야 합니다.");
   let random = { seed: config.seed, cursor: 0 };
   const nextDie = () => { const result = drawDie(random); random = result.random; return result.value; };
   const tiles: Record<string, Tile> = {};

@@ -1,4 +1,5 @@
 "use client";
+import {playerPaint} from "../game/player-colors";
 import {tileHelpId} from "../game/tile-help";
 
 import {GoodsSpace,type GoodsOption} from "./goods-space";
@@ -43,7 +44,6 @@ function blackCenters(count:number):number[][]{
 function CornerPanel({name,x,y,height}:{name:string;x:number;y:number;height:number}){
  return <rect data-info-panel={name} x={x} y={y} width={layout.panels.width} height={height} rx="3" fill="#fff5d8" fillOpacity=".55" stroke="#b49a68"/>;
 }
-const colors = { blue:"#287fba",red:"#bd4838",green:"#608d43",yellow:"#d0a536" };
 const terrainNames: Record<TileType,string> = {castle:"성",ship:"선박",mine:"광산",livestock:"가축",building:"건물",monastery:"수도원"};
 
 function Die({x,y,value}: {x:number;y:number;value:number|null}) {
@@ -102,8 +102,8 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
       <g data-round-goods="true"><text x="60" y="143" className="common-small">라운드 상품 · 공급 완료 / 다음 공급</text>
       {Array.from({length:5},(_,i)=>{const goods=game.market.roundGoods[i-(5-game.market.roundGoods.length)];return <g key={i} data-round-supply={i+1}><rect x={55+i*66} y="149" width="54" height="68" rx="5" fill={game.turn.round===i+1?"#f4dda1":"none"} stroke={game.turn.round===i+1?"#9b7135":"none"}/><text x={82+i*66} y="211" textAnchor="middle" fontSize="9" fill="#665035">{i+1}R{i>=5-game.market.roundGoods.length?" 대기":" 공급완료"}</text>{goods ? <GoodsArt value={goods.type} x={60+i*66} y={154} width="44" height="44"/> : i>=5-game.market.roundGoods.length ? <GoodsBackArt x={60+i*66} y={154} width="44" height="44" aria-label="미공개 라운드 상품"/> : <rect x={60+i*66} y={154} width="44" height="44" rx="2" fill="#e3dec0" stroke="#c6bb93" strokeDasharray="3 3"/>}</g>;})}
       </g><text x="565" y="44" className="common-small">선박 순서 트랙 · 앞 →</text>
-      {trackPositions.map(position=>{const x=570+position*330/(trackPositions.length-1);const space=game.turn.orderTrack.find(s=>s.position===position);return <g key={position}><circle cx={x} cy="82" r="12" fill="#fff9df" stroke="#b7ab83"/><text x={x} y="86" textAnchor="middle" fontSize="9" fill="#918465">{position}</text>{space && [...space.players].reverse().map(id=>{const player=game.players.find(p=>p.id===id)!;const j=space.players.indexOf(id);return <circle key={id} cx={x} cy={82-(space.players.length-1-j)*4} r="9" fill={colors[player.color??(["blue","red","green","yellow"] as const)[player.seat]]} stroke="#f4e5b5"><title>{`${player.name} · 위치 ${position} · 위에서 ${j+1}번째`}</title></circle>;})}</g>;})}
-      {game.players.map((p,i)=><g key={p.id}><circle cx={570+(i%2)*165} cy={137+Math.floor(i/2)*35} r="5" fill={colors[p.color??(["blue","red","green","yellow"] as const)[p.seat]]}/><text x={585+(i%2)*165} y={141+Math.floor(i/2)*35} fontSize="11" fill={p.id===game.turn.activePlayerId ? "#a53f30" : "#575742"}>{p.name.slice(0,8)}{p.id===game.turn.activePlayerId ? " ◀" : ""}</text></g>)}
+      {trackPositions.map(position=>{const x=570+position*330/(trackPositions.length-1);const space=game.turn.orderTrack.find(s=>s.position===position);return <g key={position}><circle cx={x} cy="82" r="12" fill="#fff9df" stroke="#b7ab83"/><text x={x} y="86" textAnchor="middle" fontSize="9" fill="#918465">{position}</text>{space && [...space.players].reverse().map(id=>{const player=game.players.find(p=>p.id===id)!;const j=space.players.indexOf(id);return <circle key={id} cx={x} cy={82-(space.players.length-1-j)*4} r="9" fill={playerPaint(player).fill} stroke="#f4e5b5"><title>{`${player.name} · 위치 ${position} · 위에서 ${j+1}번째`}</title></circle>;})}</g>;})}
+      {game.players.map((p,i)=><g key={p.id}><circle cx={570+(i%2)*165} cy={137+Math.floor(i/2)*35} r="5" fill={playerPaint(p).fill}/><text x={585+(i%2)*165} y={141+Math.floor(i/2)*35} fontSize="11" fill={playerPaint(p).ink}>{p.name.slice(0,8)}{p.id===game.turn.activePlayerId ? " ◀" : ""}</text></g>)}
       <g><Die x={60} y={265} value={game.dice.whiteDie}/><text x="83" y="269" className="common-small">흰 주사위</text></g>
       {game.market.numberedDepots.map(depot=>{const [baseX,y]=depotCenters[depot.number-1];const x=baseX;return <g key={depot.number} data-depot={depot.number} aria-label={`${depot.number}번 공급처 상품 ${depot.goods.length}개`}>
         <GoodsSpace key={`${game.revision}:${game.turn.pendingChoice?.id}`} number={depot.number} goods={depot.goods} x={x} y={y} options={goodsOptions?.(depot.number)} onAction={onGoods} onSelecting={onGoodsSelecting}/>

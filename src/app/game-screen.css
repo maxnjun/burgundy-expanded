@@ -148,3 +148,17 @@
 .game-version{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;padding:16px;font-size:12px;color:#665333}.game-version a{color:#794b26}.release-update{border:2px solid #a36d26;background:#fff1c7;padding:14px;margin:12px 0;color:#4d301d}.release-update button{min-height:44px;padding:8px 16px}.connection-status{padding:10px;border:1px solid #c1b083;background:#fbf0d4;font-size:13px}.connection-status.offline,.connection-status.retrying,.connection-status.expired{border-color:#a83232;color:#852e25}.online-lobby button{min-height:44px;min-width:110px;padding:8px 16px;margin-right:8px}.online-lobby small{display:block;margin-top:8px}.online-entry input[readonly]{min-width:0;max-width:100%}
 @media(max-width:700px){.online-estates{display:block}.online-estates>.estate-panel{width:100%;min-width:0;margin:12px 0}.online-entry{padding:12px}.online-entry button,.online-controls button{min-height:44px}.online-lobby button{margin-bottom:8px}.online-screen .live-board-scroll{max-width:100%;overflow:auto}.online-screen .estate-vineyard-row{overflow-x:auto;align-items:flex-start}.online-screen .estate-original-board{flex-shrink:0;min-width:0;max-width:100%}.connection-status{position:static}.online-screen input,.online-screen select{font-size:16px}}
 @media(max-width:700px){.estate-vineyard-row .live-board-scroll{overscroll-behavior-x:auto}}
+
+/* Online identities share one palette; board geometry stays unchanged. */
+.online-profile{display:flex;align-items:center;flex-wrap:wrap;gap:10px;border:1px solid #b69a60;padding:12px;margin:12px 0}
+.online-profile input,.online-profile select{max-width:100%;padding:9px}
+.online-profile small{flex-basis:100%}
+.online-direct-resources .online-die{width:58px;height:58px;min-width:58px;padding:0;border:2px solid var(--player-ink);border-radius:8px;background:var(--player-color);color:#18231c;font-size:52px;line-height:1;display:grid;place-items:center;flex-shrink:0}
+.online-direct-resources .online-die.used{opacity:.35;filter:saturate(.25);border-style:dashed}
+.online-direct-resources .online-die[aria-pressed="true"]:not(:disabled){outline:3px solid #6b4818;outline-offset:3px;box-shadow:0 0 0 6px #fff5c9}
+.online-player{border-inline-start:5px solid var(--player-color)}
+.online-player.active-player{box-shadow:inset 0 0 0 2px var(--player-color)}
+.online-player .estate-heading h2{color:var(--player-ink)}
+.online-player .estate-heading h2 small{display:inline-block;font-size:.7em;color:#4a3822}
+.online-player .mini-die{background:var(--player-color);color:#18231c}
+@media(max-width:700px){.online-profile label{width:100%}.online-profile input{width:min(100%,240px)}.online-profile button,.online-profile select{min-height:44px}.online-direct-resources{gap:10px;max-width:100%}}

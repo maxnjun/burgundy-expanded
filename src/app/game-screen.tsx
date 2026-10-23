@@ -1,4 +1,5 @@
 "use client";
+import {playerPaint} from "../game/player-colors";
 import {startingCastlePending} from "../game/starting-castles";
 import {GoodsInventory,SoldGoods,PlayerTileStorage} from "./player-inventory";
 import {FinalScores} from "./final-scores";
@@ -43,7 +44,7 @@ const tileInfo: Record<TileType, { name: string; icon: string; color: string }> 
 };
 const tableColors: Record<TileType, string> = { castle: "#247d62", ship: "#279db9", livestock: "#98bc45", building: "#c3a545", mine: "#a09f97", monastery: "#e2d337" };
 const buildingNames = { "white-castle": "흰 성", crane: "기중기", bank: "은행", "boarding-house": "숙소", watchtower: "감시탑", market: "시장", "carpenters-workshop": "목공소", church: "교회", warehouse: "창고", "town-hall": "시청" };
-const playerColor = (p: PlayerState) => ({blue:"#298dc7",red:"#d6624c",green:"#83ab65",yellow:"#dbbe52"})[p.color??(["blue","red","green","yellow"] as const)[p.seat]];
+const playerColor = (p: PlayerState) => playerPaint(p).fill;
 const initialNames = ["엘레오노르", "루이", "마리", "필리프"];
 const actionNames: Record<string, string> = { "place-starting-castle":"시작 성 배치", vineyard:"포도밭 행동", "buy-workers": "수도원28 · 은화로 일꾼 구매", "use-monastery-six": "수도원6 건물 획득", "resolve-choice": "타일 추가 효과 선택", "advance-phase": "단계 수입·보충 / 최종 정산", "roll-round": "라운드 주사위 굴림·상품 배분", "end-turn": "차례 종료", "buy-black-tile": "검은 공급처 구매", "take-workers": "일꾼 획득", "sell-goods": "상품 판매", "take-tile": "타일 획득", "place-tile": "영지 배치" };
 

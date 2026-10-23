@@ -1,3 +1,14 @@
+## 온라인 2인 이름·색상 및 주사위 UI (2026-10-24)
+
+- 완료: 생성/참가 이름(빈 입력은 영주 1/2), 파랑·빨강·초록·노랑·보라·분홍, 로비 본인 정보 수정. 서버가 중복 색상/다른 좌석/시작 후 변경/오래된 revision을 거부하며 수정 시 본인 준비 해제. 응답 유실 재시도는 기존 좌석을 복구하고 이름·색상을 덮어쓰지 않는다.
+- 표시: 공통 팔레트를 상단/개인 주사위, 이름·현재 차례, 영지, 공용 순서 트랙, 최종 점수에 적용. 상단 주사위 58×58 CSS px·선택 강조·사용 상태·모바일 줄바꿈. 기존 4색/색상 없는 저장은 좌석 기본값으로 읽고 파일 구조·규칙·난수·타일 좌표는 유지.
+- 검증: 관련 코어24/24, 전체 코어471/471, 보드33/33, HTTP/WSS/파일 및 Upstash REST 모의7/7, TypeScript·ESLint·프로덕션 빌드 exit0. 관련 PC19/19(기존 온라인4+신규 프로필1+로컬/AI/정산/방패/턴 회귀14), 모바일 Chrome4/4·WebKit4/4. 두 컨텍스트 실제 HTTP/폴링 조작으로 색상 충돌→재선택, 양측 이름 수정, 시작 성→주사위→두 Undo→수동 종료→새로고침/재접속을 확인. 실제 WSS는 별도 배포 회귀7개에서 확인.
+- 시각 확인: PC1280·터치390·WebKit390 캡처를 직접 열어 58px 주사위, 색상·이름·현재 차례 및 버튼 접근성을 확인. 증거 .local-data/online-identity/screenshots/{pc-controls,pc-lobby,pc-game,mobile-controls,webkit-controls}.png. 전체 로그는 같은 상위 폴더의 *.log.
+- 실행 구분: 첫 코어 실행은 Windows 샌드박스 rename EPERM→권한 확장 후 통과. 첫 신규 PC 검사는 native option disabled를 toBeDisabled로 검사한 매처 부적합→disabled JS 속성 직접 검사로 수정 후 PC/Chrome/WebKit 통과(기존 검증 완화 없음).
+- 변경 파일: src/game/{player-colors.ts,types.ts,practice.ts,save.ts}, src/server/{rooms.ts,room-http.ts}, src/app/{online/room-screen.tsx,game-screen.css,game-screen.tsx,common-board.tsx,final-scores.tsx}, tests/{core/online-identity.test.ts,core/run.mjs,browser/online-identity.spec.ts}, .github/workflows/ci.yml, docs/{PROGRESS.md,TODO.md}. CI 모바일/WebKit 목록에도 신규 테스트 포함.
+- 백업: 기존 공개 main Push 허용 지시 적용. 검증 파일만 별도 커밋 예정. [no-deploy]로 Render 배포 경로 차단하며 운영 사이트·실제 Upstash·기존 저장 방·원본 PNG 및 무관한 미커밋 꼬리는 변경하지 않는다. localhost3000은 최종 빌드로 실행 중.
+- 미검증/다음: 실제 Android/iPhone 기기와 외부망 재시험, 운영 Render 적용은 별도 사용자 승인 후. GitHub 전체 CI 결과는 Push 후 확인하며 로컬 관련 회귀와 구분한다.
+
 # 현재 작업 — 온라인 공용 게임판 통합 (2026-10-24)
 
 - 범위: 온라인의 별도 방패/상품/검은공급 목록을 기존 CommonBoard(950×1030)로 통합. 방패는 6개 공급처, 여관은 검은 공급처 옆, 포도 공급대·상점은 오른쪽 고정 레일. 개인 커스텀 무역로는 해당 영지 아래로 이동. 모바일도 같은 좌우 구조로 스크롤/확대한다.

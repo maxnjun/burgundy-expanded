@@ -1,3 +1,4 @@
+import {PLAYER_COLORS,isPlayerColor,playerColorKey} from "../game/player-colors";
 import {roomChanged} from "./room-events";
 import {serverRelease} from "./release";
 import {boardTarget,type BoardTarget} from "../game/direct-actions";
@@ -140,22 +141,27 @@ export class RoomStore {
 
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     if(!connection||typeof connection!=="object"||Array.isArray(connection))throw new RoomError(400,"연결 정보를 확인하세요.");
-    const c=connection as {id?:unknown;token?:unknown;lobby?:unknown};
+    const c=connection as {id?:unknown;token?:unknown;lobby?:unknown;color?:unknown};
     if(c.lobby!==undefined&&typeof c.lobby!=="boolean"||((c.id===undefined)!==(c.token===undefined))||c.id!==undefined&&(typeof c.id!=="string"||!/^[a-f0-9]{24}$/.test(c.id)||typeof c.token!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(c.token)))throw new RoomError(400,"연결 정보를 확인하세요.");
     const id=c.id as string|undefined??randomBytes(12).toString("hex"),token=c.token as string|undefined??randomBytes(32).toString("base64url"),now=Date.now();
     if(c.id){try{const old=await this.read(id);if(old.tokens[0]!==digest(token))throw new RoomError(409,"이미 사용 중인 방 코드입니다.");return {id,token};}catch(e){if(!(e instanceof RoomError)||e.status!==404)throw e;}}
     name(ownerName);
+    if(c.color!==undefined&&!isPlayerColor(c.color))throw new RoomError(400,"플레이어 색상을 확인하세요.");
+    const ownerColor=isPlayerColor(c.color)?c.color:"blue",guestColor=PLAYER_COLORS.find(color=>color!==ownerColor)!;
     if(!this.remote){await mkdir(this.directory,{recursive:true});await this.maintain();const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);}
-    const game=createPracticeSession({names:[name(ownerName),"참가 대기"],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"영주 2"],colors:[ownerColor,guestColor],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
-  async joinRoom(id:string,guestName:unknown,reconnectToken:unknown=undefined){return this.serial(id,async()=>{
+  async joinRoom(id:string,guestName:unknown,reconnectToken:unknown=undefined,color:unknown=undefined){return this.serial(id,async()=>{
     if(reconnectToken!==undefined&&(typeof reconnectToken!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(reconnectToken)))throw new RoomError(400,"재접속 정보를 확인하세요.");
     const room=await this.read(id);if(room.tokens[1]){if(typeof reconnectToken==="string"&&room.tokens[1]===digest(reconnectToken))return {id,token:reconnectToken};throw new RoomError(409,"이미 두 좌석이 사용 중입니다.");}
     if(typeof reconnectToken==="string"&&room.tokens[0]===digest(reconnectToken))throw new RoomError(409,"다른 자리와 같은 인증 정보는 사용할 수 없습니다.");
     const guest=name(guestName),token=typeof reconnectToken==="string"?reconnectToken:randomBytes(32).toString("base64url");
-    room.tokens[1]=digest(token);room.game={...room.game,revision:room.game.revision+1,players:room.game.players.map((p,i)=>i===1?{...p,name:guest}:p),config:{...room.game.config,players:room.game.config.players.map((p,i)=>i===1?{...p,name:guest}:p)}};
+    if(color!==undefined&&!isPlayerColor(color))throw new RoomError(400,"플레이어 색상을 확인하세요.");
+    const hostColor=playerColorKey(room.game.players[0]),guestColor=isPlayerColor(color)?color:PLAYER_COLORS.find(c=>c!==hostColor)!;
+    if(guestColor===hostColor)throw new RoomError(409,"이미 사용 중인 색상입니다. 다른 색상을 선택하세요.");
+    room.tokens[1]=digest(token);room.game={...room.game,revision:room.game.revision+1,players:room.game.players.map((p,i)=>i===1?{...p,name:guest,color:guestColor}:p),config:{...room.game.config,players:room.game.config.players.map((p,i)=>i===1?{...p,name:guest,color:guestColor}:p)}};
     room.logs=["두 플레이어가 참가했습니다.",...room.logs];room.updatedAt=Date.now();await this.write(room);return {id,token};
   });}
   async view(id:string,token:string){const room=await this.read(id);return this.publicView(room,this.seat(room,token));}
@@ -203,11 +209,23 @@ export class RoomStore {
     return room.undoBarrier||(kind==="turn"&&!room.history?.start?"이 차례의 시작 기록이 없습니다. 새 행동의 이전 행동으로만 복원할 수 있습니다.":"되돌릴 확정 행동이 없습니다. 종료된 차례는 복원할 수 없습니다.");
   }
   async control(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
-    const room=await this.read(id),seat=this.seat(room,token),c=command as {command?:string;ready?:unknown;playerId?:string};
+    const room=await this.read(id),seat=this.seat(room,token),c=command as {command?:string;ready?:unknown;playerId?:string;name?:unknown;color?:unknown};
     if(!room.lobby||room.lobby.started)throw new RoomError(409,"이미 시작된 방입니다.");
-    if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인 준비만 변경할 수 있습니다.");
+    if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인의 준비와 이름·색상만 변경할 수 있습니다.");
     if(revision!==room.game.revision)throw new RoomError(409,"최신 준비 상태에서 다시 선택하세요.");
     if(c.command==="ready"&&typeof c.ready==="boolean")room.lobby.ready[seat]=c.ready;
+    else if(c.command==="profile"){
+      const nextName=name(c.name);
+      if(!isPlayerColor(c.color))throw new RoomError(400,"플레이어 색상을 확인하세요.");
+      const nextColor=c.color;
+      if(room.game.players.some((p,i)=>i!==seat&&room.tokens[i]!==null&&playerColorKey(p)===nextColor))throw new RoomError(409,"이미 사용 중인 색상입니다. 다른 색상을 선택하세요.");
+      const profiles=room.game.players.map((p,i)=>i===seat?{...p,name:nextName,color:nextColor}:p);
+      // Keep the unoccupied seat distinct so existing save validation still applies.
+      const vacant=room.tokens.findIndex(t=>t===null);
+      if(vacant>=0&&playerColorKey(profiles[vacant])===nextColor)profiles[vacant]={...profiles[vacant],color:PLAYER_COLORS.find(color=>color!==nextColor)!};
+      room.game={...room.game,players:profiles,config:{...room.game.config,players:room.game.config.players.map((p,i)=>({...p,name:profiles[i].name,color:profiles[i].color}))}};
+      room.lobby.ready[seat]=false;
+    }
     else if(c.command==="start"){
       if(seat!==0)throw new RoomError(403,"방장만 시작할 수 있습니다.");
       if(!room.tokens[1]||!room.lobby.ready.every(Boolean)||room.draft&&!draftReady(room.draft))throw new RoomError(409,"두 플레이어의 준비와 영지 선택을 완료하세요.");room.lobby.started=true;
