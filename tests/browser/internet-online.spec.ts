@@ -16,7 +16,7 @@ test("PC and touch seats use an invite, ready, manual turns and recover offline/
   await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();const invite=page.getByLabel("초대 링크",{exact:true});await expect(invite).toBeVisible();const link=await invite.inputValue(),code=await page.getByLabel("공유할 방 코드").inputValue();expect(new URL(link).search).toBe(`?room=${code}`);
   await guest.goto(link);await expect(guest.getByLabel("방 코드",{exact:true})).toHaveValue(code);await guest.getByLabel("온라인 이름").fill("먼 곳 모바일");await guest.getByRole("button",{name:"방 참가",exact:true}).click();
   await expect(page.getByRole("button",{name:"게임 시작",exact:true})).toBeDisabled();await expect(guest.getByRole("button",{name:"게임 시작",exact:true})).toHaveCount(0);
-  await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
+  await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);await page.getByRole("button",{name:"주사위 굴리기",exact:true}).click();
   for(let n=1;n<=2;n++){await page.getByLabel("온라인 일꾼 획득",{exact:true}).click();await expect(page.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(n);}
   await expect(page.getByLabel("현재 행동 안내",{exact:true})).toContainText("턴을 종료하시겠습니까?");await waitOnlineFresh(guest);
   const seat=await guest.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));const current=async()=>{const r=await fetch(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${seat.token}`}});return r.json() as Promise<RoomView>;};

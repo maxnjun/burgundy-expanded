@@ -13,11 +13,11 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
   try{
     await page.goto("/online");await page.getByLabel("온라인 이름").fill("온라인A");const created=page.waitForResponse(r=>r.url().endsWith("/api/rooms")&&r.request().method()==="POST");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();expect((await created).status()).toBe(200);
     const code=await page.getByLabel("공유할 방 코드").inputValue();expect(code).toMatch(/^[a-f0-9]{24}$/);
-    await guest.goto("http://127.0.0.1:3000/online");await guest.getByLabel("온라인 이름").fill("온라인B");await guest.getByLabel("방 코드",{exact:true}).fill(code);await guest.getByRole("button",{name:"방 참가",exact:true}).click();
+    await guest.goto(new URL("/online",page.url()).href);await guest.getByLabel("온라인 이름").fill("온라인B");await guest.getByLabel("방 코드",{exact:true}).fill(code);await guest.getByRole("button",{name:"방 참가",exact:true}).click();
     await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);
-    await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toBeVisible();
-    await expect(page.getByRole("button",{name:"되돌리기",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"이전 행동으로",exact:true})).toBeDisabled();await expect(page.getByText("온라인 되돌리기 미지원 · 공개 정보와 무작위 결과 보호",{exact:true})).toBeVisible();
-    await page.getByRole("button",{name:"온라인 행동 실행",exact:true}).click();
+    await expect(page.getByRole("button",{name:"주사위 굴리기",exact:true})).toBeVisible();
+    await expect(page.getByRole("button",{name:"되돌리기",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"이전 행동으로",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toHaveCount(0);
+    await page.getByRole("button",{name:"주사위 굴리기",exact:true}).click();
     await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");
     for(let i=0;i<2;i++){
       await page.getByLabel("온라인 일꾼 획득",{exact:true}).click();
@@ -29,7 +29,7 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
     await expect(guest.getByLabel("온라인 상태",{exact:true})).toContainText("온라인B의 차례");
     expect(endRequests).toBe(1);
     await guest.reload();await expect(guest.getByLabel("온라인 일꾼 획득",{exact:true})).toBeEnabled();
-    await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("button",{name:"주사위 굴리기",exact:true})).toHaveCount(0);
     const auth=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));
     const response=await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}});expect(response.status()).toBe(200);
     const publicState=await response.json();expect(publicState.random).toBeUndefined();expect(publicState.supplyPools).toBeUndefined();

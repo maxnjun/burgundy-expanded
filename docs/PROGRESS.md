@@ -1,3 +1,13 @@
+# 최신 체크포인트 — 온라인 직접 입력·Undo·시작 성 확정 (2026-10-23)
+
+- 사용자 승인 범위: 온라인 행동 실행/드롭다운 제거, 서버 스냅샷 Undo2종, 시작 성 미리보기→턴 종료 확정. 실제 Render/Upstash 데이터에 접근·삭제하지 않음. 기존 PNG/ZIP/미커밋 문서꼬리 보존.
+- 구현: BoardTarget 직접클릭 재사용·필수 효과만 구체적 버튼. Undo는 기존 TurnHistory 전체상태/RNG/연쇄단위 재사용·서버 JSON에만 보관·revision 단조증가·현재차례/본인만. 새난수공개 이전/종료된턴/시작기록없는 구방은 제한 및 이유 표시. 시작 성은 서버 startingPreview에 보관·이동/Undo/재접속 후 end-turn만 엔진확정.
+- 최종 로컬 검사: 코어468/468(10), 보드33/33(11), HTTP/WSS·파일/Upstash REST모의 재시작/Undo/시작 성7/7(13), PC15/15(24), Chrome터치/WebKit8/8(25), 타입26·린트23·빌드22 exit0. 실제 화면 PC/모바일 캡처 확인, 안정 경로 screenshots/pc-online-{starting-preview,undo-ready,direct-controls}.png. 기존56방/1,778,806bytes 유지.
+- 초기 실패 기록: 01/05/14/21 타입 테스트/nullable 입력 보완, 06/12/16은 롤 응답/로비 참가 완료 대기·고정3000·과거 게스트 선행 확정 기대를 새 흐름에 맞게 수정. 18은 빌드와 브라우저가 겹친 불완전 실행(15통과 후 중지)으로 구분하고22빌드 후24/25 순차 재검증. 검증 삭제/완화 없음.
+- 배포보호: release workflow는 head commit의 [no-deploy] 표시를 존중하도록 추가. 이번 모든 Push는 이 표시 사용. 기존 CI 경로/무료서버/저장소 유지, 사이트 실제 배포는 별도 사용자 확인 전 금지. 유료/계정설정 변경 없음.
+- 백업 준비/다음: 이번20경로/문서접두만 [no-deploy] Commit/일반Push→GitHub 전체 CI 성공 및 release skip 확인. 기존 공개 origin/main은 이전 사용자 Push 허용 유지. 운영사이트 미배포·실제 외부망/실기기/실Upstash 재검증은 승인 뒤에만 진행. 기능/한계/조작은 docs/ONLINE_CONTROLS.md, 버그는 docs/BUGS.md의 ONLINE-002~004.
+
+---
 # 최신 체크포인트 — 비용0원 Render Free 전환 (2026-10-23)
 
 - 구현: Render Free1개·유료디스크/DB 없음. Upstash Free REST의 전체 Room JSON 원자 비교저장·namespace 분리·서버 전용 비밀값·한도/통신503·동시변경409·파일 fallback 금지. 기존 파일 모드/56방/원본/미커밋 보존. 추가 패키지/게임규칙/UI 변경 없음.

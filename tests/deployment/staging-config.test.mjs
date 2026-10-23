@@ -20,4 +20,5 @@ test("test deployment uses free compute and external rooms, isolated from produc
  assert.match(release,/staging:[\s\S]*?ENABLE_TEST_DEPLOYMENTS == 'true'[\s\S]*?workflow_run\.conclusion == 'success'/);
  assert.match(release,/production-check:[\s\S]*?ENABLE_PRODUCTION_DEPLOYMENTS == 'true'/);
  assert.doesNotMatch(release,/ENABLE_DEPLOYMENTS == 'true'/);
+ assert.match(release,/!contains\(github.event.workflow_run.head_commit.message, '\[no-deploy\]'\)/);
 });

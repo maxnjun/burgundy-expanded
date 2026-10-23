@@ -46,13 +46,22 @@ for(const storage of ["file","upstash"])test(`${storage}: production HTTP + WebS
  const view=async seat=>(await fetch(`${origin}/api/rooms/${seat.id}`,{headers:{Authorization:`Bearer ${seat.token}`}})).json();
  async function socket(seat,clientVersion=version){const ws=new WebSocket(`${origin.replace("http","ws")}/api/rooms/${seat.id}/live`,{origin});sockets.push(ws);const messages=[];ws.on("message",b=>messages.push(JSON.parse(b.toString())));await once(ws,"open");ws.send(JSON.stringify({type:"authenticate",token:seat.token,version:clientVersion,protocol:1}));return {ws,messages};}
  async function seen(client,predicate){for(let i=0;i<100;i++){const found=client.messages.find(predicate);if(found)return found;await delay(50);}throw Error("WebSocket update missing");}
- await start();const a=await(await post("/api/rooms",{name:"Desktop",lobby:true,shieldRules:true,whiteCastles:true,inns:true,tradeRoutes:true,vineyards:true})).json();assert.match(a.id,/^[a-f0-9]{24}$/);
- const b=await(await post(`/api/rooms/${a.id}/join`,{name:"Mobile"})).json();const live=await socket(b);await seen(live,m=>m.type==="state");
+ await start();const a=await(await post("/api/rooms",{name:"Desktop",lobby:true,chooseStartingCastles:true,shieldRules:true,whiteCastles:true,inns:true,tradeRoutes:true,vineyards:true})).json();assert.match(a.id,/^[a-f0-9]{24}$/);
+ const b=await(await post(`/api/rooms/${a.id}/join`,{name:"Mobile"})).json();let live=await socket(b);await seen(live,m=>m.type==="state");
  for(const [seat,command]of [[a,"ready"],[b,"ready"],[a,"start"]]){const v=await view(seat);const res=await post(`/api/rooms/${a.id}/actions`,{revision:v.revision,action:{type:"room-control",playerId:v.seat,command,ready:true}},seat.token);assert.equal(res.status,200);}
+ for(const seat of [a,b]){
+  let setup=await view(seat),res=await post('/api/rooms/'+a.id+'/actions',{revision:setup.revision,action:setup.actions[0].action},seat.token);assert.equal(res.status,200);setup=await res.json();assert.ok(setup.startingPreview);
+  if(seat===a){await seen(live,m=>m.type==='state'&&m.view.startingPreview?.cellId===setup.startingPreview.cellId);await stop();await start();assert.deepEqual(await view(a),setup);live=await socket(b);}
+  res=await post('/api/rooms/'+a.id+'/actions',{revision:setup.revision,action:{type:'undo-turn',playerId:setup.seat}},seat.token);assert.equal(res.status,200);setup=await res.json();assert.equal(setup.startingPreview,undefined);
+  res=await post('/api/rooms/'+a.id+'/actions',{revision:setup.revision,action:setup.actions[0].action},seat.token);assert.equal(res.status,200);setup=await res.json();
+  res=await post('/api/rooms/'+a.id+'/actions',{revision:setup.revision,action:{type:'end-turn',playerId:setup.seat}},seat.token);assert.equal(res.status,200);
+ }
  let v=await view(a);let response=await post(`/api/rooms/${a.id}/actions`,{revision:v.revision,action:v.actions.find(a=>a.action.type==="roll-round").action},a.token);assert.equal(response.status,200);v=await response.json();
  await seen(live,m=>m.type==="state"&&m.view.revision===v.revision);const before=v,worker=v.actions.find(a=>a.action.type==="use-die"&&a.action.intent.kind==="take-workers"&&a.action.adjustment.workersSpent===0).action;
  const requests=await Promise.all([post(`/api/rooms/${a.id}/actions`,{revision:v.revision,action:worker},a.token),post(`/api/rooms/${a.id}/actions`,{revision:v.revision,action:worker},a.token)]);assert.deepEqual(requests.map(r=>r.status).sort(),[200,409]);v=await view(a);assert.equal(v.players[0].workers,before.players[0].workers+2);
  const pushed=await seen(live,m=>m.type==="state"&&m.view.revision===v.revision);assert.equal(pushed.view.random,undefined);assert.equal(pushed.view.supplyPools,undefined);assert.equal(JSON.stringify(pushed).includes(a.token),false);assert.equal(JSON.stringify(pushed).includes(b.token),false);
+ const undone=await post('/api/rooms/'+a.id+'/actions',{revision:v.revision,action:{type:'undo-action',playerId:v.seat}},a.token);assert.equal(undone.status,200);const restored=await undone.json();assert.deepEqual(restored.players,before.players);assert.deepEqual(restored.dice,before.dice);await seen(live,m=>m.type==='state'&&m.view.revision===restored.revision);assert.equal((await view(b)).revision,restored.revision);
+ const replay=await post('/api/rooms/'+a.id+'/actions',{revision:restored.revision,action:worker},a.token);assert.equal(replay.status,200);v=await replay.json();
  const forbidden=new WebSocket(`${origin.replace("http","ws")}/api/rooms/${a.id}/live`,{origin:"https://other.example"});forbidden.on("error",()=>{});const rejected=await once(forbidden,"unexpected-response");assert.equal(rejected[1].statusCode,403);rejected[1].resume();forbidden.terminate();
  const bad=await socket({id:a.id,token:"x".repeat(64)});await once(bad.ws,"close");
  if(version!=="development"){const old=await socket(a,"old");await seen(old,m=>m.type==="update");}

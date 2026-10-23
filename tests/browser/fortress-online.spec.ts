@@ -16,6 +16,6 @@ test("online each seat chooses its own saved candidate before game start",async(
   await expect(page.getByRole('region',{name:'온라인 영지 선택',exact:true})).toHaveCount(0);await expect(guest.getByRole('region',{name:'온라인 영지 선택',exact:true})).toHaveCount(0);
   await expect(page.locator('[data-fortress-line]')).toHaveCount(6);await expect(guest.locator('[data-fortress-line]')).toHaveCount(6);
   await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);
-  await expect(page.getByRole('button',{name:'온라인 행동 실행',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'주사위 굴리기',exact:true})).toBeVisible();
  }finally{await context.close();await isolated.close();}
 });

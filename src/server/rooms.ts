@@ -20,6 +20,9 @@ import { shieldLayout, type ShieldLayout } from "../game/shields";
 import { directCost } from "../game/direct-actions";
 import { parseSavedGame } from "../game/save";
 import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
+import {beginHistory,recordTurnAction,undoTurn,canUndoTurn,turnKey,type TurnHistory} from "../game/turn-history";
+import {restoreTurnHistory} from "../game/turn-history-cache";
+import {startingCastleCells} from "../game/starting-castles";
 
 import {RoomError} from "./room-error";
 import type {UpstashRooms} from "./upstash-rooms";
@@ -29,8 +32,10 @@ const ROOM_BYTES=2_100_000,WRITE_RESERVE=ROOM_BYTES*4,ARCHIVE_AGE=24*60*60*1000;
 export function requireRoomSpace(available:number){
   if(available<WRITE_RESERVE)throw new RoomError(503,"서버 디스크의 남은 저장 공간이 부족하여 새 방을 만들 수 없습니다. 기존 방은 보존됩니다. 관리자에게 저장 공간 점검을 요청하세요.","ROOM_STORAGE_FULL");
 }
-interface StoredRoom { lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
+interface StoredRoom { history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
+export type OnlineUndoAction={type:"undo-turn"|"undo-action";playerId:string};
 export interface RoomView {
+  undo?:{turnReason:string;actionReason:string};startingPreview?:{playerId:string;cellId:string};
   release?:ReturnType<typeof serverRelease>;lobby?:{ready:readonly boolean[];started:boolean;capacity:number};
   automaticChoice?:GameAction|null;
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
@@ -77,9 +82,13 @@ export class RoomStore {
     if(room.draft&&!validBoardDraft(room.draft,["seat-1","seat-2"]))throw new RoomError(500,"영지 후보 검증 실패");
     room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
     if(room.draft&&draftReady(room.draft)&&room.draft.seats.some((s,i)=>s.selected!==room.game.players[i].duchy.boardId))throw new RoomError(500,"선택 영지와 게임 상태가 일치하지 않습니다.");
+    if(room.startingPreview&&(room.startingPreview.playerId!==room.game.turn.activePlayerId||!startingCastleCells(room.game,room.startingPreview.playerId).includes(room.startingPreview.cellId)))throw new RoomError(500,"시작 성 미리보기 검증 실패");
+    if(room.history)room.history=restoreTurnHistory(JSON.stringify({game:room.game,logs:room.logs,history:room.history}),room.game,room.logs);
     this.revisions.set(room,room.game.revision);return room;
   }
   private async write(room:StoredRoom){
+    if(Buffer.byteLength(JSON.stringify(room))>ROOM_BYTES&&room.history){room.history=beginHistory(room.game,room.logs);room.undoBarrier="되돌리기 기록 한도에 도달했습니다. 현재 진행은 보존됩니다.";}
+    if(Buffer.byteLength(JSON.stringify(room))>ROOM_BYTES)throw new RoomError(503,"방 데이터의 저장 한도를 초과했습니다. 이전 저장은 유지됩니다.","ROOM_STORAGE_FULL");
     if(this.remote){await this.remote.write(room.id,JSON.stringify(room),this.revisions.get(room)??null);roomChanged(room.id);return;}
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
@@ -156,14 +165,42 @@ export class RoomStore {
     if(!room.tokens[1])throw new RoomError(409,"다른 플레이어의 참가를 기다리세요.");
     if(!Number.isSafeInteger(revision)||revision!==room.game.revision)throw new RoomError(409,"다른 행동이 먼저 반영되었습니다. 최신 상태에서 다시 선택하세요.");
     if(!action||typeof action!=="object"||!("playerId" in action)||action.playerId!==player.id)throw new RoomError(403,"다른 좌석의 행동은 실행할 수 없습니다.");
-    if("type" in action&&["undo","undo-turn","undo-action","restore-state"].includes(String(action.type)))throw new RoomError(400,"온라인 되돌리기는 공개 정보와 무작위 결과 보호를 위해 지원하지 않습니다.");
+    const type=(action as {type?:unknown}).type;
+    if(type==="undo-turn"||type==="undo-action"){
+      const reason=this.undoReason(room,player.id,type==="undo-turn"?"turn":"action");if(reason)throw new RoomError(400,reason);
+      if(room.game.status==="setup")delete room.startingPreview;
+      else {const restored=undoTurn(room.history!,room.game,type==="undo-turn"?"turn":"action")!;room.game={...restored.snapshot.game,revision:room.game.revision};room.logs=[...restored.snapshot.logs];room.history=restored.history;}
+      room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
+    }
+    if(type==="undo"||type==="restore-state")throw new RoomError(400,"서버에 저장된 현재 차례 기록만 복원할 수 있습니다.");
+    if(room.game.status==="setup"){
+      if(player.id!==room.game.turn.activePlayerId)throw new RoomError(403,"현재 시작 성 배치 차례가 아닙니다.");
+      if(type==="place-starting-castle"){
+        const cellId=(action as {cellId?:unknown}).cellId;if(typeof cellId!=="string"||!startingCastleCells(room.game,player.id).includes(cellId))throw new RoomError(400,"유효한 시작 성 칸을 선택하세요.");
+        room.startingPreview={playerId:player.id,cellId};room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
+      }
+      if(type!=="end-turn"||!room.startingPreview)throw new RoomError(400,"시작 성 위치를 선택한 뒤 턴 종료로 확정하세요.");
+      action={type:"place-starting-castle",playerId:player.id,cellId:room.startingPreview.cellId};delete room.startingPreview;
+    }
+    const before=room.game,previousLogs=room.logs;
     const next=applyCoreAction(room.game,action as GameAction);
     if(!next.ok)throw new RoomError(400,"차례·주사위·자원·선택 조건을 확인하세요.");
     const after=next.value.state.players[seat],label=actionLabel(room.game,action as GameAction);
     const fortress=next.value.state.scoreLedger[player.id].filter(e=>e.id.startsWith("fortress:")&&!room.game.scoreLedger[player.id].some(old=>old.id===e.id)).map(e=>`${e.source.section} +${e.points}점`).join(" · ");
     room.logs=[`${fortress?fortress+" · ":""}${player.name} · ${label} · 승점 ${after.victoryPoints-player.victoryPoints>=0?"+":""}${after.victoryPoints-player.victoryPoints}`,...room.logs].slice(0,60);
-    room.game=next.value.state;room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
+    room.game=next.value.state;
+    if(before.random.cursor!==room.game.random.cursor){room.history=beginHistory(room.game,room.logs);room.undoBarrier="새 무작위 결과가 공개된 행동 이전으로는 되돌릴 수 없습니다.";}
+    else {room.history=recordTurnAction(room.history??beginHistory(before,previousLogs),before,room.game,action as GameAction,previousLogs,room.logs);if(room.history.start)delete room.undoBarrier;}
+    // Dice become public before the first player's undo checkpoint is established.
+    if(turnKey(before)!==turnKey(room.game)){room.history=beginHistory(room.game,room.logs,true);delete room.undoBarrier;}
+    room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}
+  private undoReason(room:StoredRoom,playerId:string,kind:"turn"|"action"){
+    if(room.game.turn.activePlayerId!==playerId)return "현재 내 차례의 행동만 되돌릴 수 있습니다.";
+    if(room.game.status==="setup")return room.startingPreview?"":"취소할 시작 성 임시 배치가 없습니다.";
+    if(room.history&&canUndoTurn(room.history,room.game,kind))return "";
+    return room.undoBarrier||(kind==="turn"&&!room.history?.start?"이 차례의 시작 기록이 없습니다. 새 행동의 이전 행동으로만 복원할 수 있습니다.":"되돌릴 확정 행동이 없습니다. 종료된 차례는 복원할 수 없습니다.");
+  }
   async control(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
     const room=await this.read(id),seat=this.seat(room,token),c=command as {command?:string;ready?:unknown;playerId?:string};
     if(!room.lobby||room.lobby.started)throw new RoomError(409,"이미 시작된 방입니다.");
@@ -208,11 +245,13 @@ export class RoomStore {
     for(const id of [...s.market.blackDepot,...(s.market.inns?.stack??[])])if(id)visible.add(id);
     const ending=checkCoreGameEnd(s);
     const legal=room.tokens[1]&&(!room.lobby||room.lobby.started)&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
-    const actions=legal?.ok ? legal.value.actions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)})) : [];
+    const engineActions=legal?.ok?legal.value.actions.filter(()=>s.status!=="setup"||s.turn.activePlayerId===s.players[seat].id):[];
+    if(s.status==="setup"&&room.startingPreview&&room.startingPreview.playerId===s.players[seat].id)engineActions.push({type:"end-turn",playerId:s.players[seat].id});
+    const actions=engineActions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)}));
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
     const automatic=automaticVineReward(s);
-    return {release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    return {undo:{turnReason:this.undoReason(room,s.players[seat].id,"turn"),actionReason:this.undoReason(room,s.players[seat].id,"action")},...(room.startingPreview?{startingPreview:room.startingPreview}:{}),release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 

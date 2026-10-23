@@ -9,6 +9,7 @@ const tempRoot = resolve(tmpdir());
 const output = mkdtempSync(join(tempRoot, "burgundy-core-tests-"));
 const cases = ["room-storage", "internet-online", "player-improvements", "tile-help", "castle-order", "action-guidance", "turn-history", "vineyard-online", "vineyards", "custom-trade-online", "custom-trade", "trade-routes", "inn-online", "inns", "fortress-online", "fortress", "board-draft", "white-castles", "white-online", "core", "placement", "practice", "phases", "save", "ship", "effects", "scenarios", "market", "optional-rules", "computer", "rooms", "room-http", "additional-hexes", "solo-scoring", "solo-round", "solo-ship", "team", "supply", "shields", "shield-rules", "direct-actions", "atomic-write", "shield-computer", "shield-online", "shield-castles"];
 cases.push("upstash-rooms");
+cases.push("online-controls");
 const requested=process.argv.slice(2);
 if(requested.some(name=>!cases.includes(name)))throw new Error("Unknown core test suite");
 const selected=requested.length?requested:cases;
