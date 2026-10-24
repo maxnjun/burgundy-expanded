@@ -36,7 +36,7 @@ test("every tile face shares viewBox clip inward frame and readable resource siz
  }
  const bands=await tiles.evaluateAll(els=>els.filter(el=>!el.hasAttribute('data-baked-tile-frame')).map(el=>[...el.querySelectorAll('[data-rim-band]')].map(p=>p.getAttribute('d')).join('|')));expect(new Set(bands).size).toBe(1);
  const sizes=await page.locator('img[data-resource-icon]').evaluateAll(els=>els.map(e=>{const b=e.getBoundingClientRect();return [b.width,b.height,getComputedStyle(e).objectFit];}));expect(sizes).toEqual([16,20,24,32].flatMap(n=>[[n,n,"contain"],[n,n,"contain"]]));
- const separation=await page.locator('[data-resource-shield]').evaluateAll(els=>els.map(g=>{const icon=g.querySelector<SVGGraphicsElement>('image')!.getBBox(),texts=g.querySelectorAll<SVGGraphicsElement>('text'),number=texts[0].getBBox(),score=texts[1].getBBox();return icon.y+icon.height<=number.y&&number.y+number.height<=score.y;}));expect(separation).toEqual([true,true]);
+ const printed=page.locator('[data-approved-shield]');await expect(printed).toHaveCount(2);expect(await printed.evaluateAll(els=>els.map(g=>({number:g.getAttribute('data-approved-shield'),images:g.querySelectorAll('image[data-shield-image]').length,texts:g.querySelectorAll('text').length,resourceOverlays:g.querySelectorAll('[data-resource-icon]').length})))).toEqual(['8','3'].map(number=>({number,images:1,texts:0,resourceOverlays:0})));
  await page.screenshot({path:'.local-data/tile-standard/all-faces-resources.png',fullPage:true});
 });
 

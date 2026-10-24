@@ -1,0 +1,405 @@
+{
+  "canvas": [
+    1200,
+    1480
+  ],
+  "mapping": "approved-number-1-to-18",
+  "assets": [
+    {
+      "number": 1,
+      "file": "shield-01.png",
+      "sourceSha256": "864b2f4266a9fcb2b6f45b688098392047afca71187eb22249cd3c29dc637fa4",
+      "outputSha256": "ac71ff42948035be82809a2a87594ddbcc93fea3d8980d4a501880f07e73920d",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        57,
+        5,
+        1104,
+        1357
+      ],
+      "artBounds": [
+        34,
+        10,
+        1165,
+        1470
+      ]
+    },
+    {
+      "number": 2,
+      "file": "shield-02.png",
+      "sourceSha256": "bbe5a7cf3780194556a94cfc00ccd1ab0b1df93b97cf258db12496336fca6b56",
+      "outputSha256": "dd5ad3f656cdb923c02bcba25a037d356f21e1f1941a79cf5d3e4531e4226b61",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        55,
+        6,
+        1101,
+        1356
+      ],
+      "artBounds": [
+        34,
+        10,
+        1165,
+        1470
+      ]
+    },
+    {
+      "number": 3,
+      "file": "shield-03.png",
+      "sourceSha256": "e4d1ef560c7778e175be65de1ac43fd7f20b63fe0e5c23839fa976f4d6776d53",
+      "outputSha256": "4757d47ea045ae1617237493d233c39cb92fb9f0ca8ee8198e17e5b00dd347b0",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceBounds": [
+        32,
+        60,
+        1013,
+        1384
+      ],
+      "artBounds": [
+        59,
+        10,
+        1141,
+        1470
+      ]
+    },
+    {
+      "number": 4,
+      "file": "shield-04.png",
+      "sourceSha256": "fd9d0ab67506b3c579c8ab1903bbb915711db370caa086fb826af17f3c1189cd",
+      "outputSha256": "047590ede9bed3e250d946c4a403d0951058c2ea3c9afd3e9065b701876fe959",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceBounds": [
+        32,
+        60,
+        1012,
+        1384
+      ],
+      "artBounds": [
+        59,
+        10,
+        1140,
+        1470
+      ]
+    },
+    {
+      "number": 5,
+      "file": "shield-05.png",
+      "sourceSha256": "6c4d1d24e61c8faf3d9bbf34bb2158d0dfbfcf1a2540c3effe0deee4346ca300",
+      "outputSha256": "b15642f5d4f57cd961a290e3e0216d960d3219f98586754b9ed9e20e84c00d79",
+      "sourceSize": [
+        1159,
+        1357
+      ],
+      "sourceBounds": [
+        56,
+        12,
+        1105,
+        1351
+      ],
+      "artBounds": [
+        28,
+        10,
+        1172,
+        1470
+      ]
+    },
+    {
+      "number": 6,
+      "file": "shield-06.png",
+      "sourceSha256": "4468627899a9e79aa1abd06d19e80db5629bc766f817be7b8bd91d6a9a694a34",
+      "outputSha256": "62f56eea90790306c3eec0e56572ef6bbf229aab7b78ba9820277ec510dac94b",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        10,
+        1105,
+        1355
+      ],
+      "artBounds": [
+        30,
+        10,
+        1169,
+        1470
+      ]
+    },
+    {
+      "number": 7,
+      "file": "shield-07.png",
+      "sourceSha256": "c28de7798440550c5b5cf0445ecd5701b1a693df374b31c67ddbffa685826e2e",
+      "outputSha256": "305c1c3bbd50c8c5a200110936dfbdbf38f6698ebffddf2656ab90c5a3148b39",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        10,
+        1102,
+        1351
+      ],
+      "artBounds": [
+        30,
+        10,
+        1169,
+        1470
+      ]
+    },
+    {
+      "number": 8,
+      "file": "shield-08.png",
+      "sourceSha256": "32dd10daa5a7d93bdeaadf71bf53a10c9b1f98441723afc2d7084480ce12808d",
+      "outputSha256": "909f91dee72e2960c94fe1dd035b45f7ed7e8d944fea956f4a18486f65f0a527",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        54,
+        12,
+        1101,
+        1353
+      ],
+      "artBounds": [
+        30,
+        10,
+        1170,
+        1470
+      ]
+    },
+    {
+      "number": 9,
+      "file": "shield-09.png",
+      "sourceSha256": "e6a6b1deb440f8755af7a763e9d2abad0ee370fca8de17d64f2f7638a1a1d57c",
+      "outputSha256": "881e64775f506fa460be7f300c974fecf720c801fd5f979a86526bf34486563b",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        55,
+        8,
+        1103,
+        1355
+      ],
+      "artBounds": [
+        32,
+        10,
+        1168,
+        1470
+      ]
+    },
+    {
+      "number": 10,
+      "file": "shield-10.png",
+      "sourceSha256": "7960cba02cb5123e06f3e59ade8acf0fdb90c6f27ada55dd722e34239b0f60f6",
+      "outputSha256": "5f12322dd631b911d77c73528221f9e0f858be1179096c1ffcc5fd536cf62482",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        55,
+        7,
+        1104,
+        1354
+      ],
+      "artBounds": [
+        31,
+        10,
+        1168,
+        1470
+      ]
+    },
+    {
+      "number": 11,
+      "file": "shield-11.png",
+      "sourceSha256": "ffbfe875872708c396774b259ba927f3ff6bf257716df96e8a461b41e0c56910",
+      "outputSha256": "b685e774a4a1d95ab51eebf4cd76f61bfbaf7e0fa9aa164ed9141a1cf9ea1434",
+      "sourceSize": [
+        1159,
+        1357
+      ],
+      "sourceBounds": [
+        56,
+        9,
+        1103,
+        1351
+      ],
+      "artBounds": [
+        30,
+        10,
+        1169,
+        1470
+      ]
+    },
+    {
+      "number": 12,
+      "file": "shield-12.png",
+      "sourceSha256": "9961395cf7046f35c4d66f360335a2a8966e9733029d13f30faf81eaeef0f6b0",
+      "outputSha256": "7d4c35a9535af286b0eb00ded98624b02a019cd9da6c3de30b8e29890a6e37cb",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        6,
+        1102,
+        1354
+      ],
+      "artBounds": [
+        33,
+        10,
+        1166,
+        1470
+      ]
+    },
+    {
+      "number": 13,
+      "file": "shield-13.png",
+      "sourceSha256": "0c247de6159af5aaa98ace1c6c8f0fe8fa6ca6143aaf0b5e967074ca3c375a71",
+      "outputSha256": "720e84e51e1d2999dfe71f801a791e39684b7cf76ff8080d007e9a0e008fd3f8",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        2,
+        1106,
+        1356
+      ],
+      "artBounds": [
+        34,
+        10,
+        1166,
+        1470
+      ]
+    },
+    {
+      "number": 14,
+      "file": "shield-14.png",
+      "sourceSha256": "b88b6121a98bbdbd768e0657712c18763a5e9b9abe532f0fe137fa56dbe5f8e3",
+      "outputSha256": "0043c1d0a5245483505f78a7b3e892c08650369b5cb619e8e5c741398a18a702",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        3,
+        1105,
+        1357
+      ],
+      "artBounds": [
+        34,
+        10,
+        1165,
+        1470
+      ]
+    },
+    {
+      "number": 15,
+      "file": "shield-15.png",
+      "sourceSha256": "1b4418bfb4c089e8df0a98a17ef487d3f87e82ce92de621e22d70920dd107d43",
+      "outputSha256": "f838afebf14decaf9ae9ed8ceedf55c63757d3d8cb06266dceddab4eac6e679c",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        56,
+        4,
+        1103,
+        1358
+      ],
+      "artBounds": [
+        35,
+        10,
+        1164,
+        1470
+      ]
+    },
+    {
+      "number": 16,
+      "file": "shield-16.png",
+      "sourceSha256": "9521bf19c80464bba34979a1fb9775412dfcc80a4c6457db881e95426438d480",
+      "outputSha256": "eb3f17e7a866bfb69c95329cb32a11f992fbc751a6a2152d3c252bcf07486d98",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        57,
+        5,
+        1108,
+        1356
+      ],
+      "artBounds": [
+        32,
+        10,
+        1168,
+        1470
+      ]
+    },
+    {
+      "number": 17,
+      "file": "shield-17.png",
+      "sourceSha256": "c301c53ac6706cb94cdf08f5fa59672ee4fcf0995fdb8861ce92379cf8963681",
+      "outputSha256": "41a033603d9c79302696e3c9d641e0eefef016f1d7b36b34d66070ecda63b51b",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        55,
+        0,
+        1102,
+        1358
+      ],
+      "artBounds": [
+        37,
+        10,
+        1163,
+        1470
+      ]
+    },
+    {
+      "number": 18,
+      "file": "shield-18.png",
+      "sourceSha256": "6e9bb8b3435e7d478606f8f4356e612637876fe81898a86dbcf75f7c65117ea3",
+      "outputSha256": "84855fcb0c8cb1209ca0ec847af790ba6d2677106fa8e861fcc8fd086d9f72b4",
+      "sourceSize": [
+        1159,
+        1358
+      ],
+      "sourceBounds": [
+        57,
+        0,
+        1102,
+        1358
+      ],
+      "artBounds": [
+        38,
+        10,
+        1161,
+        1470
+      ]
+    }
+  ]
+}

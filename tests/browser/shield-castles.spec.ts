@@ -15,7 +15,7 @@ test("mounted shield stays on its physical castle through touch, zoom, pan and r
  const g=placed(mount(setup(),8),0,{type:"castle",back:"matching-color"});await load(page,g);
  const overlay=page.locator('[data-mounted-shield="8"]'),tile=shieldLayout(g)!.mounted[0].castleTileId!;
  await expect(overlay).toHaveAttribute("data-castle-tile",tile);
- await press(overlay.locator(".."),info);await expect(page.getByRole("dialog",{name:"방패 상세",exact:true})).toContainText("광산 은화 두 배");await page.getByRole("button",{name:"방패 상세 닫기",exact:true}).click();
+ await press(overlay.locator(".."),info);const detail=page.getByRole("dialog",{name:info.project.use.hasTouch?"타일 효과 설명":"방패 상세",exact:true});await expect(detail).toContainText("광산 은화 두 배");await expect(detail.locator('image[data-shield-image="8"]')).toHaveCount(1);await detail.getByRole("button",{name:info.project.use.hasTouch?"타일 설명 닫기":"방패 상세 닫기",exact:true}).click();
  const slot=await selectShield(page,info);const empty=g.players[0].duchy.cells.find(c=>c.tileId&&g.tiles[c.tileId].type==="castle"&&c.tileId!==tile)!;
  const target=page.getByRole("button",{name:new RegExp(`^규칙A ${empty.id} .*배치 가능`)});await press(target,info);
  await expect(page.locator(`[data-shield-slot="${slot}"]`)).toHaveAttribute("data-empty","true");await expect(page.locator("[data-mounted-shield]")).toHaveCount(2);

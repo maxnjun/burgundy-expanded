@@ -1,0 +1,42 @@
+import {test,expect,type Page} from '@playwright/test';
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {createHash} from 'node:crypto';
+import {writeFile} from 'node:fs/promises';
+import {ShieldArt,SHIELD_ART_SIZE,MOUNTED_SHIELD_SCALE} from '../../src/app/shield-art';
+import approved from '../../public/shields/manifest.json';
+import {setup,mount} from '../fixtures/shields';
+import {serializeSavedGame} from '../../src/game/save';
+import type {GameState} from '../../src/game/types';
+
+async function load(page:Page,g:GameState){const saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});await page.addInitScript(s=>{if(!localStorage.getItem('burgundy-expanded:local-v1'))localStorage.setItem('burgundy-expanded:local-v1',s);},saved);await page.goto('/');await expect(page.locator('[data-mounted-shield="8"]')).toHaveCount(1);}
+
+test('all eighteen approved shields map to transparent cached PNGs with no duplicate SVG artwork',async({page},info)=>{
+ await page.goto('/');const gallery=renderToStaticMarkup(createElement('div',{style:{display:'flex',flexWrap:'wrap'}},...approved.assets.map(a=>createElement('svg',{key:a.number,width:120,height:148,viewBox:'-30 -38 60 74'},createElement(ShieldArt,{number:a.number})))));await page.setContent(`<body style="background:#f3e7ca">${gallery}</body>`);
+ expect(approved.assets.map(a=>a.number)).toEqual(Array.from({length:18},(_,i)=>i+1));await expect(page.locator('image[data-shield-image]')).toHaveCount(18);
+ for(const a of approved.assets){const image=page.locator(`image[data-shield-image="${a.number}"]`),href=(await image.getAttribute('href'))!;expect(href).toBe(`/shields/shield-${String(a.number).padStart(2,'0')}.png?v=${a.outputSha256.slice(0,12)}`);await expect(image).toHaveAttribute('preserveAspectRatio','xMidYMid meet');const response=await page.request.get(href);expect(response.ok()).toBe(true);expect(createHash('sha256').update(await response.body()).digest('hex')).toBe(a.outputSha256);}
+ const proof=await page.locator('image[data-shield-image]').evaluateAll(async(elements,geometry)=>{
+  const results=[];for(const el of elements){const image=new Image();image.src=el.getAttribute('href')!;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const context=canvas.getContext('2d')!;context.drawImage(image,0,0);const rgba=context.getImageData(0,0,image.width,image.height).data;let outsideHexPixels=0;
+   for(let i=0;i<image.width*image.height;i++)if(rgba[4*i+3]){const x=((i%image.width+.5)/image.width-.5)*geometry.width*geometry.scale,y=((Math.floor(i/image.width)+.5)/image.height-.5)*geometry.height*geometry.scale;if(Math.abs(x)>48*Math.sqrt(3)/2||Math.abs(y)+Math.abs(x)/Math.sqrt(3)>48)outsideHexPixels++;}
+   results.push({size:[image.width,image.height],corners:[0,image.width-1,image.width*(image.height-1),image.width*image.height-1].map(i=>rgba[i*4+3]),interior:rgba[(Math.floor(image.height/2)*image.width+Math.floor(image.width/2))*4+3],outsideHexPixels});
+  }return results;
+ },{...SHIELD_ART_SIZE,scale:MOUNTED_SHIELD_SCALE});
+ expect(proof).toEqual(approved.assets.map(()=>({size:[1200,1480],corners:[0,0,0,0],interior:255,outsideHexPixels:0})));await expect(page.locator('[data-approved-shield] text,[data-approved-shield] path')).toHaveCount(0);await page.screenshot({path:info.outputPath('all-shields.png'),fullPage:true});
+});
+
+test('only mounted faces grow eighteen percent, stay centered, survive detail zoom and preserve game state',async({page},info)=>{
+ await page.clock.install();for(const count of [2,3,4]){const g=mount(mount(setup(count),8),3);if(count===2)await load(page,g);else{await page.evaluate(s=>localStorage.setItem('burgundy-expanded:local-v1',s),serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}}));await page.reload();}
+  await expect(page.locator('.estate-panel')).toHaveCount(count);const board=page.getByRole('group',{name:'규칙A 영지',exact:true}),mounted=board.locator('[data-mounted-shield]');await expect(mounted).toHaveCount(2);
+  for(const overlay of await mounted.all()){await expect(overlay.locator('[data-mounted-shield-scale]')).toHaveAttribute('transform','scale(1.18)');const relative=await overlay.evaluate(el=>{const image=el.querySelector('image[data-shield-image]')!,b=image.getBoundingClientRect(),polygon=el.parentElement!.querySelector('polygon')!.getBoundingClientRect(),unit=polygon.width/(48*Math.sqrt(3));return {width:b.width/unit,height:b.height/unit,centerX:(b.left+b.right-polygon.left-polygon.right)/2,centerY:(b.top+b.bottom-polygon.top-polygon.bottom)/2,inside:b.left>=polygon.left&&b.right<=polygon.right&&b.top>=polygon.top&&b.bottom<=polygon.bottom};});expect(relative.width).toBeCloseTo(SHIELD_ART_SIZE.width*MOUNTED_SHIELD_SCALE,3);expect(relative.height).toBeCloseTo(SHIELD_ART_SIZE.height*MOUNTED_SHIELD_SCALE,3);expect(Math.abs(relative.centerX)).toBeLessThan(.1);expect(Math.abs(relative.centerY)).toBeLessThan(.1);expect(relative.inside).toBe(true);}
+  for(const image of await page.locator('[data-shield-slot] image[data-shield-image]').all()){await expect(image).toHaveAttribute('width',String(SHIELD_ART_SIZE.width));await expect(image.locator('xpath=ancestor::*[@data-mounted-shield-scale]')).toHaveCount(0);}
+  const die=page.getByRole('button',{name:/^행동 주사위 1 눈/});await die.click();await expect(page.locator('[data-shield-cost]').first()).toBeVisible();expect(await page.locator('.common-board-svg').evaluate(el=>{const images=[...el.querySelectorAll('[data-shield-slot] image[data-shield-image]')].map(e=>e.getBoundingClientRect());return [...el.querySelectorAll('[data-shield-cost]')].every(e=>{const b=e.getBoundingClientRect();return images.every(a=>Math.min(a.right,b.right)-Math.max(a.left,b.left)<=0||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=0);});})).toBe(true);if(!info.project.use.hasTouch)await die.click();const castle=board.locator('[data-mounted-shield="8"]').locator('..');if(info.project.use.hasTouch)await castle.tap();else await castle.click();const dialog=page.getByRole('dialog',{name:'방패 상세',exact:true});await expect(dialog.locator('image[data-shield-image="8"]')).toHaveCount(1);await expect(dialog).toContainText('광산 은화 두 배');await dialog.getByRole('button',{name:'방패 상세 닫기'}).click();if(info.project.use.hasTouch)await die.tap();
+  if(count===2){await board.screenshot({path:info.outputPath('mounted-after-estate.png')});await board.locator('[data-mounted-shield="8"]').locator('..').screenshot({path:info.outputPath('mounted-after-castle.png')});await page.locator('.common-board-svg').screenshot({path:info.outputPath('new-shields-common.png')});let zoom=100;for(const target of [160,200]){while(zoom<target){await page.getByRole('button',{name:'규칙A 영지 확대',exact:true}).click();zoom+=10;}await board.screenshot({path:info.outputPath(`mounted-${target}.png`)});}await writeFile(info.outputPath('mounted-metrics.json'),JSON.stringify({scale:MOUNTED_SHIELD_SCALE,art:SHIELD_ART_SIZE},null,2));}
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game)).toEqual(g);
+ }
+});
+
+test('missing approved shield recovers the original resource-safe SVG and then the PNG after reload',async({page})=>{
+ await page.route('**/shields/shield-08.png*',route=>route.fulfill({status:404,body:'missing image fixture'}));await page.clock.install();const g=mount(setup(),8);await load(page,g);const root=page.locator('[data-mounted-shield="8"]');await expect(root.locator('[data-resource-shield="silver"]')).toHaveCount(1);await expect(root.locator('image[data-shield-image]')).toHaveCount(0);
+ expect(await root.locator('[data-resource-shield]').evaluate(el=>{const icon=el.querySelector<SVGGraphicsElement>('image')!.getBBox(),texts=el.querySelectorAll<SVGGraphicsElement>('text'),number=texts[0].getBBox(),score=texts[1].getBBox();return icon.y+icon.height<=number.y&&number.y+number.height<=score.y;})).toBe(true);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game)).toEqual(g);await page.unroute('**/shields/shield-08.png*');await page.reload();await expect(root.locator('image[data-shield-image="8"]')).toHaveCount(1);
+});
