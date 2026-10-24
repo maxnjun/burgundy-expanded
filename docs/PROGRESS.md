@@ -9,7 +9,7 @@
 - WebKit/경합: 관련15개 중14통과/응답유실1건 시간초과. trace에서 자동 복구로 사라진 수동버튼을 기다리는 신규 검사 경합을 확인해 망 복구는 online 이벤트로 수정했다. 수동버튼은 별도 영구 오류 상태에서 물리 클릭 검증을 유지했다. 게임상태/ID/중복자원 판정은 그대로, 수정 후 WebKit복구3/3(browser-webkit-recovery)·같은 흐름PC/Chrome6/6(browser-recovery-final) 통과. 초기 새 코어 검사의 game.extensions 오타는 game.config.extensions로 수정했고 기존 테스트 삭제/기준 완화 없음.
 - 실제 프로세스 검증: deployment-final7/7. 외부 저장이 확정되고 HTTP 응답은 보내지 않은 시점의 실제 Node 서버를 SIGKILL→빈 로컬 디렉터리/새 서버버전으로 시작→기존토큰/같은요청ID로 복원, 자원1회/원문/양쪽상태·WebSocket 복귀 확인. 기존 v1·미래형식·서로다른서버/두플레이어 동시제출·배치포도/층/토큰/장착방패 복원도 코어에서 확인.
 - 범위/한계: 외부 저장은 격리 Upstash REST 계약모형이며 실제 Redis Lua 엔진/실계정·Android/iPhone 실기기·외부망 검증이 아니다. 운영 Redis에 쓰기/삭제·기존 방 생성/변경 없음. 첫 운영health 읽기30초 지연 뒤 재조회200/version2a36666/protocol1/roomFormat1 확인(이전98e와 앱소스 동일한 문서커밋).
-- 백업/배포: 모든 이번 커밋에 [skip render][no-deploy]를 넣어 Render 자체 자동 배포와 기존 Game release를 보류한다. 현재 Commit/Push 대기. 상세 설계/파일/검사는 docs/deployment/ONLINE_RECOVERY.md, 로컬 로그는 .local-data/online-recovery/. 다음: 명시적12파일만 비밀검사/문서꼬리분리→main Commit/일반Push→원격SHA/운영기존2a36666 유지 확인. 실제 배포는 추가 사용자 요청 전 금지.
+- 백업/배포: 모든 이번 커밋에 [skip render][no-deploy]를 넣어 Render 자체 자동 배포와 기존 Game release를 보류한다. 구현 f6eba9013d18821ade8d0632a25e566d167a0419 main Commit/일반Push·원격SHA 일치 확인. Push후 health200/version2a36666/protocol1/roomFormat1 유지 확인. [GitHub CI40085392311](https://github.com/maxnjun/burgundy-expanded/actions/runs/40085392311)는 실행 중이며 원격통과로 보고하지 않는다. 상세 설계/파일/검사는 docs/deployment/ONLINE_RECOVERY.md, 로그 .local-data/online-recovery/. 이 완료기록은 [skip ci][skip render][no-deploy] 문서 전용 백업으로 운영에 반영하지 않는다. 다음: 원격CI 결과 확인·사용자 명시 배포 요청 대기. 전체 프로젝트 완료나 실제클라우드/실기기 검증으로 보고하지 않는다.
 
 ## 영지/포도밭 점수판·Render 배포 완료 (2026-10-24)
 

@@ -6,8 +6,9 @@
 - [x] 실제Node SIGKILL/빈디렉터리/새버전 복원7/7·양쪽동시제출/장착방패/배치포도
 - [x] 코어475/475·보드33/33·전체PC156통과(전용제외3)·타입/ESLint/빌드
 - [x] 최종관련PC13/Chrome20(전용제외2)·WebKit복구3·망복구흐름PC/Chrome6 재검증
-- [ ] [skip render][no-deploy]로 이번12파일만 main Commit/Push·원격확인
-- [ ] Push 후 운영 기존2a36666 유지 확인(방/Redis 초기화·배포 없음)
+- [x] [skip render][no-deploy]로 이번12파일만 main f6eba90 Commit/Push·원격확인
+- [x] Push 후 health200·운영 기존2a36666 유지 확인(방/Redis 초기화·배포 없음)
+- [ ] 원격 GitHub CI40085392311 결과 확인(로컬 검사 완료, 원격은 실행 중)
 - [ ] 사용자 배포 요청 전 운영 반영 금지, 이후 실제 Upstash/실기기/외부망 추가검증
 
 ---
