@@ -48,7 +48,21 @@ Render **Hobby 작업 공간($0)** 안에서 Web Service의 **Free 인스턴스*
 8. 두 브라우저에서 `/online` → 이름 →2인 방 생성 → 초대 링크 → 다른 기기 참가 → 각자 준비 → 방장 시작을 확인한다. 같은 브라우저·프로필·주소로 돌아와야 같은 자리로 재접속한다. 저장소 삭제/시크릿 종료/기기 간 자리 이동은 자동 지원하지 않는다.
 9. Render Restart/새 배포 후 방·revision·좌석 유지,15분 유휴 뒤 재접속, 계정 사용량을 실제 확인한다. 정상 동기화 트래픽이 있으면 절전되지 않을 수 있다. 인위적인 keep-alive를 추가하지 않는다. 버그는 `docs/BUGS.md`에 토큰/개인정보 없이 기록한다. iPhone은 WebKit 자동검사와 실기기를 구분한다.
 
-현재 실제 사이트 URL은 없다. 외부 서비스 연결은 사용자 확인 후 진행하며 무료 리소스만 선택한다.
+현재 기존 서비스는 `burgundy-expanded`, 주소는 `https://burgundy-expanded.onrender.com/online`이다. 위 Blueprint는 신규 구성 예시이므로 기존 서비스를 다시 만들지 않는다. 기존 Upstash와 `staging` 네임스페이스를 유지한다.
+
+## 기존 서비스에 수동으로 최신 main 반영
+
+2026-10-24 터미널 점검 기준 `render.yaml`은 `autoDeployTrigger: off`다. 실제 대시보드 설정은 이번 작업에서 조작하지 않는다. GitHub의 별도 자동 배포 workflow도 `[no-deploy]` 커밋은 배포하지 않는다.
+
+1. GitHub `main`의 **Game CI**가 초록색 `success`인지 확인한다. 실패/진행 중이면 배포를 기다린다. 최신 커밋 해시는 `git rev-parse origin/main`으로 확인할 수 있다.
+2. Render 대시보드의 기존 프로젝트에서 **burgundy-expanded** 서비스를 선택한다. `New`나 Blueprint 생성은 사용하지 않는다.
+3. 서비스의 **Deploys → Manual Deploy → Deploy latest commit**을 선택한다. 서비스가 연결한 저장소가 `maxnjun/burgundy-expanded`, 브랜치가 `main`인지 먼저 확인한다.
+4. `Restart service`는 기존 버전을 재시작하므로 새 코드 반영 용도로 선택하지 않는다. 빌드 캐시 삭제도 이번 업데이트에는 필요하지 않다.
+5. 배포가 `Live`가 되고 표시된 커밋이 원하는 main 커밋인지 확인한다. 실패하면 기존 `Live` 버전을 유지하고 실패 로그를 확인한다. 기존 환경변수·Upstash 토큰·`BURGUNDY_ROOM_NAMESPACE=staging`은 변경하지 않는다.
+6. `/api/health`의 `status=ok`, `version=배포한 전체 커밋 SHA`, `protocol=1`, `roomFormat=1`을 확인한다. `/api/version`도 같은 버전이어야 하고 `/online`이 열려야 한다. 이전 SHA면 아직 업데이트 완료가 아니다.
+7. 기존 방은 삭제하지 않고 같은 브라우저로 재접속한다. 별도 테스트 방에서 생성·참가·동기화를 확인한다. 데이터 초기화/Redis 키 삭제/새 DB 생성은 업데이트 절차에 포함되지 않는다.
+
+공식 절차: [Render 배포 및 Manual Deploy 옵션](https://render.com/docs/deploys). 터미널 HTTP 응답만 확인한 상태와 실제 수동 배포 완료를 구분한다.
 
 ## 업데이트·롤백
 

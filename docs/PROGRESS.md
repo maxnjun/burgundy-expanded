@@ -1,3 +1,14 @@
+## 터미널 기반 Render 반영 준비 (2026-10-24)
+
+- 사용자 지시: Computer Use/브라우저 직접 자동 조작 없이 Git·터미널만 사용. 기존 Render burgundy-expanded/Upstash staging 유지.
+- 시작: main/dafe34d18e688ed9c75663ab8e4e22bbb99eaf58와 원격 main 차이0/0, 앱 소스 미커밋 없음. 기존 dirty 문서꼬리·수도원 원본27/28·입력 ZIP/asset-inbox는 이미 승인 최종 PNG와 구분해 보존한다. 최종 배포 PNG62개 SHA/해상도/RGBA 헤더 검사 통과.
+- CI40015013553 실패 원인은 기존 player-inventory-zoom의40px 기대값 잔존(실제52px). 합의된 상품52px×배율로 수정하고 겹침·판매·Undo 검증은 유지. 기존 원격 PC147통과/3모바일 전용제외/1실패 결과와 이번 실행을 구분한다.
+- 이번 터미널 검사: 코어471/471·보드33/33·HTTP/WSS/격리파일·Upstash REST 모의 배포7/7, TypeScript·ESLint·프로덕션 빌드 통과. 로컬 브라우저 테스트/Computer Use는 요청대로 실행하지 않았다.
+- 실제 사이트 HTTP 읽기: /api/health·/api/version·/online 모두200, 현재 version32e895a5c174c5304b0375930a345491dfbf181f/protocol1/roomFormat1. 최신 버전 배포 완료가 아니다. 실제 기존 방/Redis 쓰기·삭제 없음.
+- render.yaml 자동배포Off 유지. 기존 CI배포는 성공CI와 계정의 활성화 변수/배포훅이 필요하므로 Push만으로 반영된다고 주장하지 않는다. 이번 준비 커밋은 [no-deploy]로 백업하고, 사용자 수동 배포는 docs/deployment/FREE_RENDER.md의 기존 서비스→Deploys→Manual Deploy→Deploy latest commit 순서. 새 리소스·유료 옵션·환경변수 변경 없음.
+- 변경: tests/browser/player-inventory-zoom.spec.ts(40→52), docs/deployment/FREE_RENDER.md(실제 URL·수동 단계), 이번 PROGRESS/TODO 접두 구간만. 기존 여관 완료 문서꼬리는8a60c2f 이력과 대조했으나 다른 작업으로 남겨 둠. 원본27/28은 현재 최종 수도원 이미지 경로에 쓰이지 않는 보존 자료이며 이번 배포에 포함하지 않음.
+- 미완료: 새 커밋 main 백업·원격CI 확인, 사용자의 수동 배포 후 health버전/온라인 새방 생성·참가 실제 확인. 미제작 방패18장은 기존SVG 유지(후속1200×1480 RGBA·회색석재·상단점수/하단번호 규격), 이번 배포 준비를 막지 않음.
+
 ## 공용 보드 은화 가격 아이콘 위치 (2026-10-24)
 
 - 완료: 검은 공급처 타일 묶음 오른쪽18 SVG 단위에 ResourceGlyph 은화2개, 포도 상점은 마지막 상점 타일의 오른쪽 빈 셀에 ResourceIcon 은화2개. 둘 다 승인 silver-coin.png 그대로 크기26·간격6, 세로 중앙 정렬. 해당 가격의 상단 중복 아이콘 없음.
