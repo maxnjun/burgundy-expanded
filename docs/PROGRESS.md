@@ -1,13 +1,15 @@
-## 영지/포도밭 점수판 페이지 전환 및 Render 반영 (2026-10-24)
+## 영지/포도밭 점수판·Render 배포 완료 (2026-10-24)
 
-- 구현: 공용950×1030 보드의 기존 좌하단390×155 영역과 각 개인 보드 우하단에 영지1/2·포도밭2/2 및 ▲/▼ 전환. 각 컴포넌트의 로컬 페이지 상태는 서로 독립적이며 게임 revision/난수/저장 형식에 넣지 않는다. 영지 육각형/공급처 좌표·원본 에셋·기존 방 데이터 보존.
-- 점수: 영지 페이지는 기존 지역 기본 점수표(regionSizePoints)와 현재 누적 victoryPoints. 포도밭 페이지는 기존 종료 정산 vineScore의 같은 연결 영역/토큰 판정을 vineScoreBreakdown으로 공유해 품종별 채점 영역과 종료 예상 합계를 표시. 누적 승점에 예상 점수를 더하지 않으며 확장 비활성 시 미사용 안내. 4층/시작1+완성4토큰 규칙 미변경.
-- 온라인: RoomView가 이미 제공하는 공개 vineyards/players를 CommonBoard와 개인 점수판에 연결. 서버 DTO·권한·저장 마이그레이션 없이 두 클라이언트에서 실제 획득→배치→후속 효과 후 점수 갱신/재접속 검증.
-- 검사 완료: 코어471/471·보드33/33·HTTP/WSS/격리 저장 배포7/7, 타입·ESLint·프로덕션 빌드, 신규PC5/5·Chrome터치/WebKit10/10. 초기 신규 검사 실패는 미리 굴리지 않은3/4인 픽스처의 정상 자동 라운드 준비와 격리 HTTP 서버 종료 후 남은 폴링을 구분해 수정했다. 기존 테스트 삭제/기준 완화 없음.
-- 화면: .local-data/score-pages/ 아래 브라우저 로그·캡처. PC에서 개인 우하단/공용 기존 프레임 내부를 직접 확인. 모바일 locator 캡처가 기존 고정HUD 아래로 스크롤되어 가린 장면은 사용하지 않고 mobile-visible.png에서 점수판 중앙이 실제 hit target인지 확인했다. 실제 Android/iPhone 실기기는 미검증.
-- 최종 검사: browser-final.log PC/Chrome터치/WebKit15/15(100/160/200%·키보드 포함), browser-regression.log 관련PC8/8(방패2/3/4인·온라인보드·Undo·시작성·고정포도효과·상품/무역로). build-final/types-last/lint-last 통과.
-- 백업: 최초 d3c71f6 main Push 후 실제 모바일에서 점수판390px가 화면 여백을 넘는 것을 확인해 width:min(100%,390px,100vw-32px)로 한정했다. 보완 browser-responsive.log15/15·build-responsive/types-responsive/lint-responsive 통과. 진행 중: 반응형 보완 커밋 main Push→정확한 최신 SHA의 전체CI→기존 Render 수동 Deploy. 사용자는 배포를 명시 승인했으며, GitHub API에서 Actions secrets/Environments가0개로 확인되어 자동 경로를 가정하지 않고 사용자가 수동 Deploy 방식을 선택했다. 배포 후 exact SHA/health/online/실제 점수판을 확인하기 전에는 성공으로 보고하지 않는다.
-- Git 시작 main/origin506bc29 동일. 원래 dirty 문서 꼬리·수도원 원본27/28·asset-inbox·입력ZIP/프롬프트는 이번 백업 제외하고 보존한다. Render 기존 서비스/Upstash staging/기존 온라인 방 초기화·삭제·유료 리소스 생성 없음.
+- 기능/배포 커밋: 98e62a3c96957c56abe4fc74dfee691654753e39(main 일반Push·원격 SHA 일치). 최초 구현d3c71f6, 모바일 너비 보완98e62a3. 이 완료 기록 커밋은 앱 변경 없이 [skip ci][no-deploy]로 백업하므로 실제 서비스의 기능 SHA는98e62a3이다.
+- UI: 공용950×1030의 기존 좌하단390×155 영역과 각 개인 영지 우하단에 영지1/2·포도밭2/2·▲/▼. 각 컴포넌트의 페이지 선택은 독립된 로컬UI 상태이며 게임 revision/난수/저장 형식에 넣지 않는다. PC390px·모바일 최대100vw-32px(390px화면에서358px), 영지/공급/포도밭 좌표와 원본 이미지는 유지한다.
+- 점수: 영지 기본 점수표는 regionSizePoints, 현재 누적은 victoryPoints. 포도밭은 기존 종료 정산의 연결 영역/토큰 판정을 vineScoreBreakdown으로 공유하여 품종별 토큰·채점 영역·종료 예상 점수를 표시한다. 예상 점수를 누적에 더하지 않는다. 확장 비활성은 미사용 안내. 4층·시작1+완성4토큰 규칙 그대로.
+- 온라인: 기존 공개 RoomView의 players/vineyards로 두 화면 점수가 갱신된다. 새 서버 DTO·저장 마이그레이션·권한 변경 없음. 격리 서버에서 실제 포도 획득→배치→후속 효과 후 양쪽 점수/누적 갱신·재접속 검증.
+- 로컬 검사: 전체 코어471/471·보드33/33·HTTP/WSS/격리 저장 배포7/7, 전체 ESLint·타입·프로덕션 빌드 통과. 최종 browser-responsive.log PC/Chrome터치/WebKit15/15(100/160/200%·키보드·2/3/4인·비활성확장·게임상태불변), browser-regression.log 관련PC8/8(방패2/3/4인·온라인보드·Undo·시작성·고정포도효과·상품/무역로).
+- 원격 검증: [Game CI40075189920](https://github.com/maxnjun/burgundy-expanded/actions/runs/40075189920) 최종98e62a3 전체 성공. 코어471·보드33·배포7·PC153통과/3제외·Chrome터치17통과/2제외·WebKit12통과·버전빌드/타입/린트 통과. 제외5건은 해당 프로젝트 대상이 아닌 기존 테스트의 조건부 제외이며 실패0. ci-summary.log 보존.
+- 실제 배포: GitHub Actions secrets/Environments0개로 자동 배포를 가정하지 않았고, 사용자가 기존 Render 수동 Deploy 방식을 선택했다. 기존 burgundy-expanded의 https://burgundy-expanded.onrender.com/api/health·api/version·online 모두200, health/version98e62a3·protocol1·roomFormat1을 확인했다.
+- 실사이트 검증: .local-data/score-pages/verify-live.cjs 실행 성공(live-verification.log). PC와390px모바일 브라우저에서 새 QA방1개 생성→두번째 참가→공용/개인/다른플레이어 점수판 독립 전환→모바일 새로고침/재접속 성공. live/{common-vineyard,mobile-personal}.png를 직접 확인했다. 기존 방 접근/삭제·Redis 초기화·환경변수/네임스페이스 변경·유료 리소스 생성 없음. QA방은 정상 보존/만료 정책을 따른다.
+- 화면/한계: .local-data/score-pages/{responsive,screens}/ 및 mobile-visible.png. PC·모바일·WebKit 캡처 직접 확인. 로컬 모바일 캡처가 기존 고정HUD 아래로 스크롤되어 가린 장면은 제외하고 화면 중앙으로 옮긴358px 캡처에서 잘림 없음/중앙 hit target 확인. 실제 Android/iPhone 실기기와 다른 네트워크, 기존 사용자 방별 토큰 재접속은 이번에 미검증. 자동 배포 훅은 설정되지 않았으므로 이후 배포도 수동 또는 별도 보안 설정이 필요하다.
+- 변경 파일: src/app/{score-pages.tsx,score-pages.css,common-board.tsx,game-screen.tsx,online/room-screen.tsx}, src/game/vineyards.ts, tests/{core/vineyards.test.ts,browser/score-pages.spec.ts}, .github/workflows/ci.yml, docs/{PROGRESS.md,TODO.md}. 시작시 기존 dirty 문서꼬리·수도원 원본27/28·asset-inbox·입력ZIP/프롬프트는 백업 제외/그대로 보존했다. 다음: 이 범위 완료, 사용자 다음 지시 대기. 전체 프로젝트/실기기QA 완료로 보고하지 않는다.
 
 ## 터미널 기반 Render 반영 준비 (2026-10-24)
 
