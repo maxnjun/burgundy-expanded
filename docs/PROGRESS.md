@@ -7,7 +7,7 @@
 - 실제 사이트 HTTP 읽기: /api/health·/api/version·/online 모두200, 현재 version32e895a5c174c5304b0375930a345491dfbf181f/protocol1/roomFormat1. 최신 버전 배포 완료가 아니다. 실제 기존 방/Redis 쓰기·삭제 없음.
 - render.yaml 자동배포Off 유지. 기존 CI배포는 성공CI와 계정의 활성화 변수/배포훅이 필요하므로 Push만으로 반영된다고 주장하지 않는다. 이번 준비 커밋은 [no-deploy]로 백업하고, 사용자 수동 배포는 docs/deployment/FREE_RENDER.md의 기존 서비스→Deploys→Manual Deploy→Deploy latest commit 순서. 새 리소스·유료 옵션·환경변수 변경 없음.
 - 변경: tests/browser/player-inventory-zoom.spec.ts(40→52), docs/deployment/FREE_RENDER.md(실제 URL·수동 단계), 이번 PROGRESS/TODO 접두 구간만. 기존 여관 완료 문서꼬리는8a60c2f 이력과 대조했으나 다른 작업으로 남겨 둠. 원본27/28은 현재 최종 수도원 이미지 경로에 쓰이지 않는 보존 자료이며 이번 배포에 포함하지 않음.
-- 미완료: 새 커밋 main 백업·원격CI 확인, 사용자의 수동 배포 후 health버전/온라인 새방 생성·참가 실제 확인. 미제작 방패18장은 기존SVG 유지(후속1200×1480 RGBA·회색석재·상단점수/하단번호 규격), 이번 배포 준비를 막지 않음.
+- 백업:70f023145d5c9221995a44723d75a8d87a581c76 main Commit/일반Push·원격 SHA 일치 확인. 이 결과 기록도 별도 main 백업한다. 남음: [최신 main CI](https://github.com/maxnjun/burgundy-expanded/actions/workflows/ci.yml) 결과 확인, 사용자의 수동 배포 후 health버전/온라인 새방 생성·참가 실제 확인. 미제작 방패18장은 기존SVG 유지(후속1200×1480 RGBA·회색석재·상단점수/하단번호 규격), 이번 배포 준비를 막지 않음.
 
 ## 공용 보드 은화 가격 아이콘 위치 (2026-10-24)
 
