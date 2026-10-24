@@ -1,3 +1,9 @@
+## CI 글꼴 단계 점검 — 설정 보완·전체 재검사 준비 (2026-10-25)
+
+- 완료 로그를 확보해 정정:200fe13 CI40113380264는 성공, Noto CJK 설치3.3초였다. 상태 API 지연을 설치 정체로 오판했다. 실제 PC19.4분/Chrome4.0분/WebKit5.5분. 코어486·보드33·저장/배포7·PC173/Chrome40/WebKit35 및 린트/타입/두 빌드 통과. 상세 docs/qa/ci-font-setup.md.
+- 이번 범위는 CI만: 기존 한글 스크린샷의 Noto CJK 유지·비대화형설치5분·다운로드 재시도2/HTTP·HTTPS30초/잠금60초·한글폰트존재검사. Playwright 설치10분 제한·PC/Chrome/WebKit 단계 명명. 기존 모든 검사 명령/대상/기준/전역60분 제한 유지. 게임·서버·이미지 무변경.
+- YAML 파싱·전체 검사명령/빌드 환경/권한/제한 보존 자동검사 통과. Git Bash 문법검사 후 이 CI변경만 [skip render] [no-deploy] 커밋/Push→전체CI→기존Render 최신SHA배포/온라인복구 확인 순서. 현재200fe13 운영·18PNG해시/두좌석실측1.18/복구 확인. 기존Redis/방/미커밋자료 보존.
+
 ## 방패18종 PNG/장착18% 확대 — CI 픽스처 보완·재검증 준비 (2026-10-25)
 
 - 기준 main a05e7e6. ZIP18종의 실제 체크무늬를 분리하고 원본RGB/비율을 유지한1200×1480 RGBA와 번호/해시 manifest를 public/shields에 등록했다. 입력은 asset-inbox/shield-approved/originals 보존. 상세 docs/SHIELD_ASSET_IMPORT.md.

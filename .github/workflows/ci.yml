@@ -36,11 +36,25 @@ jobs:
       - run: npm run test:deployment
         env:
           TEST_GAME_VERSION: ${{ github.sha }}
-      - run: npx playwright install --with-deps msedge webkit
-      - run: sudo apt-get install -y fonts-noto-cjk
-      - run: npm run test:browser -- --project=desktop-1280
-      - run: npm run test:browser -- tests/browser/shield-assets.spec.ts tests/browser/shield-castles.spec.ts tests/browser/fifteen-online.spec.ts tests/browser/fifteen-fixes.spec.ts tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/tile-help.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=mobile-390
-      - run: npm run test:browser -- tests/browser/shield-assets.spec.ts tests/browser/shield-castles.spec.ts tests/browser/fifteen-online.spec.ts tests/browser/fifteen-fixes.spec.ts tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=iphone-webkit
+      - name: Install Playwright browsers and system dependencies
+        timeout-minutes: 10
+        run: npx playwright install --with-deps msedge webkit
+      - name: Prepare Korean screenshot font (5 minute limit)
+        timeout-minutes: 5
+        run: |
+          sudo env DEBIAN_FRONTEND=noninteractive apt-get \
+            -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
+            -o DPkg::Lock::Timeout=60 install -y fonts-noto-cjk
+          korean_fonts="$(fc-list ':lang=ko' family)"
+          test -n "$korean_fonts"
+          printf '%s\n' "$korean_fonts"
+          fc-match 'sans-serif:lang=ko'
+      - name: Full PC browser regression
+        run: npm run test:browser -- --project=desktop-1280
+      - name: Chrome mobile browser regression
+        run: npm run test:browser -- tests/browser/shield-assets.spec.ts tests/browser/shield-castles.spec.ts tests/browser/fifteen-online.spec.ts tests/browser/fifteen-fixes.spec.ts tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/tile-help.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=mobile-390
+      - name: iPhone WebKit browser regression
+        run: npm run test:browser -- tests/browser/shield-assets.spec.ts tests/browser/shield-castles.spec.ts tests/browser/fifteen-online.spec.ts tests/browser/fifteen-fixes.spec.ts tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=iphone-webkit
       - name: Verify the deploy-time versioned build
         run: npm run build && npx tsc --noEmit
         env:
