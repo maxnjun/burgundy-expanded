@@ -26,6 +26,7 @@ for(const count of [2,3,4])test(`score pages ${count}p are independent, accurate
  await expect(personal.first()).toHaveAttribute("data-score-page","2");
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
  for(const panel of await personal.all()){
+  expect((await panel.boundingBox())!.width).toBeLessThanOrEqual(Math.min(390,info.project.use.viewport!.width-32)+1);
   const nav=panel.getByRole("button",{name:/다음 페이지$/});
   await expect(nav).toHaveAttribute("aria-disabled",await panel.getAttribute("data-score-page")==="2"?"true":"false");
   const bounds=await panel.evaluate(el=>{const outer=el.closest("svg")!.getBoundingClientRect();return [...el.querySelectorAll("text")].every(t=>{const r=t.getBoundingClientRect();return r.left>=outer.left-1&&r.right<=outer.right+1&&r.bottom<=outer.bottom+1;});});expect(bounds).toBe(true);

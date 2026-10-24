@@ -1,4 +1,4 @@
-.personal-score-pages{display:block;width:min(100%,390px);height:auto;margin:8px 0 0 auto;flex-shrink:0}
+.personal-score-pages{display:block;width:min(100%,390px,calc(100vw - 32px));height:auto;margin:8px 0 0 auto;flex-shrink:0}
 .score-pages text{fill:#513d22;pointer-events:none;font-family:inherit}
 .score-pages .score-page-title{font-size:17px;font-weight:700}
 .score-pages .score-page-number,.score-pages .score-page-total{font-size:13px;font-weight:700}
