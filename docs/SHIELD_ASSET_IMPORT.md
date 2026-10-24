@@ -33,3 +33,7 @@
 - 최종 방패 전용 PC1280×900·Chrome390×844·WebKit390×844 **9/9** 통과:18종 번호/파일/해시/알파, 모든 실제 불투명 픽셀의 성 내부 포함, 2·3·4인 장착1.18/중심/클릭/비용 분리,100/160/200% 확대, 상세 이미지, PNG 실패 복구, 전체 게임 상태 불변을 확인했다. PC/Chrome의 높이2400 캡처2개도 통과했다. 캡처용 긴 WebKit 화면의 상세 터치1건은 실패했지만 동일 검사가 일반844 높이에서는 통과했다. 실제 Android/iPhone 기기는 미검증이다.
 - 직접 확인한 실제 게임 화면: `.local-data/shield-assets/screens/{before-after,pc-estate,mobile-estate,pc-common,pc-160,pc-200}.png`.18종 전체 비교는 `.local-data/shield-assets/preview-sheet.png`. 로그는 같은 폴더의 `browser-all-pc.log`, `browser-mobile.log`, `cleanup-check.log`, `final-shields.log` 등이다. 운영 배포 결과와 GitHub CI는 로컬 검사와 별도로 확인한다.
 - 기존 Render 서비스와 Upstash를 사용한다. 운영 방/Redis/환경변수 초기화 또는 유료 리소스 생성은 하지 않는다. 로컬 검증 후 이번 변경만 main에 백업하고, 실제 배포 SHA·자산 해시·운영 화면을 확인하기 전에는 배포 성공으로 보고하지 않는다.
+
+### GitHub CI 픽스처 보완
+
+149eb25의 첫 CI40110925485는 에셋80개·코어486·보드33·린트·빌드·타입·배포 계약을 통과했으나 PC176개 중172통과/3대상제외/1픽스처 시간 초과로 중단했다. 실패 화면/trace에는 포도밭 테스트 상태 대신 기본 새 게임이 나타났다. `fifteen-online.spec.ts`가 초기화 중인 페이지의 localStorage를 바꾼 직후 reload하면서 이전 페이지의 자동 저장과 경합한 것이다. 테스트의 sessionStorage에 다음 픽스처를 보관하고 새 문서의 init script에서 React 초기화 전에 주입하도록 수정했다. 실제 이름 검증을 추가하고 기존 보드 번호/2·3·4인/가로 넘침/세로·가로 캡처 기준은 유지했다. 같은 검사를 PC/Chrome390/WebKit390에서 각각3회,9/9 통과했다. 운영 자동 저장 코드는 변경하지 않는다. 상세 로그 `ci-fixture.log` 및 CI 실패 원본 `.local-data/shield-assets/ci-results/`.

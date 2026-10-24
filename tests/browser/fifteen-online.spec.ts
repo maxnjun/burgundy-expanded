@@ -44,10 +44,12 @@ test('online legacy shield returns have two choices, zero removal fee, capacity 
 });
 
 test('two three and four real duchy numbers and fitted boards remain usable in portrait and landscape',async({page},info)=>{
+ // The previous page may autosave during reload; seed before React initializes.
+ await page.addInitScript(()=>{const saved=sessionStorage.getItem('qa-real-duchy-boards');if(saved)localStorage.setItem('burgundy-expanded:local-v1',saved);});
  await page.goto('/');for(const count of [2,3,4]){
   const initial=createPracticeSession({names:Array.from({length:count},(_,i)=>`번호${i+1}`),boardIds:Array.from({length:count},(_,i)=>`se:base:${i+2}`),seed:`number-${count}`,vineyards:true,officialSlots:true}),rolled=applyCoreAction(initial,{type:'roll-round',playerId:'seat-1'});expect(rolled.ok).toBeTruthy();if(!rolled.ok)return;
-  const saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:rolled.value.state,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});await page.evaluate(s=>localStorage.setItem('burgundy-expanded:local-v1',s),saved);await page.reload();
-  const panels=page.locator('.estate-panel');await expect(panels).toHaveCount(count);for(let i=0;i<count;i++){await expect(panels.nth(i).locator('.board-number')).toHaveText(`영지 보드 ${i+2}번`);const row=panels.nth(i).locator('.estate-vineyard-row');expect(await row.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);}
+  const saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:rolled.value.state,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});await page.evaluate(s=>sessionStorage.setItem('qa-real-duchy-boards',s),saved);await page.reload();
+  const panels=page.locator('.estate-panel');await expect(panels).toHaveCount(count);await expect(panels.first().locator('h2')).toContainText('번호1');for(let i=0;i<count;i++){await expect(panels.nth(i).locator('.board-number')).toHaveText(`영지 보드 ${i+2}번`);const row=panels.nth(i).locator('.estate-vineyard-row');expect(await row.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);}
   if(count===4&&info.project.use.hasTouch)await page.setViewportSize({width:844,height:390});await panels.first().locator('.estate-vineyard-row').screenshot({path:info.outputPath(`real-boards-${count}.png`)});
  }
 });
