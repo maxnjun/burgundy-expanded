@@ -1,10 +1,11 @@
-import {prepareTileEffect,immediateOptions} from "../../src/game/core/effects";
+import {automaticAction} from "../../src/game/direct-actions";
+import {prepareTileEffect,immediateOptions,refreshPendingChoice} from "../../src/game/core/effects";
 import {setupCustomTrade} from "../../src/game/custom-trade-routes";
 import {mkdirSync,writeFileSync} from "node:fs";
 import {mount,placed} from "../fixtures/shields";
 import {createShieldLayout,setShieldLayout,shieldLayout} from "../../src/game/shields";
 import {settleShieldState} from "../../src/game/core/shield-effects";
-import {vineFixture,layeredVineFixture} from "../fixtures/vineyards";
+import {vineFixture,layeredVineFixture,blackVineFixture} from "../fixtures/vineyards";
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createPracticeSession} from '../../src/game/practice';
@@ -52,7 +53,7 @@ test('all12 placements independently claim4 layers once and every bonus resumes 
 test('castle bonus purchases a vine then nests free placement without losing the outer bonus',()=>{
  let g=vineFixture();g=resolveAll(vineStep(reserveFromBag(g),options(reserveFromBag(g)).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command==='place'&&a.intent.slotId==='V01')!));
  g=reserveFromBag(g);g=vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V04')!);
- g=vineStep(g,options(g).find(a=>a.type==='resolve-choice'&&a.optionId==='vine-order:V04:1')!);
+ assert.equal(g.turn.pendingChoice!.source.section,'포도밭 · 프로젝트 복원판 v0.1');assert.ok(!g.turn.pendingChoice!.options.some(o=>o.id.startsWith('vine-order:')), 'the only remaining castle reward starts automatically');
  const buy=options(g).find(a=>a.type==='extension'&&a.extensionId==='vineyards');assert.ok(buy);g=vineStep(g,buy);
  const child=options(g).find(a=>a.type==='resolve-choice'&&(g.turn.pendingChoice!.options.find(o=>o.id===a.optionId)?.payload as unknown as {intent?:{kind?:string;command?:string}})?.intent?.kind==='vineyard'&&(g.turn.pendingChoice!.options.find(o=>o.id===a.optionId)?.payload as unknown as {intent:{command:string}}).intent.command==='place');assert.ok(child);
  g=resolveAll(vineStep(g,child));assert.equal(g.vineyards!.players['seat-1'].placed.length,3);assert.ok(g.vineyards!.players['seat-1'].placed.every(x=>x.used.length===2));assert.equal(g.vineyards!.stack.length,0);
@@ -114,4 +115,32 @@ test('unmarked intermediate tier4 saves are rejected explicitly instead of silen
 
 test('unclaimed intermediate tier map adopts V11 without changing any tile, pool or token',()=>{
  const g=vineFixture(),raw=JSON.parse(serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,boardZooms:{}}}));delete raw.game.vineyards.topSlotId;const n=parseSavedGame(JSON.stringify(raw)).game;assert.deepEqual(n,g);
+});
+
+test('new vineyard board IDs use supported coordinates and legacy saves never reroll',()=>{
+ const g=vineFixture();assert.ok(g.vineyards!.players['seat-1'].boardId);assert.deepEqual(saved(g),g);
+ const old={...g,vineyards:{...g.vineyards!,players:Object.fromEntries(Object.entries(g.vineyards!.players).map(([id,{boardId,...p}])=>{assert.ok(boardId);return [id,p];}))}};assert.deepEqual(saved(old),old);
+ assert.throws(()=>saved({...g,vineyards:{...g.vineyards!,players:{...g.vineyards!.players,'seat-1':{...g.vineyards!.players['seat-1'],boardId:'unknown' as never}}}}));
+});
+test('a remaining vineyard reward starts directly and the fixed bank reward cannot run twice',()=>{
+ let g=reserveFromBag(vineFixture());const before=g.players[0].silver;g=vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V02')!);
+ assert.equal(g.players[0].silver,before+2);assert.deepEqual(g.vineyards!.players['seat-1'].placed[0].used,[0,1]);assert.ok(g.turn.pendingChoice);assert.ok(g.turn.pendingChoice.options.every(o=>!o.id.startsWith('vine-order:')));g=resolveAll(g);assert.equal(g.players[0].silver,before+2);assert.deepEqual(saved(g),g);
+});
+test('V12 free acquisition permits documented normal black types only, rejects numbered tiles and does not spend a purchase',()=>{
+ let g=blackVineFixture();const list=g.turn.pendingChoice!.options,black=list.find(o=>(o.payload as {vineBlack?:object}|null)?.vineBlack)!;assert.ok(black);
+ for(const o of list){const id=(o.payload as {vineBlack?:{tileId:string}}|null)?.vineBlack?.tileId;if(id){assert.ok(g.market.blackDepot.includes(id));assert.ok(['castle','ship','mine','livestock','building','monastery'].includes(g.tiles[id].type));}}
+ const tileId=g.market.numberedDepots.flatMap(d=>d.slots).find(s=>s.tileId)!.tileId!;const bad:GameAction={type:'resolve-choice',playerId:'seat-1',choiceId:g.turn.pendingChoice!.id,optionId:JSON.stringify({tileId,storageSlot:0})};assert.equal(validateCoreAction(g,bad).valid,false);
+ const old=g.players[0].silver,used=g.turn.blackPurchaseUsed;g=vineStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:g.turn.pendingChoice!.id,optionId:black.id});assert.equal(g.players[0].silver,old);assert.equal(g.turn.blackPurchaseUsed,used);assert.deepEqual(saved(g),g);
+});
+
+test('a skip-only vineyard placement reward waits when a legal purchase can create a target',()=>{
+ let g=reserveFromBag(layeredVineFixture());g=vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V05')!);g=vineStep(g,options(g).find(a=>a.type==='resolve-choice'&&a.optionId==='vine-order:V05:1')!);
+ assert.deepEqual(g.turn.pendingChoice!.options.map(o=>o.id),['skip']);assert.equal(automaticAction(g,options(g)),null);
+ const candidate=options(g).filter(a=>a.type==='buy-black-tile').map(a=>applyCoreAction(g,a)).find(r=>r.ok&&r.value.state.turn.pendingChoice!.options.some(o=>(o.payload as {intent?:{kind:string}}|null)?.intent?.kind==='place-tile'));assert.ok(candidate?.ok);if(candidate.ok){assert.ok(candidate.value.state.turn.pendingChoice!.options.length>1);assert.deepEqual(saved(candidate.value.state),candidate.value.state);}
+});
+test('a single vineyard castle choice waits when a legal purchase can create another action',()=>{
+ let g=reserveFromBag(layeredVineFixture());g=vineStep(g,options(g).find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId==='V06')!);const goods=g.players[0].goods.flatMap(s=>s.tiles),v=g.vineyards!;
+ g=refreshPendingChoice({...g,players:g.players.map((p,i)=>i?p:{...p,goods:[]}),market:{...g.market,removedTileIds:[...g.market.removedTileIds,...g.market.numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[]))],numberedDepots:g.market.numberedDepots.map((d,i)=>({...d,slots:d.slots.map(s=>({...s,tileId:null})),goods:i?d.goods:[...d.goods,...goods]}))},vineyards:{...v,removed:[...v.removed,...v.depots.flatMap(d=>d.tileId?[d.tileId]:[]),...v.store.filter((id):id is string=>id!==null)],depots:v.depots.map(d=>({...d,tileId:null})),store:v.store.map(()=>null)}});
+ assert.ok(validateCoreState(g).valid);assert.equal(g.turn.pendingChoice!.options.length,1);assert.ok(options(g).some(a=>a.type==='buy-black-tile'));assert.ok(!options(g).some(a=>a.type==='use-die'),'a started vineyard effect remains mandatory');assert.equal(automaticAction(g,options(g)),null);
+ const only={...g,market:{...g.market,removedTileIds:[...g.market.removedTileIds,...g.market.blackDepot.filter((id):id is string=>!!id)],blackDepot:g.market.blackDepot.map(()=>null)}};const action=automaticAction(only,options(only));assert.ok(action);assert.equal(options(only).length,1);const done=vineStep(only,action);assert.equal(done.turn.activePlayerId,'seat-1');assert.equal(automaticAction(done,options(done)),null);assert.deepEqual(saved(done),done);
 });

@@ -1,7 +1,7 @@
 import { LIVESTOCK_NAMES } from "../tile-help";
 import {keyOccupant,storedWeight,compactVineStorage,discardStored,VINE_TILES} from "../vineyards";
-import type { GameState, JsonValue, PendingChoice, PlayerState } from "../types";
-import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldTurnKey, type ShieldAcquireAction } from "../shields";
+import type { GameState, JsonValue, PendingChoice, PlayerState, DieValue } from "../types";
+import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, type ShieldAcquireAction } from "../shields";
 import { placementIssue } from "./placement";
 import { executeIntent } from "./intents";
 import { prepareTileEffect, refreshPendingChoice } from "./effects";
@@ -24,13 +24,14 @@ function windowOf(state:GameState):Window|null {
   const p=effect.payload as Window|null;
   return p&&["shield-five","shield-storage","shield-phase"].includes(p.kind)?p:null;
 }
-function phaseOptions(state:GameState,player:PlayerState):PendingChoice["options"] {
+function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingChoice["options"] {
   const layout=shieldLayout(state)!,flow=layout.rules!.phase!;
   const owned=layout.mounted.filter(m=>m.playerId===player.id);
   if(flow.stage==="tribute")return owned.filter(m=>!flow.paid.includes(m.shieldNumber)).flatMap(m=>[
     ...(player.silver>0?[{id:`pay:${m.shieldNumber}:silver`,label:`방패 ${m.shieldNumber} 유지 · 은화1`,payload:json({shieldNumber:m.shieldNumber,pay:"silver"})}]:[]),
     ...(hasShield(state,player.id,3)&&player.workers>0?[{id:`pay:${m.shieldNumber}:worker`,label:`방패 ${m.shieldNumber} 유지 · 일꾼1 (방패3)`,payload:json({shieldNumber:m.shieldNumber,pay:"worker"})}]:[]),
-    {id:`remove:${m.shieldNumber}`,label:`방패 ${m.shieldNumber} 제거 · 유지비 내지 않기`,payload:json({shieldNumber:m.shieldNumber,pay:"remove"})},
+    ...(legacy?[{id:`remove:${m.shieldNumber}`,label:`방패 ${m.shieldNumber} 제거 · 유지비 내지 않기`,payload:json({shieldNumber:m.shieldNumber,pay:"remove"})}]:
+      (m.sourceDepot?[m.sourceDepot]:[1,2,3,4,5,6]).map(depot=>({id:m.sourceDepot?`remove:${m.shieldNumber}`:`remove:${m.shieldNumber}:return:${depot}`,label:`방패 ${m.shieldNumber} 제거 · ${depot}번 공급처 반환`,payload:json({shieldNumber:m.shieldNumber,pay:"remove",returnDepot:depot})}))),
   ]);
   if(flow.stage!=="free")return [];
   return owned.filter(m=>(m.shieldNumber===14||m.shieldNumber===15)&&!flow.freeDone.includes(m.shieldNumber)).flatMap(m=>{
@@ -51,6 +52,12 @@ function prepare(state:GameState,playerId:string,window:Window):GameState {
   const player=state.players.find(p=>p.id===playerId)!;
   const id=`shield:${state.revision+1}:${window.kind}:${playerId}`;
   return {...state,turn:{...state.turn,activePlayerId:playerId,pendingEffects:[{id,playerId,kind:"extension",source,payload:json(window)}],pendingChoice:{id,playerId,source,options:optionsFor(state,player,window)}}};
+}
+/** Exact old tribute menus are upgraded in memory; unknown/corrupt choices still fail validation. */
+export function upgradeShieldPhaseChoice(state:GameState):GameState {
+ const choice=state.turn.pendingChoice,p=state.players.find(p=>p.id===state.turn.activePlayerId);
+ if(windowOf(state)?.kind!=='shield-phase'||!choice||!p||shieldLayout(state)?.rules?.phase?.stage!=='tribute')return state;
+ return JSON.stringify(choice.options)===JSON.stringify(phaseOptions(state,p,true))?{...state,turn:{...state.turn,pendingChoice:{...choice,options:phaseOptions(state,p)}}}:state;
 }
 export function validShieldChoice(state:GameState):boolean {
   try{
@@ -126,7 +133,13 @@ export function resolveShieldChoice(state:GameState,optionId:string):GameState {
       }
     }else{
       const pay=payload!.pay;
-      next=setShieldLayout(next,{...layout,mounted:pay==="remove"?layout.mounted.filter(m=>m.shieldNumber!==n):layout.mounted,removed:pay==="remove"?[...layout.removed,n]:layout.removed,rules:{...layout.rules!,phase:{...flow,paid:[...flow.paid,n]}}});
+      let slots=layout.slots;
+      if(pay==='remove'){
+        const depot=payload!.returnDepot as DieValue,empty=slots.find(s=>s.depot===depot&&s.shieldNumber===null);
+        if(empty)slots=slots.map(s=>s.id===empty.id?{...s,shieldNumber:n}:s);
+        else {let index=shieldSlotCount(state.config.playerCount,depot);while(slots.some(s=>s.depot===depot&&s.index===index))index++;slots=[...slots,{id:`shield:depot:${depot}:${index}`,depot,index,shieldNumber:n}];}
+      }
+      next=setShieldLayout(next,{...layout,slots,mounted:pay==="remove"?layout.mounted.filter(m=>m.shieldNumber!==n):layout.mounted,rules:{...layout.rules!,phase:{...flow,paid:[...flow.paid,n]}}});
       next={...next,players:next.players.map(p=>p.id===playerId?{...p,silver:p.silver-(pay==="silver"?1:0),workers:p.workers-(pay==="worker"?1:0)}:p)};
     }
   }

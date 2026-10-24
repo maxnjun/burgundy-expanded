@@ -41,6 +41,7 @@ test('all selectable tile benefits override end guidance; white castle and conte
   const tile=kind==='castle'||kind==='ship'?{type:kind as 'castle'|'ship',back:'matching-color' as const}:{type:'building' as const,building:kind as BuildingType,back:'matching-color' as const};
   const g=placed(setup(),0,tile),id=Object.keys(g.tiles).find(k=>k.startsWith('shield-fixture:'))!,pending=prepareTileEffect(g,'seat-1',id);
   assert.match(actionGuidance(pending,directActions(pending,'seat-1')),message!);
+  if(kind==='warehouse'){const tile={type:'monastery',number:6,back:'matching-color'} as const,m=placed(pending,0,tile),actions=directActions(m,'seat-1');assert.match(actionGuidance(m,actions,{special:true}),/수도원 6/);assert.match(actionGuidance(m,actions,{purchase:true}),/은화 2개/);}
  }
  const white=placeWhite(whiteFixture());assert.match(actionGuidance(white,directActions(white,'p1')),/흰 주사위/);
  const base=white.turn.pendingEffects[0];

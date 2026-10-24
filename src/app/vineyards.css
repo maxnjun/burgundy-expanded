@@ -29,3 +29,14 @@
 .vineyard-depot-values{display:flex;align-items:center;justify-content:center;gap:6px}.vineyard-depot-values svg{flex:none}
 
 .vineyard-store-price{justify-self:start;display:flex;align-items:center;justify-content:center;align-self:center;gap:6px;pointer-events:none}.vineyard-store-price img{flex:none}
+
+/* Both boards fit the available row; zoom remains inside each board viewport. */
+.estate-vineyard-row:has(.vineyard-personal){display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start;overflow:visible;gap:12px}
+.estate-vineyard-row:has(.vineyard-personal)>.estate-original-board{min-width:0;width:100%}
+.estate-vineyard-row>.vineyard-personal{min-width:0;width:100%;box-sizing:border-box}
+.estate-vineyard-row .personal-score-pages{width:100%;max-width:390px;margin:8px 0}
+.estate-vineyard-row .board-touch-tools{flex-wrap:wrap;gap:4px}.estate-vineyard-row .board-touch-tools span{font-size:10px}
+.vineyard-depots button:disabled{opacity:1;border-style:dashed}.vineyard-depots button:disabled small{color:#76674d}
+@media(max-width:760px){.estate-vineyard-row:has(.vineyard-personal){gap:6px}.estate-vineyard-row>.vineyard-personal{padding:4px}.vineyard-personal header{flex-wrap:wrap}.vineyard-personal header small{font-size:8px}}
+
+.vineyard-zoom-tools{display:flex;gap:6px;align-items:center;justify-content:flex-end;font-size:11px}.vineyard-zoom-tools button{min-width:32px;min-height:32px;background:#fff4d7;border:1px solid #b39d68;border-radius:4px}.vineyard-personal .board-touch-tools span{display:none}.vineyard-personal .live-board-scroll{min-width:0;max-width:100%;overflow:auto}.vineyard-personal .board-touch-tools{margin:4px 0}

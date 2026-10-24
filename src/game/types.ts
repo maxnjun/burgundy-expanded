@@ -73,6 +73,8 @@ export interface MarketState {
   readonly bonusTiles: readonly BonusTile[];
   readonly phaseGoods: Readonly<Record<Phase, readonly GoodsTile[]>>;
   readonly roundGoods: readonly GoodsTile[];
+  /** Public phase schedule; references only, not additional physical goods. Legacy saves may omit it. */
+  readonly revealedPhaseGoods?: Partial<Readonly<Record<Phase,readonly GoodsTile[]>>>;
 }
 export interface PlayerDie { readonly id: DieId; readonly value: DieValue; readonly used: boolean }
 export interface DiceState {

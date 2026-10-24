@@ -1,4 +1,5 @@
 "use client";
+import {useState} from "react";
 import {ScorePages} from "./score-pages";
 import {WhiteDie} from "./white-die";
 import {playerPaint} from "../game/player-colors";
@@ -55,6 +56,8 @@ type CommonBoardState = Pick<GameState,"revision"|"tiles"|"players"|"dice"|"vine
   market:Pick<GameState["market"],"numberedDepots"|"blackDepot"|"inns"|"bonusTiles"> & {
     phaseGoods:Readonly<Record<Phase,{readonly length:number}>>;
     roundGoods:readonly (GoodsTile|null)[];
+    revealedGoods?:readonly (GoodsTile|null)[];
+    revealedPhaseGoods?:GameState["market"]["revealedPhaseGoods"];
   };
 };
 
@@ -67,6 +70,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   shieldSelection?: {slotId:string|null;onSelect:(id:string)=>void;cost:(id:string)=>GameAction|null};
 
 }) {
+  const [shieldPages,setShieldPages]=useState<Record<number,number>>({});
   const selected = (id:string,x:number,y:number,width=53,label=titleFor(id)) => <g key={id} data-tile-id={id} data-tile-help={tileHelpId(game.tiles[id])} role="button" tabIndex={0} aria-label={label} aria-disabled={!actionFor(id)} aria-pressed={selectedTileId===id} className={`supply-art-tile ${actionFor(id)?"direct-legal":"direct-unavailable"}`} onClick={()=>onSelect(id)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(id);}}}>
     <title>{`${label}${!actionFor(id)?game.turn.pendingChoice?" · 현재 효과에서 선택할 수 없는 타일입니다.":" · 주사위 선택, 일꾼 및 보관 공간을 확인하세요.":" · 클릭하면 획득합니다."}${game.tiles[id].back==="black" ? " · 검은 뒷면" : ""}`}</title>
     <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
@@ -98,19 +102,19 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <text x={75+i*66} y="113" textAnchor="middle" className="common-small">{phase===game.turn.phase ? "현재" : `${game.market.phaseGoods[phase].length}개`}</text>
       </g>)}
       <g data-round-goods="true"><text x="60" y="143" className="common-small">라운드 상품 · 공급 완료 / 다음 공급</text>
-      {Array.from({length:5},(_,i)=>{const goods=game.market.roundGoods[i-(5-game.market.roundGoods.length)];return <g key={i} data-round-supply={i+1}><rect x={55+i*66} y="149" width="54" height="68" rx="5" fill={game.turn.round===i+1?"#f4dda1":"none"} stroke={game.turn.round===i+1?"#9b7135":"none"}/><text x={82+i*66} y="211" textAnchor="middle" fontSize="9" fill="#665035">{i+1}R{i>=5-game.market.roundGoods.length?" 대기":" 공급완료"}</text>{goods ? <GoodsArt value={goods.type} x={56+i*66} y={150} width="52" height="52"/> : i>=5-game.market.roundGoods.length ? <GoodsBackArt x={56+i*66} y={150} width="52" height="52" aria-label="미공개 라운드 상품"/> : <rect x={56+i*66} y={150} width="52" height="52" rx="2" fill="#e3dec0" stroke="#c6bb93" strokeDasharray="3 3"/>}</g>;})}
+      {Array.from({length:5},(_,i)=>{const goods=(game.market.revealedGoods??game.market.revealedPhaseGoods?.[game.turn.phase])?.[i]??game.market.roundGoods[i-(5-game.market.roundGoods.length)];return <g key={i} data-round-supply={i+1}><rect x={55+i*66} y="149" width="54" height="68" rx="5" fill={game.turn.round===i+1?"#f4dda1":"none"} stroke={game.turn.round===i+1?"#9b7135":"none"}/><text x={82+i*66} y="211" textAnchor="middle" fontSize="9" fill="#665035">{i+1}R{i>=5-game.market.roundGoods.length?" 대기":" 공급완료"}</text>{goods ? <GoodsArt value={goods.type} x={56+i*66} y={150} width="52" height="52"/> : i>=5-game.market.roundGoods.length ? <GoodsBackArt x={56+i*66} y={150} width="52" height="52" aria-label="미공개 라운드 상품"/> : <rect x={56+i*66} y={150} width="52" height="52" rx="2" fill="#e3dec0" stroke="#c6bb93" strokeDasharray="3 3"/>}</g>;})}
       </g><text x="565" y="44" className="common-small">선박 순서 트랙 · 앞 →</text>
       {trackPositions.map(position=>{const x=570+position*330/(trackPositions.length-1);const space=game.turn.orderTrack.find(s=>s.position===position);return <g key={position}><circle cx={x} cy="82" r="12" fill="#fff9df" stroke="#b7ab83"/><text x={x} y="86" textAnchor="middle" fontSize="9" fill="#918465">{position}</text>{space && [...space.players].reverse().map(id=>{const player=game.players.find(p=>p.id===id)!;const j=space.players.indexOf(id);return <circle key={id} cx={x} cy={82-(space.players.length-1-j)*4} r="9" fill={playerPaint(player).fill} stroke="#f4e5b5"><title>{`${player.name} · 위치 ${position} · 위에서 ${j+1}번째`}</title></circle>;})}</g>;})}
       {game.players.map((p,i)=><g key={p.id}><circle cx={570+(i%2)*165} cy={137+Math.floor(i/2)*35} r="5" fill={playerPaint(p).fill}/><text x={585+(i%2)*165} y={141+Math.floor(i/2)*35} fontSize="11" fill={playerPaint(p).ink}>{p.name.slice(0,8)}{p.id===game.turn.activePlayerId ? " ◀" : ""}</text></g>)}
       <g><WhiteDie x={60} y={265} value={game.dice.whiteDie}/><text x="83" y="269" className="common-small">흰 주사위</text></g>
       {game.market.numberedDepots.map(depot=>{const [baseX,y]=depotCenters[depot.number-1];const x=baseX;return <g key={depot.number} data-depot={depot.number} aria-label={`${depot.number}번 공급처 상품 ${depot.goods.length}개`}>
         <GoodsSpace key={`${game.revision}:${game.turn.pendingChoice?.id}`} number={depot.number} goods={depot.goods} x={x} y={y} options={goodsOptions?.(depot.number)} onAction={onGoods} onSelecting={onGoodsSelecting}/>
-        <WhiteDie x={x+(depot.number===2||depot.number===3?52:depot.number===5||depot.number===6?-52:0)} y={y+(depot.number===1||depot.number===4?-52:0)} value={depot.number}/>
+        <WhiteDie x={x+(depot.number===2||depot.number===3?52:depot.number===5||depot.number===6?-52:0)} y={y-52} value={depot.number}/>
         {depot.slots.map((slot,i)=>{const [tx,ty]=slotCenter(depot.number,i,depot.slots.length);return slot.tileId ? selected(slot.tileId,tx,ty,tileWidth,`${depot.number}번 공급처 ${titleFor(slot.tileId)}`) : <g key={slot.id}><polygon points={hex(tx,ty,tileWidth)} fill={terrainPaint[slot.requiredType]} fillOpacity=".45" stroke="#b4ac85" strokeDasharray="3 3"/><title>{`${terrainNames[slot.requiredType]} 빈 공급 칸`}</title></g>;})}
       </g>;})}
       <g transform={`translate(${325-215} ${playCenter.y-398})`}><InnStack width={tileWidth} game={game} onSelect={onSelect} canBuy={id=>!!actionFor(id)}/></g>
       <g data-black-depot="true">
-        <text x={playCenter.x} y={playCenter.y-tileHeight*1.25-5} textAnchor="middle" fill="#514636" fontSize="12">검은 공급처 · 은화 2</text>
+
         <g data-market-price="black" aria-label="검은 공급처 가격 · 은화 2개" pointerEvents="none" transform={`translate(${Math.max(playCenter.x,...blackSlots.map(([x])=>x))+tileWidth/2+18} ${playCenter.y-13})`}>
           <ResourceGlyph type="silver" x={0} y={0} size={26}/><ResourceGlyph type="silver" x={32} y={0} size={26}/>
         </g>
@@ -128,16 +132,17 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         </g>)}
       </g>
       {shields && game.market.numberedDepots.map(depot=>{
-        const slots=shields.slots.filter(s=>s.depot===depot.number);const [cx,cy]=shieldCenters[depot.number-1];
+        const allSlots=shields.slots.filter(s=>s.depot===depot.number),pages=Math.ceil(allSlots.length/2),page=(shieldPages[depot.number]??0)%pages,slots=allSlots.slice(page*2,page*2+2);const [cx,cy]=shieldCenters[depot.number-1];
         const [dx]=shieldDepotCenters[depot.number-1];
         const zoneHeight=slots.length===2?172:104;
         const linkDirection=Math.sign(dx-cx);
         return <g key={`shields-${depot.number}`} data-shield-depot={depot.number} aria-label={`${depot.number}번 공급처 방패 그룹`}>
           {linkDirection!==0&&<path d={`M${cx+linkDirection*36} ${cy}h${linkDirection*16}`} className="shield-depot-link"/>}
           <rect data-shield-zone={depot.number} x={cx-36} y={cy-zoneHeight/2} width="72" height={zoneHeight} rx="28" fill="#b9bcb0" fillOpacity=".38" stroke="#929689" pointerEvents="none"/>
+          {pages>1&&<g role="button" tabIndex={0} aria-label={`${depot.number}번 방패 다음 묶음`} transform={`translate(${cx-30} ${cy-86})`} onClick={()=>setShieldPages(p=>({...p,[depot.number]:page+1}))} onKeyDown={e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();setShieldPages(p=>({...p,[depot.number]:page+1}));}}}><rect width="60" height="18" rx="3" fill="#f8edcb" stroke="#777b70"/><text x="30" y="13" textAnchor="middle" fontSize="10">{depot.number}번 {page+1}/{pages} ▸</text></g>}
           {slots.map((slot,i)=>{const offset=slots.length===2?(i===0?-layout.shieldGap/2:layout.shieldGap/2):0;const x=cx,y=cy+offset;const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
             return <g key={slot.id} data-shield-slot={slot.id} data-empty={slot.shieldNumber===null} transform={`translate(${x} ${y})`} role={slot.shieldNumber===null?"img":"button"} tabIndex={slot.shieldNumber===null?undefined:0} aria-label={label} aria-pressed={slot.shieldNumber===null?undefined:shieldSelection?.slotId===slot.id} aria-disabled={slot.shieldNumber!==null&&!shieldSelection?.cost(slot.id)} className={slot.shieldNumber===null?"shield-slot empty":`shield-slot occupied ${shieldSelection?.cost(slot.id)?"direct-legal":"direct-unavailable"}`} onClick={slot.shieldNumber===null?undefined:()=>shieldSelection?.onSelect(slot.id)} onKeyDown={slot.shieldNumber===null?undefined:e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();shieldSelection?.onSelect(slot.id);}}}>
-              <title>{label}{slot.shieldNumber===null?" · 보충 없음":(shields.effectsActive?" · 장착 시 능력 활성":" · 능력은 검증 모드에서 미적용")}</title><ShieldArt number={slot.shieldNumber}/>{showCosts&&slot.shieldNumber!==null&&<g className="direct-cost"><rect x="-29" y="23" width="58" height="16" rx="5"/><text y="35" textAnchor="middle">{shieldSelection?.cost(slot.id)?`일꾼 ${costFor(shieldSelection.cost(slot.id)!)}`:"불가"}</text></g>}{(i===0)&&<text y={-40} textAnchor="middle" className="shield-depot-number">{depot.number}번</text>}
+              <title>{label}{slot.shieldNumber===null?" · 보충 없음":(shields.effectsActive?" · 장착 시 능력 활성":" · 능력은 검증 모드에서 미적용")}</title><ShieldArt number={slot.shieldNumber}/>{showCosts&&slot.shieldNumber!==null&&<g className="direct-cost"><rect x="-29" y="23" width="58" height="16" rx="5"/><text y="35" textAnchor="middle">{shieldSelection?.cost(slot.id)?`일꾼 ${costFor(shieldSelection.cost(slot.id)!)}`:"불가"}</text></g>}{(i===0&&pages===1)&&<text y={-40} textAnchor="middle" className="shield-depot-number">{depot.number}번</text>}
             </g>;})}
         </g>;})}
       <text x={475} y={1020} textAnchor="middle" className="common-small">{game.turn.phase}단계 · {game.turn.round}라운드</text>

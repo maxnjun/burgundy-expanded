@@ -19,6 +19,8 @@ const rows:readonly [number,DieValue,number,number,VineBonus,number,number,VineB
  [4,6,2,1,'watchtower',2,2,'castle'],[3,1,1,4,'black-get',2,3,'warehouse'],
 ];
 export const VINE_LAYERS=[1,2,3,4] as const;
+// Only reconstructed boards with verified coordinates are eligible; currently one exists.
+export const VINE_BOARD_IDS=['project-vineyards-v2'] as const;
 /** Project reconstruction v0.2. Coordinates are shared by logic and renderer. */
 export const VINE_SLOTS:readonly VineSlot[]=rows.map(([layer,value,q,r,bonus,s,t,other],i)=>({id:`V${String(i+1).padStart(2,'0')}`,layer,value,cells:[{q,r,bonus},{q:s,r:t,bonus:other}]}));
 export const VINE_TILES:Readonly<Record<string,readonly [Grape,Grape]>>=Object.fromEntries(GRAPES.flatMap((a,i)=>GRAPES.slice(i).flatMap(b=>Array.from({length:a===b?1:3},(_,n)=>[`${a}-${b}:${n+1}`,[a,b] as const]))));
@@ -27,7 +29,7 @@ export interface VineFrame {playerId:string;slotId:string;active:number|null}
 export interface VineyardState {
  version:'project-vineyards-v1'|'project-vineyards-v2';topSlotId?:'V11';excluded:readonly Grape[];bag:readonly string[];removed:readonly string[];phases:readonly Phase[];
  depots:readonly {id:string;values:readonly DieValue[];tileId:string|null}[];store:readonly (string|null)[];
- players:Readonly<Record<string,{placed:readonly VinePlaced[];tokens:readonly Grape[];layers:readonly number[]}>>;
+ players:Readonly<Record<string,{boardId?:typeof VINE_BOARD_IDS[number];placed:readonly VinePlaced[];tokens:readonly Grape[];layers:readonly number[]}>>;
  pool:Readonly<Record<Grape,number>>;stack:readonly VineFrame[];
 }
 export interface VineIntent {kind:'vineyard';command:'take'|'place';tileId:string;source?:'depot'|'store'|'black';slotId?:string;flipped?:boolean;discardIds?:readonly string[];storageSlot?:number;discardTileId?:string}
@@ -47,7 +49,7 @@ export function setupVineyards(s:GameState,excluded:readonly Grape[]=[]):GameSta
  if(!s.config.extensions.some(e=>e.id==='vineyards'))return s;
  if(new Set(excluded).size!==excluded.length||excluded.some(g=>!GRAPES.includes(g))||excluded.length>(s.players.length===2?2:s.players.length===3?1:0))throw new Error('Invalid excluded grapes');
  const a=shuffle(Object.keys(VINE_TILES).filter(id=>!VINE_TILES[id].some(g=>excluded.includes(g))),s.random),b=shuffle(GRAPES.filter(g=>!excluded.includes(g)),a.random),pool=Object.fromEntries(GRAPES.map(g=>[g,excluded.includes(g)?0:4])) as Record<Grape,number>;
- const players=Object.fromEntries(s.players.map((p,i)=>{pool[b.items[i]]--;return [p.id,{placed:[],tokens:[b.items[i]],layers:[]}];}));
+ const players=Object.fromEntries(s.players.map((p,i)=>{pool[b.items[i]]--;return [p.id,{boardId:VINE_BOARD_IDS[i%VINE_BOARD_IDS.length],placed:[],tokens:[b.items[i]],layers:[]}];}));
  return refillVineyards({...s,random:b.random,vineyards:{version:'project-vineyards-v2',topSlotId:'V11',excluded,bag:a.items,removed:[],phases:[],depots:[],store:[],players,pool,stack:[]}},'A');
 }
 export function refillVineyards(s:GameState,phase:Phase):GameState {
@@ -110,7 +112,7 @@ export function validVineyards(s:GameState):boolean {
  const ids=[...v.bag,...v.removed,...v.depots.flatMap(d=>d.tileId?[d.tileId]:[]),...v.store.filter((id):id is string=>id!==null)];
  const totals=Object.fromEntries(GRAPES.map(g=>[g,v.pool[g]])) as Record<Grape,number>;
  for(const p of s.players){
-  const own=v.players[p.id];if(!own||new Set(own.layers).size!==own.layers.length||own.layers.some(l=>!vineLayers(v).includes(l))||own.tokens.length>(v.version==='project-vineyards-v1'?4:5))return false;
+  const own=v.players[p.id];if(!own||own.boardId!==undefined&&!VINE_BOARD_IDS.includes(own.boardId)||new Set(own.layers).size!==own.layers.length||own.layers.some(l=>!vineLayers(v).includes(l))||own.tokens.length>(v.version==='project-vineyards-v1'?4:5))return false;
   for(const g of own.tokens){if(!GRAPES.includes(g))return false;totals[g]++;}
   if(new Set(own.placed.map(x=>x.slotId)).size!==own.placed.length)return false;
   for(const [index,x] of own.placed.entries()){const current=VINE_SLOTS.find(slot=>slot.id===x.slotId);if(current&&(index===0?current.layer!==1:!own.placed.slice(0,index).some(old=>VINE_SLOTS.find(slot=>slot.id===old.slotId)?.cells.some(a=>current.cells.some(b=>vineNeighbors(a,b))))))return false;if(!VINE_SLOTS.some(slot=>slot.id===x.slotId)||typeof x.flipped!=='boolean'||new Set(x.used).size!==x.used.length||x.used.some(i=>i!==0&&i!==1))return false;ids.push(x.tileId);}

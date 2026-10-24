@@ -11,7 +11,7 @@ import {isolatedRooms} from './isolated-rooms';
 function legacyReward(){
  let g=vineFixture();for(const command of ['take','place']){const a=directActions(g,'seat-1').find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command===command&&(command==='take'||a.intent.slotId==='V02'))!;const r=applyCoreAction(g,a);if(!r.ok)throw Error('fixture');g=r.value.state;}
  const pid='seat-1',id=`vine-order:${pid}:V02:0`;
- return refreshVineChoice({...g,players:g.players.map((p,i)=>i?p:{...p,silver:p.silver-2}),vineyards:{...g.vineyards!,players:{...g.vineyards!.players,[pid]:{...g.vineyards!.players[pid],placed:g.vineyards!.players[pid].placed.map(x=>({...x,used:[]}))}}},turn:{...g.turn,pendingChoice:{...g.turn.pendingChoice!,id},pendingEffects:g.turn.pendingEffects.map(e=>({...e,id}))}});
+ return refreshVineChoice({...g,players:g.players.map((p,i)=>i?p:{...p,silver:p.silver-2}),vineyards:{...g.vineyards!,stack:g.vineyards!.stack.map(f=>({...f,active:null})),players:{...g.vineyards!.players,[pid]:{...g.vineyards!.players[pid],placed:g.vineyards!.players[pid].placed.map(x=>({...x,used:[]}))}}},turn:{...g.turn,pendingChoice:{...g.turn.pendingChoice!,id},pendingEffects:g.turn.pendingEffects.map(e=>({...e,id,kind:"extension" as const,payload:{vineChoice:"order",slotId:"V02"}}))}});
 }
 test('old fixed vineyard reward resumes automatically once locally and on its own online seat',async({page,browser},info)=>{
  const g=legacyReward(),before=g.players[0].silver;

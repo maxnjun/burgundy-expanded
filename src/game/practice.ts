@@ -207,7 +207,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
       startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.vineyards?[{id:"vineyards" as const,options:{}}]:[]),...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
     players, tiles, market: { numberedDepots, blackDepot, supplyPools: [{ id: "practice:authored-reserve", remainingTileIds }], removedTileIds,
       bonusTiles: (["castle", "ship", "mine", "livestock", "building", "monastery"] as const).flatMap(color => (["first", "second"] as const).map(rank => ({ id: `bonus:${color}:${rank}`, color, rank, points: count + (rank === "first" ? 3 : 0) }))),
-      phaseGoods: { ...phaseGoods, A: [] }, roundGoods },
+      phaseGoods: { ...phaseGoods, A: [] }, roundGoods, revealedPhaseGoods:{A:[...roundGoods]} },
     dice: { players: Object.fromEntries(players.map(p => [p.id, [{ id: `${p.id}:a`, value: 1, used: false }, { id: `${p.id}:b`, value: 1, used: false }]])),
       whiteDie: null, rolledForRound: false, roundGoodsDistributed: false },
     turn: { phase: "A", round: 1, stage: "round-setup", activePlayerId: null, orderTrack: [{ position: 0, players: [...players.slice(firstSeat), ...players.slice(0, firstSeat)].map(p => p.id) }], actedPlayerIds: [], blackPurchaseUsed: false, monasterySixUsed: false, pendingEffects: [], pendingChoice: null },
@@ -221,4 +221,14 @@ export function createPracticeSession(config: PracticeConfig): GameState {
   const valid = validateCoreState(ready);
   if (!valid.valid) throw new Error(valid.issues.map(i => i.message).join(", "));
   return ready;
+}
+/** Read-only recovery for pre-schedule practice saves: verify the deterministic deal against physical goods. */
+export function publicPhaseGoods(s:Pick<GameState,'config'|'market'|'turn'|'players'>):readonly (GoodsTile|null)[]{
+ const recorded=s.market.revealedPhaseGoods?.[s.turn.phase];if(recorded)return recorded;
+ const remaining=s.market.roundGoods,fallback=[...Array(5-remaining.length).fill(null),...remaining];
+ if(!s.config.catalogId.startsWith('practice:')&&s.config.catalogId!=='project:base-160-v1')return fallback;
+ const original=createPracticeSession({names:['복구1','복구2'],seed:s.config.seed});
+ const dealt=s.turn.phase==='A'?original.market.roundGoods:original.market.phaseGoods[s.turn.phase];
+ const physical=[...remaining,...s.market.numberedDepots.flatMap(d=>d.goods),...s.players.flatMap(p=>[...p.soldGoods,...p.goods.flatMap(g=>g.tiles)])];
+ return dealt.every(g=>physical.some(p=>p.id===g.id&&p.type===g.type))&&JSON.stringify(dealt.slice(5-remaining.length))===JSON.stringify(remaining)?dealt:fallback;
 }

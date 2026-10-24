@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createPracticeSession } from "../../src/game/practice";
+import { createPracticeSession,publicPhaseGoods } from "../../src/game/practice";
 import { applyCoreAction, checkCoreGameEnd, finalScore, orderedPlayers, validateCoreState } from "../../src/game/core";
 import type { GameAction, GameState, MonasteryNumber, BaseTile as Tile } from "../../src/game/types";
 import { parseSavedGame, serializeSavedGame } from "../../src/game/save";
@@ -113,4 +113,18 @@ test("final score tie breaks by fewer empty cells, then the rear of the order tr
   s.players[1].duchy.cells.push({id:"empty",coord:{q:1,r:0},terrain:"mine",number:1,regionId:"empty",tileId:null});
   finished=act(s,{type:"advance-phase",playerId:"p1"});result=checkCoreGameEnd(finished);
   assert.ok(result.ok&&result.value.ended);assert.deepEqual(result.value.winnerIds,["p1"]);
+});
+
+test("all five goods of a phase remain public in order through each round and save/reload",()=>{
+ let g=createPracticeSession({names:['A','B'],seed:'public-phase-five',officialSlots:true});
+ for(const phase of ['A','B','C','D','E'] as const){
+  const schedule=g.market.revealedPhaseGoods![phase]!;assert.equal(schedule.length,5);
+  for(let round=1;round<=5;round++){
+   assert.deepEqual(g.market.roundGoods,schedule.slice(round-1));g=act(g,{type:'roll-round',playerId:orderedPlayers(g)[0]});assert.deepEqual(g.market.revealedPhaseGoods![phase],schedule);assert.deepEqual(publicPhaseGoods({...g,market:{...g.market,revealedPhaseGoods:undefined}}),schedule);
+   for(let seat=0;seat<2;seat++){const playerId=g.turn.activePlayerId!;for(const die of g.dice.players[playerId])g=act(g,{type:'use-die',playerId,dieId:die.id,adjustment:{workersSpent:0,steps:[]},intent:{kind:'take-workers'}});g=act(g,{type:'end-turn',playerId});}
+   const restored=parseSavedGame(serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,boardZooms:{}}}));assert.deepEqual(restored.game.market.revealedPhaseGoods,g.market.revealedPhaseGoods);
+  }
+  g=act(g,{type:'advance-phase',playerId:orderedPlayers(g)[0]});
+ }
+ assert.equal(g.status,'finished');
 });

@@ -11,7 +11,7 @@ export function vineStoreIntents(s:GameState,p:PlayerState):VineIntent[]{
 }
 function blackOptions(s:GameState,p:PlayerState):PendingChoice['options']{
  const options:PendingChoice['options'][number][]=[];
- for(const tileId of s.market.blackDepot)if(tileId)for(let storageSlot=0;storageSlot<p.storage.length;storageSlot++){
+ for(const tileId of s.market.blackDepot)if(tileId&&["castle","ship","mine","livestock","building","monastery"].includes(s.tiles[tileId]?.type))for(let storageSlot=0;storageSlot<p.storage.length;storageSlot++){
   const occupant=keyOccupant(p,storageSlot),a={tileId,storageSlot,...(occupant?{discardTileId:occupant}:{})};
   if(!destinationIssue(p,a))options.push({id:JSON.stringify(a),label:`검은 타일 ${tileId} · 보관${storageSlot+1}`,payload:{vineBlack:a}});
  }
@@ -29,6 +29,7 @@ export function resumeVineyards(s:GameState):GameState {
   const x=v.players[pid].placed.find(x=>x.slotId===top!.slotId)!;
   const automatic=VINE_SLOTS.find(slot=>slot.id===x.slotId)!.cells.findIndex((c,i)=>!x.used.includes(i)&&['bank','boarding-house','watchtower'].includes(c.bonus));
   if(automatic>=0)return resumeVineyards(applyVineBenefit(s,x.slotId,automatic));
+  if(x.used.length===1)return resumeVineyards(applyVineBenefit(s,x.slotId,[0,1].find(i=>!x.used.includes(i))!));
   if(x.used.length<2)return wrap(s,`vine-order:${pid}:${x.slotId}:${x.used.length}`,pid,{vineChoice:'order',slotId:x.slotId},orderOptions(s,pid,x.slotId));
   v={...v,stack:v.stack.slice(0,-1)};s={...s,vineyards:v};
  }
@@ -79,10 +80,13 @@ export function refreshVineChoice(s:GameState):GameState {
 }
 
 /** Old saves can already be paused before a now-automatic fixed reward. */
-export function automaticVineReward(s:GameState):Extract<GameAction,{type:"resolve-choice"}>|null {
+export function automaticVineReward(s:GameState,actions:readonly GameAction[]):Extract<GameAction,{type:"resolve-choice"}>|null {
+ // A purchase can create another target; never auto-consume that decision window.
+ const choice=s.turn.pendingChoice;
+ if(choice?.source.document==='project-user-rule'&&choice.source.section===source.section&&choice.options.length===1&&((actions.length===1&&s.vineyards?.stack.length)||(choice.options[0].id!=='skip'&&validVineChoice(s))))return {type:'resolve-choice',playerId:choice.playerId,choiceId:choice.id,optionId:choice.options[0].id};
  const payload=s.turn.pendingEffects[0]?.payload as {vineChoice?:string;slotId?:string}|null;
- if(payload?.vineChoice!=='order'||!validVineChoice(s))return null;
- const slot=VINE_SLOTS.find(x=>x.id===payload.slotId)!,choice=s.turn.pendingChoice!;
+ if(!choice||payload?.vineChoice!=='order'||!validVineChoice(s))return null;
+ const slot=VINE_SLOTS.find(x=>x.id===payload.slotId)!;
  const option=choice.options.find(o=>['bank','boarding-house','watchtower'].includes(slot.cells[(o.payload as {index:number}).index].bonus));
  return option?{type:'resolve-choice',playerId:choice.playerId,choiceId:choice.id,optionId:option.id}:null;
 }

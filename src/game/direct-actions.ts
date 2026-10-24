@@ -5,13 +5,13 @@ import type { ActionIntent, GameAction, GameState } from "./types";
 import {isCastleAction} from './castle-actions';
 import {automaticVineReward} from './core/vineyard-effects';
 
-export interface BoardTarget {intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}
+export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}
 /** Public click targets are projections of canonical engine options, never executable UI payloads. */
 export function boardTarget(game:GameState,action:GameAction):BoardTarget {
  if(action.type==='use-die')return {intent:action.intent};
  if(action.type!=='resolve-choice')return {};
- const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield']}|null;
- return {intent:p?.intent,shield:p?.shield,...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
+ const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {vineBlack?:BoardTarget['blackTile'];intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield']}|null;
+ return {blackTile:p?.vineBlack,intent:p?.intent,shield:p?.shield,...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
 }
 export function directBoardAction(game:GameState,actions:readonly GameAction[],dieId:string|undefined,match:(intent:ActionIntent)=>boolean):GameAction|null {
  if(dieId&&(!game.turn.pendingChoice||isCastleAction(game)))return cheapestDieAction(actions,dieId,match);
@@ -41,7 +41,7 @@ export function directCost(game:GameState,action:GameAction):number{
 }
 /** Human turns end manually; setup and fixed rewards are automatic. */
 export function automaticAction(game:GameState,actions:readonly GameAction[]):GameAction|null{
- const reward=automaticVineReward(game);if(reward)return actions.find(a=>a.type==='resolve-choice'&&a.choiceId===reward.choiceId&&a.optionId===reward.optionId)??null;
+ const reward=automaticVineReward(game,actions);if(reward)return actions.find(a=>a.type==='resolve-choice'&&a.choiceId===reward.choiceId&&a.optionId===reward.optionId)??null;
  if(game.status!=="playing"||game.turn.pendingChoice||game.turn.pendingEffects.length)return null;
  const playerId=game.turn.activePlayerId??orderedPlayers(game)[0];
  if(game.turn.stage==="round-setup"||game.turn.stage==="phase-end")return actions.find(a=>a.playerId===playerId&&(a.type==="roll-round"||a.type==="advance-phase"))??null;

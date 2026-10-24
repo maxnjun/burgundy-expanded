@@ -113,6 +113,10 @@ export function validateCoreState(state: GameState): ValidationResult {
     if (state.market.blackDepot.some(id => id !== null && state.tiles[id]?.back !== "black")) issue("Black depot requires black-backed tiles");
     for (const phase of ["A", "B", "C", "D", "E"] as const) goods(state.market.phaseGoods[phase]);
     goods(state.market.roundGoods);
+    if(state.market.revealedPhaseGoods!==undefined&&(!state.market.revealedPhaseGoods||typeof state.market.revealedPhaseGoods!=='object'||Array.isArray(state.market.revealedPhaseGoods)))issue("Invalid public phase goods schedule");
+    for(const [phase,revealed] of Object.entries(state.market.revealedPhaseGoods??{})){
+      if(!['A','B','C','D','E'].includes(phase)||phase>state.turn.phase||!Array.isArray(revealed)||revealed.length!==5||revealed.some(g=>!g||typeof g.id!=='string'||!g.id||!isDie(g.type))||new Set(revealed.map(g=>g.id)).size!==5)issue("Invalid public phase goods schedule");
+    }
     if (new Set(goodsIds).size !== goodsIds.length) issue("Goods IDs must have unique locations");
     if (new Set(tileLocations).size !== tileLocations.length || tileLocations.some(id => !state.tiles[id]) ||
       Object.keys(state.tiles).some(id => state.tiles[id].id !== id || !tileLocations.includes(id))) issue("Each catalog tile must occupy exactly one location");

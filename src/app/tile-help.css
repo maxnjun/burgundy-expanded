@@ -10,4 +10,4 @@
 [data-tile-help]{-webkit-touch-callout:none;user-select:none}[data-tile-help] image{-webkit-user-drag:none}
 @media(max-width:600px){.tile-encyclopedia{padding:12px 9px}.tile-help-categories,.tile-help-list{gap:3px}.tile-encyclopedia .tile-help-categories button,.tile-encyclopedia .tile-help-list button{min-width:64px;padding:3px;font-size:11px}.tile-help-icon{width:58px;height:68px}.tile-help-content{grid-template-columns:68px minmax(0,1fr);gap:10px}.tile-help-picture{width:68px;height:79px}.tile-effect-tooltip .tile-help-content{display:block}.tile-effect-tooltip .tile-help-picture{float:left;margin:0 10px 5px 0}.tile-effect-tooltip .tile-help-content>div:last-child{min-width:0}.tile-help-content h3{font-size:15px}}
 
-.direct-special .tile-help-touch-purchase,.online-direct-resources .tile-help-touch-purchase{display:none}@media(pointer:coarse){.direct-special .tile-help-touch-purchase,.online-direct-resources .tile-help-touch-purchase{display:flex;align-items:center;gap:5px;font-size:12px}}
+.direct-special .tile-help-touch-purchase,.online-direct-resources .tile-help-touch-purchase{display:flex;align-items:center;gap:5px;font-size:12px}

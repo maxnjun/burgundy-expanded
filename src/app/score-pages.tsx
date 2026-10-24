@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import type {PlayerState} from "../game/types";
+import {PHASE_COMPLETION_POINTS} from "../game/core/fortress-lines";
 import {regionSizePoints} from "../game/inns";
 import {GRAPE_COLORS,GRAPE_NAMES,vineScoreBreakdown,type VineyardState} from "../game/vineyards";
 import "./score-pages.css";
@@ -19,11 +20,12 @@ export function ScorePages({player,vineyards,label}:Props){
    <rect width="48" height="42" rx="4"/><text x="24" y="27" textAnchor="middle">{delta<0?"▲":"▼"}</text>
   </g>;})}
   {page===1?<>
-   <text x="12" y="50" className="score-page-note">지역 완성 · 칸 수 / 기본 점수</text>
-   {Array.from({length:8},(_,i)=>i+1).map((size,i)=><g key={size} transform={`translate(${54+i%4*94} ${74+Math.floor(i/4)*29})`}>
+   <text x="12" y="50" className="score-page-note">지역 완성 · 연결 칸 수 → 기본 점수</text>
+   {Array.from({length:10},(_,i)=>i+1).map((size,i)=><g key={size} transform={`translate(${39+i%5*78} ${70+Math.floor(i/5)*27})`}>
     <text textAnchor="middle" className="score-page-note">{size}칸</text><text y="17" textAnchor="middle" className="score-page-points">{regionSizePoints(size)}</text>
    </g>)}
-   <text x="195" y="146" textAnchor="middle" className="score-page-total">{player?`${player.name} · 현재 누적 ${player.victoryPoints}점`:"플레이어 준비 중"}</text>
+   <text x="195" y="128" textAnchor="middle" className="score-page-note">추가 점수 {Object.entries(PHASE_COMPLETION_POINTS).map(([phase,points])=>`${phase} ${points}`).join(" · ")}</text>
+   <text x="195" y="148" textAnchor="middle" className="score-page-total">{player?`${player.name} · 현재 누적 ${player.victoryPoints}점`:"플레이어 준비 중"}</text>
   </>:rows?<>
    <text x="12" y="50" className="score-page-note">토큰 수 · 채점 연결 영역(칸) · 점수</text>
    {rows.map((row,i)=><g key={row.grape} data-grape-score={row.grape} transform={`translate(${14+i%2*190} ${70+Math.floor(i/2)*25})`}>

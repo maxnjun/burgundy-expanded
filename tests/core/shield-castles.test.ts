@@ -38,7 +38,7 @@ test("opponent-only castle, empty castle terrain and missing destination reject 
 test("legacy valid cell bindings resolve to tile IDs only after full save validation",()=>{
  const g=mount(setup(),9),layout=shieldLayout(g)!;
  const legacy=setShieldLayout(g,{...layout,mounted:layout.mounted.map(({shieldNumber,playerId,cellId})=>({shieldNumber,playerId,cellId}))});
- assert.deepEqual(parseSavedGame(saved(legacy)).game,g);assert.ok(!JSON.stringify(legacy).includes("castleTileId"));
+ const expected=setShieldLayout(g,{...layout,mounted:layout.mounted.map(({sourceDepot,...m})=>{assert.ok(sourceDepot);return m;})});assert.deepEqual(parseSavedGame(saved(legacy)).game,expected);assert.ok(!JSON.stringify(legacy).includes("castleTileId"));
  const wrong=setShieldLayout(g,{...layout,mounted:layout.mounted.map(m=>({...m,castleTileId:"wrong-castle"}))});assert.throws(()=>parseSavedGame(saved(wrong)));
 });
 test("saves reject duplicate, foreign and non-castle mount relations instead of repairing them",()=>{

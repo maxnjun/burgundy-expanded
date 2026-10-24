@@ -21,3 +21,15 @@ export function layeredVineFixture(stopAtToken=false,tokenLayer=1):GameState {
  let guard=0;while(g.turn.pendingChoice){if(stopAtToken&&(g.turn.pendingEffects[0]?.payload as {vineChoice?:string;layer?:number}).vineChoice==='token'&&(g.turn.pendingEffects[0]?.payload as {layer?:number}).layer===tokenLayer)return g;if(++guard>40)throw new Error('layer fixture loop');g=fixtureStep(g,opts().find(a=>a.type==='resolve-choice'&&a.optionId==='skip')??opts().find(a=>a.type==='resolve-choice'&&a.optionId.includes('take-workers'))??opts().find(a=>a.type==='resolve-choice')!);}
  }return g;
 }
+
+/** V12 pending black reward reached through legal placements; used by server and browser tests. */
+function vineBenefitFixture(slotId:string,index:number):GameState {
+ let g=layeredVineFixture();g=discardStored(g,'seat-1',[...g.players[0].storage.filter((x):x is string=>!!x)]);
+ const id=g.vineyards!.bag[0];g={...g,vineyards:{...g.vineyards!,bag:g.vineyards!.bag.slice(1)},players:g.players.map((p,i)=>i?p:{...p,vineyardReserve:[{tileId:id,keys:[0,1]}]}),dice:{...g.dice,players:{...g.dice.players,'seat-1':g.dice.players['seat-1'].map(d=>({...d,used:false})) as unknown as GameState['dice']['players'][string]}}};
+ const opts=()=>{const r=listCoreActionOptions(g,'seat-1');if(!r.ok)throw Error('black fixture');return r.value.actions;};
+ g=fixtureStep(g,opts().find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.slotId===slotId)!);
+ return fixtureStep(g,opts().find(a=>a.type==='resolve-choice'&&a.optionId===`vine-order:${slotId}:${index}`)!);
+}
+
+export const blackVineFixture=()=>vineBenefitFixture("V12",0);
+export const townHallVineFixture=()=>vineBenefitFixture("V05",1);

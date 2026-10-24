@@ -16,9 +16,9 @@ export function placed(g:GameState,index:number,tile:Omit<Tile,"id">,cellId?:str
 export function mount(g:GameState,n:number,index=0):GameState {
   let layout=shieldLayout(g)!;const owner=g.players[index];let cell=owner.duchy.cells.find(c=>c.tileId&&g.tiles[c.tileId].type==="castle"&&!layout.mounted.some(m=>m.playerId===owner.id&&m.cellId===c.id));
   if(!cell){g=placed(g,index,{type:"castle",back:"matching-color"});layout=shieldLayout(g)!;cell=g.players[index].duchy.cells.find(c=>c.tileId&&g.tiles[c.tileId].type==="castle"&&!layout.mounted.some(m=>m.playerId===owner.id&&m.cellId===c.id));}assert.ok(cell);
-  let slots=[...layout.slots],boxed=[...layout.boxed];const source=slots.find(s=>s.shieldNumber===n);
+  let slots=[...layout.slots],boxed=[...layout.boxed];const source=slots.find(s=>s.shieldNumber===n);const sourceDepot=source?.depot??slots.find(s=>s.shieldNumber!==null)!.depot;
   if(source)slots=slots.map(s=>s.id===source.id?{...s,shieldNumber:null}:s);else{assert.ok(boxed.includes(n));const slot=slots.find(s=>s.shieldNumber!==null)!;boxed=boxed.filter(x=>x!==n);boxed.push(slot.shieldNumber!);slots=slots.map(s=>s.id===slot.id?{...s,shieldNumber:null}:s);}
-  return settleShieldState(setShieldLayout(g,{...layout,slots,boxed,mounted:[...layout.mounted,{shieldNumber:n,playerId:owner.id,cellId:cell.id,castleTileId:cell.tileId!}]}));
+  return settleShieldState(setShieldLayout(g,{...layout,slots,boxed,mounted:[...layout.mounted,{shieldNumber:n,sourceDepot,playerId:owner.id,cellId:cell.id,castleTileId:cell.tileId!}]}));
 }
 export function stash(g:GameState,tile:Omit<Tile,"id">):{g:GameState;id:string}{const id=`shield-stash:${serial++}`,i=g.players[0].storage.indexOf(null);assert.ok(i>=0);return {id,g:{...g,tiles:{...g.tiles,[id]:{...tile,id} as Tile},players:g.players.map((p,k)=>k===0?{...p,storage:p.storage.map((s,k)=>k===i?id:s)}:p)}};}
 export function choose(g:GameState,match:(o:NonNullable<GameState["turn"]["pendingChoice"]>["options"][number])=>boolean):GameState {const c=g.turn.pendingChoice;assert.ok(c);const o=c.options.find(match);assert.ok(o,`missing option ${c.options.map(o=>o.id)}`);return step(g,{type:"resolve-choice",playerId:c.playerId,choiceId:c.id,optionId:o.id});}

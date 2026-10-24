@@ -15,7 +15,7 @@ import {gzip,gunzip} from "node:zlib";
 import {promisify} from "node:util";
 import { replaceRoomFile } from "./atomic-write";
 import { join } from "node:path";
-import { createPracticeSession } from "../game/practice";
+import { createPracticeSession,publicPhaseGoods } from "../game/practice";
 import { applyCoreAction, checkCoreGameEnd, listCoreActionOptions } from "../game/core";
 import { shieldLayout, type ShieldLayout } from "../game/shields";
 import { directCost } from "../game/direct-actions";
@@ -39,7 +39,7 @@ export function requireRoomSpace(available:number){
 interface StoredRoom { requests?:Receipt[];history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export type OnlineUndoAction={type:"undo-turn"|"undo-action";playerId:string};
 export interface RoomView {
-  commonBoard:{marketRecipeId:GameState["config"]["marketRecipeId"];orderTrack:GameState["turn"]["orderTrack"];phaseGoodsCounts:Record<GameState["turn"]["phase"],number>;roundGoodsCount:number;bonusTiles:GameState["market"]["bonusTiles"]};
+  commonBoard:{marketRecipeId:GameState["config"]["marketRecipeId"];orderTrack:GameState["turn"]["orderTrack"];phaseGoodsCounts:Record<GameState["turn"]["phase"],number>;roundGoodsCount:number;revealedGoods?:readonly (import("../game/types").GoodsTile|null)[];bonusTiles:GameState["market"]["bonusTiles"]};
   undo?:{turnReason:string;actionReason:string};startingPreview?:{playerId:string;cellId:string};
   release?:ReturnType<typeof serverRelease>;lobby?:{ready:readonly boolean[];started:boolean;capacity:number};
   automaticChoice?:GameAction|null;
@@ -296,8 +296,8 @@ export class RoomStore {
     const actions=engineActions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)}));
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    const automatic=automaticVineReward(s);
-    return {commonBoard:{marketRecipeId:s.config.marketRecipeId,orderTrack:s.turn.orderTrack,phaseGoodsCounts:{A:s.market.phaseGoods.A.length,B:s.market.phaseGoods.B.length,C:s.market.phaseGoods.C.length,D:s.market.phaseGoods.D.length,E:s.market.phaseGoods.E.length},roundGoodsCount:s.market.roundGoods.length,bonusTiles:s.market.bonusTiles},undo:{turnReason:this.undoReason(room,s.players[seat].id,"turn"),actionReason:this.undoReason(room,s.players[seat].id,"action")},...(room.startingPreview?{startingPreview:room.startingPreview}:{}),release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
+    const automatic=automaticVineReward(s,actions.map(a=>a.action));
+    return {commonBoard:{marketRecipeId:s.config.marketRecipeId,orderTrack:s.turn.orderTrack,phaseGoodsCounts:{A:s.market.phaseGoods.A.length,B:s.market.phaseGoods.B.length,C:s.market.phaseGoods.C.length,D:s.market.phaseGoods.D.length,E:s.market.phaseGoods.E.length},roundGoodsCount:s.market.roundGoods.length,revealedGoods:publicPhaseGoods(s),bonusTiles:s.market.bonusTiles},undo:{turnReason:this.undoReason(room,s.players[seat].id,"turn"),actionReason:this.undoReason(room,s.players[seat].id,"action")},...(room.startingPreview?{startingPreview:room.startingPreview}:{}),release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }
 

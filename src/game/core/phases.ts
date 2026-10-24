@@ -127,7 +127,7 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     }
     for (const depot of draft.market.numberedDepots) for (const slot of depot.slots) slot.tileId = draw("matching-color", slot.requiredType);
     draft.market.blackDepot = draft.market.blackDepot.map(() => draw("black"));
-    draft.market.roundGoods = draft.market.phaseGoods[phase]; draft.market.phaseGoods[phase] = [];
+    draft.market.roundGoods = draft.market.phaseGoods[phase]; draft.market.revealedPhaseGoods={...draft.market.revealedPhaseGoods,[phase]:[...draft.market.roundGoods]}; draft.market.phaseGoods[phase] = [];
     draft = structuredClone(supplyInn(draft, phase)) as Mutable<GameState>;
     draft=structuredClone(refillVineyards(draft,phase)) as Mutable<GameState>;
     draft.turn.phase = phase; draft.turn.round = 1; draft.turn.stage = "round-setup";

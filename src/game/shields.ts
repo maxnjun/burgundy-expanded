@@ -20,7 +20,7 @@ export interface ShieldLayout {
   };
   readonly slots: readonly ShieldSlot[];
   /** castleTileId is absent only in validated legacy saves. New acquisitions always bind it. */
-  readonly mounted: readonly { readonly shieldNumber: number; readonly playerId: string; readonly cellId: string; readonly castleTileId?: string }[];
+  readonly mounted: readonly { readonly shieldNumber: number; readonly playerId: string; readonly cellId: string; readonly castleTileId?: string; readonly sourceDepot?: DieValue }[];
   readonly removed: readonly number[];
   readonly boxed: readonly number[];
 }
@@ -60,12 +60,13 @@ export function validShieldLayout(game: GameState): boolean {
         if(f.stage==="ready"&&raw.mounted.some(m=>m&&!paid.includes(m.shieldNumber)))return false;}
     }
     const expected=Array.from({length:6},(_,i)=>Array.from({length:shieldSlotCount(game.config.playerCount,i+1)},(_,index)=>({id:`shield:depot:${i+1}:${index}`,depot:i+1,index}))).flat();
-    if(raw.slots.length!==expected.length || new Set(raw.slots.map(s=>s?.id)).size!==expected.length)return false;
+    if(raw.slots.length<expected.length || raw.slots.length>expected.length+18 || new Set(raw.slots.map(s=>s?.id)).size!==raw.slots.length)return false;
     const numbers: unknown[]=[];
     for(const e of expected){const slot=raw.slots.find(s=>s?.id===e.id);if(!record(slot)||Object.keys(slot).sort().join(",")!=="depot,id,index,shieldNumber"||slot.depot!==e.depot||slot.index!==e.index)return false;if(slot.shieldNumber!==null)numbers.push(slot.shieldNumber);}
+    for(const slot of raw.slots.filter(s=>!expected.some(e=>e.id===s?.id))){if(!record(slot)||Object.keys(slot).sort().join(',')!=='depot,id,index,shieldNumber'||typeof slot.depot!=='number'||!Number.isInteger(slot.depot)||slot.depot<1||slot.depot>6||typeof slot.index!=='number'||!Number.isInteger(slot.index)||slot.index<shieldSlotCount(game.config.playerCount,slot.depot)||slot.index>=20||slot.id!==`shield:depot:${slot.depot}:${slot.index}`||slot.shieldNumber===null)return false;numbers.push(slot.shieldNumber);}
     const mounts=new Set<string>();
     const castleTiles=new Set<string>();
-    for(const m of raw.mounted){if(!record(m)||!["cellId,playerId,shieldNumber","castleTileId,cellId,playerId,shieldNumber"].includes(Object.keys(m).sort().join(",")))return false;const p=game.players.find(p=>p.id===m.playerId);const c=p?.duchy.cells.find(c=>c.id===m.cellId);const key=`${m.playerId}:${m.cellId}`;if(!c?.tileId||game.tiles[c.tileId]?.type!=="castle"||("castleTileId" in m&&m.castleTileId!==c.tileId)||mounts.has(key)||castleTiles.has(c.tileId))return false;mounts.add(key);castleTiles.add(c.tileId);numbers.push(m.shieldNumber);}
+    for(const m of raw.mounted){if(!record(m)||!["cellId,playerId,shieldNumber","castleTileId,cellId,playerId,shieldNumber","cellId,playerId,shieldNumber,sourceDepot","castleTileId,cellId,playerId,shieldNumber,sourceDepot"].includes(Object.keys(m).sort().join(",")))return false;if(m.sourceDepot!==undefined&&(typeof m.sourceDepot!=='number'||!Number.isInteger(m.sourceDepot)||m.sourceDepot<1||m.sourceDepot>6))return false;const p=game.players.find(p=>p.id===m.playerId);const c=p?.duchy.cells.find(c=>c.id===m.cellId);const key=`${m.playerId}:${m.cellId}`;if(!c?.tileId||game.tiles[c.tileId]?.type!=="castle"||("castleTileId" in m&&m.castleTileId!==c.tileId)||mounts.has(key)||castleTiles.has(c.tileId))return false;mounts.add(key);castleTiles.add(c.tileId);numbers.push(m.shieldNumber);}
     numbers.push(...raw.removed,...raw.boxed);
     return numbers.length===18&&new Set(numbers).size===18&&numbers.every(n=>typeof n==="number"&&Number.isInteger(n)&&n>=1&&n<=18)&&raw.boxed.length===18-expected.length;
   }catch{return false;}
@@ -93,8 +94,8 @@ export function acquireShieldPreview(game: GameState, action: ShieldAcquireActio
   const layout=shieldLayout(game)!;const slot=layout.slots.find(s=>s.id===action.payload.slotId)!;
   const cost=action.payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
   return {...game,extensionStates:{...game.extensionStates,shields:{...layout,
-    slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:action.payload.replaceShieldNumber}:s),
-    mounted:[...layout.mounted.filter(m=>!(m.playerId===action.playerId&&m.cellId===action.payload.castleCellId)),{shieldNumber:slot.shieldNumber!,playerId:action.playerId,cellId:action.payload.castleCellId,castleTileId:game.players.find(p=>p.id===action.playerId)!.duchy.cells.find(c=>c.id===action.payload.castleCellId)!.tileId!}],
+    slots:layout.slots.filter(s=>s.id!==slot.id||action.payload.replaceShieldNumber!==null||s.index<shieldSlotCount(game.config.playerCount,s.depot)).map(s=>s.id===slot.id?{...s,shieldNumber:action.payload.replaceShieldNumber}:s),
+    mounted:[...layout.mounted.filter(m=>!(m.playerId===action.playerId&&m.cellId===action.payload.castleCellId)),{shieldNumber:slot.shieldNumber!,sourceDepot:slot.depot,playerId:action.playerId,cellId:action.payload.castleCellId,castleTileId:game.players.find(p=>p.id===action.playerId)!.duchy.cells.find(c=>c.id===action.payload.castleCellId)!.tileId!}],
     ...((layout.rules)?{rules:{...layout.rules,monasteryTarget:action.payload.replaceShieldNumber===6||slot.shieldNumber===6?null:layout.rules.monasteryTarget}}:{}),
   } as unknown as JsonValue}, players:game.players.map(p=>p.id===action.playerId?{...p,workers:p.workers-(free?0:cost)}:p),
     dice:free?game.dice:{...game.dice,players:{...game.dice.players,[action.playerId]:game.dice.players[action.playerId].map((d,i)=>({...d,used:true,value:slot.depot, id:game.dice.players[action.playerId][i].id})) as unknown as GameState["dice"]["players"][string]}}};
