@@ -30,10 +30,13 @@ import type {UpstashRooms} from "./upstash-rooms";
 export {RoomError} from "./room-error";
 const compress=promisify(gzip),decompress=promisify(gunzip);
 const ROOM_BYTES=2_100_000,WRITE_RESERVE=ROOM_BYTES*4,ARCHIVE_AGE=24*60*60*1000;
+const REQUEST_LIMIT=128,REQUEST_ID=/^[A-Za-z0-9_-]{16,80}$/;
+const GAME_SCHEMA:GameState["schemaVersion"]="0.2.1";
+interface Receipt {id:string;seat:number;hash:string}
 export function requireRoomSpace(available:number){
   if(available<WRITE_RESERVE)throw new RoomError(503,"서버 디스크의 남은 저장 공간이 부족하여 새 방을 만들 수 없습니다. 기존 방은 보존됩니다. 관리자에게 저장 공간 점검을 요청하세요.","ROOM_STORAGE_FULL");
 }
-interface StoredRoom { history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
+interface StoredRoom { requests?:Receipt[];history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export type OnlineUndoAction={type:"undo-turn"|"undo-action";playerId:string};
 export interface RoomView {
   commonBoard:{marketRecipeId:GameState["config"]["marketRecipeId"];orderTrack:GameState["turn"]["orderTrack"];phaseGoodsCounts:Record<GameState["turn"]["phase"],number>;roundGoodsCount:number;bonusTiles:GameState["market"]["bonusTiles"]};
@@ -51,13 +54,34 @@ export interface RoomView {
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
 const name=(value:unknown)=>typeof value==="string"&&value.trim().length>0&&value.trim().length<=30 ? value.trim() : (()=>{throw new RoomError(400,"이름은1~30자로 입력하세요.");})();
 
-/** Single-process rooms; use a durable disk or the external room store.
+/** File storage requires one process; external storage uses cross-process CAS.
  * Only hashed seat tokens are persisted; full engine state never leaves the server.
  */
 export class RoomStore {
   private locks=new Map<string,Promise<unknown>>();
   private revisions=new WeakMap<StoredRoom,number>();
   constructor(private directory:string,private remote?:UpstashRooms){}
+  private replay(room:StoredRoom,seat:number,revision:unknown,action:unknown,requestId:unknown,record=false){
+    if(requestId===undefined)return false; // Existing v1 clients remain revision-validated.
+    if(typeof requestId!=="string"||!REQUEST_ID.test(requestId))throw new RoomError(400,"행동 요청 ID를 확인하세요.");
+    const hash=digest(JSON.stringify({revision,action})),previous=room.requests?.find(r=>r.id===requestId&&r.seat===seat);
+    if(previous){if(previous.hash!==hash)throw new RoomError(409,"이미 사용한 요청 ID로 다른 행동을 실행할 수 없습니다.");return true;}
+    if(record)room.requests=[...(room.requests??[]).slice(1-REQUEST_LIMIT),{id:requestId,seat,hash}];
+    return false;
+  }
+  private async mutate(id:string,token:string,revision:unknown,action:unknown,requestId:unknown,apply:(room:StoredRoom,seat:number)=>Promise<RoomView>){
+    return this.serial(id,async()=>{
+      const room=await this.read(id),seat=this.seat(room,token);
+      if(this.replay(room,seat,revision,action,requestId,true))return this.publicView(room,seat);
+      try{return await apply(room,seat);}catch(error){
+        // Another process or a lost Redis response may have committed this exact request.
+        if(requestId!==undefined&&error instanceof RoomError&&[409,503].includes(error.status)){
+          try{const saved=await this.read(id),owner=this.seat(saved,token);if(this.replay(saved,owner,revision,action,requestId)){roomChanged(id);return this.publicView(saved,owner);}}catch{}
+        }
+        throw error;
+      }
+    });
+  }
   private async serial<T>(key:string,task:()=>Promise<T>):Promise<T>{
     const previous=this.locks.get(key)??Promise.resolve();
     const current=previous.catch(()=>{}).then(task);this.locks.set(key,current);
@@ -78,8 +102,11 @@ export class RoomStore {
   private async read(id:string):Promise<StoredRoom>{
     let raw:string;try{raw=await this.raw(id);}catch(error){if(error instanceof RoomError)throw error;throw new RoomError((error as NodeJS.ErrnoException).code==="ENOENT"?404:500,"방을 읽을 수 없습니다. 기존 저장은 변경하지 않습니다.");}
     if(Buffer.byteLength(raw)>ROOM_BYTES)throw new RoomError(500,"방 데이터 검증 실패");
-    const room=JSON.parse(raw) as StoredRoom;
-    if(room.version!==1||room.id!==id||room.tokens.length!==2||room.tokens.some(t=>t!==null&&!/^[a-f0-9]{64}$/.test(t)))throw new RoomError(500,"방 데이터 검증 실패");
+    let room:StoredRoom;try{room=JSON.parse(raw) as StoredRoom;}catch{throw new RoomError(500,"방 데이터 검증 실패 · 원본은 보존됩니다.");}
+    if(!room||room.version!==1||room.game?.schemaVersion!==GAME_SCHEMA)throw new RoomError(409,"이 서버가 지원하지 않는 방 또는 게임 저장 형식입니다. 원본은 보존됩니다. 호환 버전으로 접속하세요.","ROOM_SCHEMA_UNSUPPORTED");
+    if(room.id!==id||!Array.isArray(room.tokens)||room.tokens.length!==2||room.tokens.some(t=>t!==null&&!/^[a-f0-9]{64}$/.test(t)))throw new RoomError(500,"방 데이터 검증 실패");
+    if(room.requests!==undefined&&(!Array.isArray(room.requests)||room.requests.length>REQUEST_LIMIT||room.requests.some(r=>!r||typeof r.id!=="string"||!REQUEST_ID.test(r.id)||![0,1].includes(r.seat)||typeof r.hash!=="string"||!/^[a-f0-9]{64}$/.test(r.hash))||new Set(room.requests.map(r=>`${r.seat}:${r.id}`)).size!==room.requests.length))throw new RoomError(500,"행동 복구 기록 검증 실패 · 원본은 보존됩니다.");
+    room.requests??=[]; // Additive v1 migration in memory; a read never rewrites legacy Redis data.
     if(room.lobby&&(!Array.isArray(room.lobby.ready)||room.lobby.ready.length!==2||room.lobby.ready.some(r=>typeof r!=="boolean")||typeof room.lobby.started!=="boolean"))throw new RoomError(500,"방 준비 데이터 검증 실패");
     if(room.draft&&!validBoardDraft(room.draft,["seat-1","seat-2"]))throw new RoomError(500,"영지 후보 검증 실패");
     room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
@@ -165,8 +192,8 @@ export class RoomStore {
     room.logs=["두 플레이어가 참가했습니다.",...room.logs];room.updatedAt=Date.now();await this.write(room);return {id,token};
   });}
   async view(id:string,token:string){const room=await this.read(id);return this.publicView(room,this.seat(room,token));}
-  async act(id:string,token:string,revision:unknown,action:unknown){return this.serial(id,async()=>{
-    const room=await this.read(id),seat=this.seat(room,token),player=room.game.players[seat];
+  async act(id:string,token:string,revision:unknown,action:unknown,requestId?:unknown){return this.mutate(id,token,revision,action,requestId,async(room,seat)=>{
+    const player=room.game.players[seat];
     if(room.lobby&&!room.lobby.started)throw new RoomError(409,"모두 준비한 뒤 방장이 게임을 시작해야 합니다.");
     if(room.draft&&!draftReady(room.draft))throw new RoomError(409,"양쪽 영지를 선택해야 게임을 시작합니다.");
     if(!room.tokens[1])throw new RoomError(409,"다른 플레이어의 참가를 기다리세요.");
@@ -208,8 +235,8 @@ export class RoomStore {
     if(room.history&&canUndoTurn(room.history,room.game,kind))return "";
     return room.undoBarrier||(kind==="turn"&&!room.history?.start?"이 차례의 시작 기록이 없습니다. 새 행동의 이전 행동으로만 복원할 수 있습니다.":"되돌릴 확정 행동이 없습니다. 종료된 차례는 복원할 수 없습니다.");
   }
-  async control(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
-    const room=await this.read(id),seat=this.seat(room,token),c=command as {command?:string;ready?:unknown;playerId?:string;name?:unknown;color?:unknown};
+  async control(id:string,token:string,revision:unknown,command:unknown,requestId?:unknown){return this.mutate(id,token,revision,command,requestId,async(room,seat)=>{
+    const c=command as {command?:string;ready?:unknown;playerId?:string;name?:unknown;color?:unknown};
     if(!room.lobby||room.lobby.started)throw new RoomError(409,"이미 시작된 방입니다.");
     if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인의 준비와 이름·색상만 변경할 수 있습니다.");
     if(revision!==room.game.revision)throw new RoomError(409,"최신 준비 상태에서 다시 선택하세요.");
@@ -239,8 +266,8 @@ export class RoomStore {
     const archived=await readdir(join(this.directory,"archive")).catch((e:NodeJS.ErrnoException)=>{if(e.code!=="ENOENT")throw e;return [];});
     for(const file of archived)if(/^[a-f0-9]{24}\.json\.gz$/.test(file))await this.read(file.slice(0,24));
   }
-  async chooseBoard(id:string,token:string,revision:unknown,command:unknown){return this.serial(id,async()=>{
-    const room=await this.read(id),seat=this.seat(room,token),playerId=room.game.players[seat].id;
+  async chooseBoard(id:string,token:string,revision:unknown,command:unknown,requestId?:unknown){return this.mutate(id,token,revision,command,requestId,async(room,seat)=>{
+    const playerId=room.game.players[seat].id;
     if(!room.draft||draftReady(room.draft))throw new RoomError(409,"영지 선택이 이미 종료되었습니다.");
     if(revision!==room.game.revision)throw new RoomError(409,"최신 후보 상태에서 다시 선택하세요.");
     const c=command as {playerId?:unknown;range?:unknown;boardId?:unknown};

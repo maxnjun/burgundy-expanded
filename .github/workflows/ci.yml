@@ -39,8 +39,8 @@ jobs:
       - run: npx playwright install --with-deps msedge webkit
       - run: sudo apt-get install -y fonts-noto-cjk
       - run: npm run test:browser -- --project=desktop-1280
-      - run: npm run test:browser -- tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/tile-help.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=mobile-390
-      - run: npm run test:browser -- tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=iphone-webkit
+      - run: npm run test:browser -- tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/tile-help.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=mobile-390
+      - run: npm run test:browser -- tests/browser/online-recovery.spec.ts tests/browser/score-pages.spec.ts tests/browser/dice-readability.spec.ts tests/browser/online-identity.spec.ts tests/browser/online-board.spec.ts tests/browser/online-controls.spec.ts tests/browser/internet-online.spec.ts tests/browser/fixed-vine-reward.spec.ts --project=iphone-webkit
       - name: Verify the deploy-time versioned build
         run: npm run build && npx tsc --noEmit
         env:

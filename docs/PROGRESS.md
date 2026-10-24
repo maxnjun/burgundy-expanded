@@ -1,3 +1,16 @@
+## 온라인 자동 저장·재접속 복구 — 로컬 검증 완료/배포 보류 (2026-10-24)
+
+- 기준 main2a36666. 운영 Upstash/기존 온라인 방/원본이미지·기존 dirty 문서꼬리·수도원27/28·asset-inbox·입력ZIP/프롬프트 보존. 이번은 Render 배포·재시작·환경변수/데이터 초기화 없이 main 백업만 한다.
+- 기존 구조: 전체 StoredRoom.game(난수 seed/cursor·주사위·턴·단계/라운드·영지/공급·보관함·자원/상품·점수·모든 확장·필수효과), 해시 좌석토큰, Undo, 시작성 미리보기, 로비/영지후보가 이미 Redis CAS에 저장되어 있었다. lock/event/weak revision은 메모리 보조 상태다. 부족했던 것은 확정 직후 응답 유실의 성공 확인과 동일 요청 중복 방지였다.
+- 서버: 선택적 requests(최근128개의 ID/좌석/본문해시)를 상태와 같은 CAS JSON에 확정. 같은 요청은 현재 뷰 반환, 다른본문/좌석/오래된revision 거부. 겹치는 프로세스409·Redis 응답 유실은 재조회로 확정 확인. Undo 밖에 기록해 취소 후 이전요청 재전송도 재실행하지 않는다. 기록이 제외돼도 원래revision은 거부된다.
+- 복귀: 기존 256비트 생성 좌석토큰·서버SHA256/상수시간검증 재사용. 브라우저에 토큰을 중복 저장하지 않고 별도 행동큐에 ID/원래revision/본문을 전송 전에 기록한다. 같은ID로 확인·복구 후 삭제, 재연결/미확인 중 입력차단·선택상태 재동기화, GET/WS/행동 확인 최대15초 지수대기, 수동재시도. 제출 오류와 연결 오류를 분리해 거부 이유가 동기화 직후 사라지지 않는다.
+- 호환: StoredRoom v1/engine0.2.1/protocol1/roomFormat1 유지. 없는 requests는 읽은 객체에서만 빈 배열로 정규화하며 GET은 원본을 다시 쓰지 않는다. 미래 방/엔진 형식은 ROOM_SCHEMA_UNSUPPORTED로 멈추고 손상 데이터도 보존한다. 기존 parseSavedGame/포도밭 업그레이드는 그대로 사용한다.
+- 최종 검사: 전체코어475/475(core-all-final)·보드33/33(boards)·타입/전체ESLint/프로덕션빌드(build-final/types-commit/lint-commit) 통과. 전체PC156통과/모바일전용3제외(browser-full-pc). 이후 미래엔진형식 안내/오류표시 보완 뒤 관련PC13/13·Chrome터치20/20(PC전용2제외) 재검증(browser-final-pc/mobile).
+- WebKit/경합: 관련15개 중14통과/응답유실1건 시간초과. trace에서 자동 복구로 사라진 수동버튼을 기다리는 신규 검사 경합을 확인해 망 복구는 online 이벤트로 수정했다. 수동버튼은 별도 영구 오류 상태에서 물리 클릭 검증을 유지했다. 게임상태/ID/중복자원 판정은 그대로, 수정 후 WebKit복구3/3(browser-webkit-recovery)·같은 흐름PC/Chrome6/6(browser-recovery-final) 통과. 초기 새 코어 검사의 game.extensions 오타는 game.config.extensions로 수정했고 기존 테스트 삭제/기준 완화 없음.
+- 실제 프로세스 검증: deployment-final7/7. 외부 저장이 확정되고 HTTP 응답은 보내지 않은 시점의 실제 Node 서버를 SIGKILL→빈 로컬 디렉터리/새 서버버전으로 시작→기존토큰/같은요청ID로 복원, 자원1회/원문/양쪽상태·WebSocket 복귀 확인. 기존 v1·미래형식·서로다른서버/두플레이어 동시제출·배치포도/층/토큰/장착방패 복원도 코어에서 확인.
+- 범위/한계: 외부 저장은 격리 Upstash REST 계약모형이며 실제 Redis Lua 엔진/실계정·Android/iPhone 실기기·외부망 검증이 아니다. 운영 Redis에 쓰기/삭제·기존 방 생성/변경 없음. 첫 운영health 읽기30초 지연 뒤 재조회200/version2a36666/protocol1/roomFormat1 확인(이전98e와 앱소스 동일한 문서커밋).
+- 백업/배포: 모든 이번 커밋에 [skip render][no-deploy]를 넣어 Render 자체 자동 배포와 기존 Game release를 보류한다. 현재 Commit/Push 대기. 상세 설계/파일/검사는 docs/deployment/ONLINE_RECOVERY.md, 로컬 로그는 .local-data/online-recovery/. 다음: 명시적12파일만 비밀검사/문서꼬리분리→main Commit/일반Push→원격SHA/운영기존2a36666 유지 확인. 실제 배포는 추가 사용자 요청 전 금지.
+
 ## 영지/포도밭 점수판·Render 배포 완료 (2026-10-24)
 
 - 기능/배포 커밋: 98e62a3c96957c56abe4fc74dfee691654753e39(main 일반Push·원격 SHA 일치). 최초 구현d3c71f6, 모바일 너비 보완98e62a3. 이 완료 기록 커밋은 앱 변경 없이 [skip ci][no-deploy]로 백업하므로 실제 서비스의 기능 SHA는98e62a3이다.
