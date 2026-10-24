@@ -1,0 +1,11 @@
+.personal-score-pages{display:block;width:min(100%,390px);height:auto;margin:8px 0 0 auto;flex-shrink:0}
+.score-pages text{fill:#513d22;pointer-events:none;font-family:inherit}
+.score-pages .score-page-title{font-size:17px;font-weight:700}
+.score-pages .score-page-number,.score-pages .score-page-total{font-size:13px;font-weight:700}
+.score-pages .score-page-note,.score-pages .score-page-grape{font-size:12px}
+.score-pages .score-page-points{font-size:14px;font-weight:700}
+.score-page-nav{cursor:pointer;touch-action:manipulation}
+.score-page-nav rect{fill:#ead6a4;stroke:#96733e}
+.score-page-nav text{font-size:18px}
+.score-page-nav:hover rect,.score-page-nav:focus-visible rect{fill:#fff1bd;stroke:#633d19;stroke-width:2}
+.score-page-nav[aria-disabled=true]{cursor:default;opacity:.4}

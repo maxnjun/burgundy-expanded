@@ -1,3 +1,14 @@
+## 영지/포도밭 점수판 페이지 전환 및 Render 반영 (2026-10-24)
+
+- 구현: 공용950×1030 보드의 기존 좌하단390×155 영역과 각 개인 보드 우하단에 영지1/2·포도밭2/2 및 ▲/▼ 전환. 각 컴포넌트의 로컬 페이지 상태는 서로 독립적이며 게임 revision/난수/저장 형식에 넣지 않는다. 영지 육각형/공급처 좌표·원본 에셋·기존 방 데이터 보존.
+- 점수: 영지 페이지는 기존 지역 기본 점수표(regionSizePoints)와 현재 누적 victoryPoints. 포도밭 페이지는 기존 종료 정산 vineScore의 같은 연결 영역/토큰 판정을 vineScoreBreakdown으로 공유해 품종별 채점 영역과 종료 예상 합계를 표시. 누적 승점에 예상 점수를 더하지 않으며 확장 비활성 시 미사용 안내. 4층/시작1+완성4토큰 규칙 미변경.
+- 온라인: RoomView가 이미 제공하는 공개 vineyards/players를 CommonBoard와 개인 점수판에 연결. 서버 DTO·권한·저장 마이그레이션 없이 두 클라이언트에서 실제 획득→배치→후속 효과 후 점수 갱신/재접속 검증.
+- 검사 완료: 코어471/471·보드33/33·HTTP/WSS/격리 저장 배포7/7, 타입·ESLint·프로덕션 빌드, 신규PC5/5·Chrome터치/WebKit10/10. 초기 신규 검사 실패는 미리 굴리지 않은3/4인 픽스처의 정상 자동 라운드 준비와 격리 HTTP 서버 종료 후 남은 폴링을 구분해 수정했다. 기존 테스트 삭제/기준 완화 없음.
+- 화면: .local-data/score-pages/ 아래 브라우저 로그·캡처. PC에서 개인 우하단/공용 기존 프레임 내부를 직접 확인. 실제 Android/iPhone 실기기는 미검증.
+- 최종 검사: browser-final.log PC/Chrome터치/WebKit15/15(100/160/200%·키보드 포함), browser-regression.log 관련PC8/8(방패2/3/4인·온라인보드·Undo·시작성·고정포도효과·상품/무역로). build-final/types-last/lint-last 통과.
+- 진행 중: 이번 변경만 main Push→GitHub 전체CI→기존 Render 수동 Deploy. 사용자는 배포를 명시 승인했으며, GitHub API에서 Actions secrets/Environments가0개로 확인되어 자동 경로를 가정하지 않고 사용자가 수동 Deploy 방식을 선택했다. 배포 후 exact SHA/health/online/실제 점수판을 확인하기 전에는 성공으로 보고하지 않는다.
+- Git 시작 main/origin506bc29 동일. 원래 dirty 문서 꼬리·수도원 원본27/28·asset-inbox·입력ZIP/프롬프트는 이번 백업 제외하고 보존한다. Render 기존 서비스/Upstash staging/기존 온라인 방 초기화·삭제·유료 리소스 생성 없음.
+
 ## 터미널 기반 Render 반영 준비 (2026-10-24)
 
 - 사용자 지시: Computer Use/브라우저 직접 자동 조작 없이 Git·터미널만 사용. 기존 Render burgundy-expanded/Upstash staging 유지.

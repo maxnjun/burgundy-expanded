@@ -9,7 +9,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createPracticeSession} from '../../src/game/practice';
 import {applyCoreAction,listCoreActionOptions,validateCoreState,validateCoreAction} from '../../src/game/core';
-import {VINE_SLOTS,VINE_TILES,GRAPES,vineNeighbors,vineScore,refillVineyards} from '../../src/game/vineyards';
+import {VINE_SLOTS,VINE_TILES,GRAPES,vineNeighbors,vineScore,vineScoreBreakdown,refillVineyards} from '../../src/game/vineyards';
 import {chooseComputerAction} from '../../src/game/computer';
 import {parseSavedGame,serializeSavedGame} from '../../src/game/save';
 import type {GameState,GameAction} from '../../src/game/types';
@@ -40,6 +40,8 @@ test('store purchase shares black/inn flag and duplicate/refill/save tampering i
 });
 test('vine scoring counts connected hexes, one token per region, repeated tokens never multiply one area',()=>{
  const v=vineFixture().vineyards!,p=v.players['seat-1'];const testV={...v,players:{...v.players,'seat-1':{...p,placed:[{slotId:'V01',tileId:'B-B:1',flipped:false,used:[0,1]}],tokens:['B','B'] as const}}};assert.equal(vineScore(testV,'seat-1'),3);
+ const rows=vineScoreBreakdown(testV,'seat-1');assert.equal(rows.length,6);assert.deepEqual(rows.find(r=>r.grape==='B'),{grape:'B',tokens:2,regions:[2],counted:[2],points:3});assert.ok(rows.filter(r=>r.grape!=='B').every(r=>r.tokens===0&&r.points===0));
+ const noTokens={...testV,players:{...testV.players,'seat-1':{...testV.players['seat-1'],tokens:[]}}};assert.equal(vineScore(noTokens,'seat-1'),0);assert.deepEqual(vineScoreBreakdown(noTokens,'seat-1')[0].counted,[]);
 });
 function resolveAll(g:GameState):GameState {let n=0;while(g.turn.pendingChoice){assert.ok(n++<50);const list=options(g).filter(a=>a.type==='resolve-choice'),a=list.find(a=>a.type==='resolve-choice'&&a.optionId==='skip')??list.find(a=>a.type==='resolve-choice'&&a.optionId.includes('take-workers'))??list[0];g=vineStep(g,a);g=saved(g);}return g;}
 function reserveFromBag(g:GameState):GameState {const id=g.vineyards!.bag[0];return {...g,vineyards:{...g.vineyards!,bag:g.vineyards!.bag.slice(1)},players:g.players.map((p,i)=>i?p:{...p,vineyardReserve:[{tileId:id,keys:[0,1]}]}),dice:{...g.dice,players:{...g.dice.players,'seat-1':[{...g.dice.players['seat-1'][0],used:false},{...g.dice.players['seat-1'][1],used:false}]}}};}

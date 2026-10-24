@@ -86,10 +86,17 @@ export function vineIntents(s:GameState,p:PlayerState):VineIntent[]{
  const min=take.filter(i=>!take.some(j=>j.tileId===i.tileId&&(j.discardIds?.length??0)<(i.discardIds?.length??0)));
  return [...min,...(p.vineyardReserve??[]).flatMap(r=>VINE_SLOTS.flatMap(slot=>[false,true].map(flipped=>({kind:'vineyard' as const,command:'place' as const,tileId:r.tileId,slotId:slot.id,flipped}))).filter(i=>!vinePlacementIssue(s,p,i)))];
 }
-export function vineScore(v:VineyardState,pid:string):number {
+export function vineScoreBreakdown(v:VineyardState,pid:string) {
  const cells=v.players[pid].placed.flatMap(p=>VINE_SLOTS.find(s=>s.id===p.slotId)!.cells.map((c,i)=>({...c,grape:VINE_TILES[p.tileId][p.flipped?1-i:i]}))),seen=new Set<number>(),areas:Record<string,number[]>={};
  for(let i=0;i<cells.length;i++){if(seen.has(i))continue;const todo=[i];seen.add(i);let size=0;while(todo.length){const j=todo.pop()!;size++;for(let k=0;k<cells.length;k++)if(!seen.has(k)&&cells[k].grape===cells[j].grape&&vineNeighbors(cells[k],cells[j])){seen.add(k);todo.push(k);}}(areas[cells[i].grape]??=[]).push(size);}
- return GRAPES.reduce((sum,g)=>sum+(areas[g]??[]).sort((a,b)=>b-a).slice(0,v.players[pid].tokens.filter(x=>x===g).length).reduce((n,size)=>n+size*(size+1)/2,0),0);
+ return GRAPES.map(grape=>{
+  const tokens=v.players[pid].tokens.filter(x=>x===grape).length;
+  const regions=(areas[grape]??[]).sort((a,b)=>b-a),counted=regions.slice(0,tokens);
+  return {grape,tokens,regions,counted,points:counted.reduce((n,size)=>n+size*(size+1)/2,0)};
+ });
+}
+export function vineScore(v:VineyardState,pid:string):number {
+ return vineScoreBreakdown(v,pid).reduce((sum,row)=>sum+row.points,0);
 }
 /** Strict save/runtime conservation; physical vine IDs never enter base tile locations. */
 export function validVineyards(s:GameState):boolean {

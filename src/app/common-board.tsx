@@ -1,4 +1,5 @@
 "use client";
+import {ScorePages} from "./score-pages";
 import {WhiteDie} from "./white-die";
 import {playerPaint} from "../game/player-colors";
 import {tileHelpId} from "../game/tile-help";
@@ -48,7 +49,7 @@ function CornerPanel({name,x,y,height}:{name:string;x:number;y:number;height:num
 const terrainNames: Record<TileType,string> = {castle:"성",ship:"선박",mine:"광산",livestock:"가축",building:"건물",monastery:"수도원"};
 
 
-type CommonBoardState = Pick<GameState,"revision"|"tiles"|"players"|"dice"> & {
+type CommonBoardState = Pick<GameState,"revision"|"tiles"|"players"|"dice"|"vineyards"> & {
   config:Pick<GameState["config"],"marketRecipeId">;
   turn:Pick<GameState["turn"],"phase"|"round"|"orderTrack"|"activePlayerId"> & {pendingChoice?:{id:string}|null};
   market:Pick<GameState["market"],"numberedDepots"|"blackDepot"|"inns"|"bonusTiles"> & {
@@ -116,10 +117,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         {game.market.blackDepot.map((id,i)=>{const [x,y]=blackSlots[i];return <g key={`black-${i}`}><polygon data-black-space={i} points={hex(x,y)} fill="#393b30" stroke="none"/>{id ? selected(id,x,y,tileWidth,`검은 공급처 ${titleFor(id)}`) : <polygon points={hex(x,y,50)} fill="none" stroke="#898168" strokeDasharray="3 3"/>}</g>;})}
       </g>
       <g data-region-score-panel="true" transform={`translate(${layout.panels.left} ${layout.panels.bottom})`}>
-        <text x="195" y="29" textAnchor="middle" className="common-small">지역 완성 · 칸 수 / 점수</text>
-        {[1,3,6,10,15,21,28,36].map((v,i)=><g key={v} transform={`translate(${60+(i%4)*90} ${56+Math.floor(i/4)*45})`}>
-          <text textAnchor="middle" fontSize="11" fill="#665035">{i+1}칸</text><path d="M-16 7h32v17l-16 7-16-7z" fill="#a54431"/><text y="24" textAnchor="middle" fontSize="13" fill="#fff1cb">{v}</text>
-        </g>)}
+        <ScorePages player={game.players.find(p=>p.id===game.turn.activePlayerId)??game.players[0]} vineyards={game.vineyards} label="공용 점수판"/>
       </g>
       <g data-color-bonuses="true" transform={`translate(${layout.panels.right} ${layout.panels.bottom})`}>
         <text x="195" y="29" textAnchor="middle" className="common-small">지형 전체 완성 · 1위 / 2위</text>
