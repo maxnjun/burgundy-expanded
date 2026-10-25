@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "canvas": 1254,
+  "review": "2026-10-24: source pixels retained; exterior matte only, freshly measured inner contours",
+  "assets": {
+    "castle": {
+      "source": "asset-inbox/castle-mine-approved/originals/castle-new.png",
+      "sourceSha256": "d768c31eb97611ffdb58020d07a9eca81e391c189f42b6ccbc166c65ead51d06",
+      "matte": "asset-inbox/castle-mine-approved/mattes/castle.png",
+      "matteSha256": "b3bb37193007a0ebde681d044252461cf56388d717bd29893c55eb56addc8dca",
+      "innerContour": [
+        [
+          627,
+          190
+        ],
+        [
+          1032,
+          422
+        ],
+        [
+          1032,
+          833
+        ],
+        [
+          627,
+          1078
+        ],
+        [
+          224,
+          833
+        ],
+        [
+          224,
+          422
+        ]
+      ],
+      "surfacePoints": [
+        [
+          627,
+          222
+        ],
+        [
+          247,
+          620
+        ],
+        [
+          627,
+          1040
+        ]
+      ]
+    },
+    "mine": {
+      "source": "asset-inbox/castle-mine-approved/originals/mine-new.png",
+      "sourceSha256": "c6ce4442f272eaa0f4c5616b591a45777201204cf646de1e1a4b15f68b066e13",
+      "matte": "asset-inbox/castle-mine-approved/mattes/mine.png",
+      "matteSha256": "c136cf4163cb74101db12fc984f8ab85d1affd4403c8bd5f14265adb4031864e",
+      "innerContour": [
+        [
+          627,
+          176
+        ],
+        [
+          1038,
+          421
+        ],
+        [
+          1038,
+          826
+        ],
+        [
+          627,
+          1075
+        ],
+        [
+          214,
+          826
+        ],
+        [
+          214,
+          421
+        ]
+      ],
+      "surfacePoints": [
+        [
+          627,
+          206
+        ],
+        [
+          240,
+          620
+        ],
+        [
+          627,
+          1040
+        ]
+      ]
+    }
+  }
+}

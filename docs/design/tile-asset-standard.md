@@ -30,6 +30,8 @@
 
 원본 `public/tiles/*.png`를 덮어쓰지 않는다. `public/tiles/estate/` 및 `normalize-estate-tiles.py`는 과거 자료이며 현재 렌더러에서 읽지 않는다. 새로운 타일에 과거 삼각 분할 워핑을 사용하지 않는다.
 
+2026-10-24 성·광산 교체 예외: 사용자 명시 요청으로 기존 원본/파생/manifest를 `asset-inbox/castle-mine-approved/backups/before-2026-10-24/`에 먼저 보존한 뒤 동일 경로에 새 승인 그림을 연결했다. 첨부 원본과 알파 마스크는 별도 보존하며 `node scripts/import-castle-mine.mjs --check`로 검증한다. 이 두 종류의 재생성은 같은 스크립트의 `--check` 없는 실행을 사용한다. 기존 Python 추출기의 옛 해시/마스크는 새 그림에 적용하지 않는다. 공통 SVG 좌표·안쪽 프레임과 원본 RGB 보존은 유지한다. 자세한 경로/결과는 `../CASTLE_MINE_IMPORT_NOTES.md`.
+
 1. 성/광산/선박/수도원27·28: `scripts/extract-tile-illustrations.py`. 검수된 원본 해시·안쪽 테두리 contour와 보존 마스크를 적용한다. 기존 파생 5개는 이번에 재작성하지 않았다. 같은 알고리즘으로 알파 지지함수를 측정하여 1024 정사각 캔버스 안쪽 육각형에 등방성으로 맞춘다. 배율·중심은 빌드 시 측정 결과이며 렌더링 보정값이 아니다.
 2. 여관: `scripts/extract-inn-illustration.py`. 검수한 금색 외곽 테두리 안쪽 contour를 분리하고 같은 등방성 fitting/안쪽 테두리를 사용한다. 여러 색의 내부 패널 구분선은 일러스트의 일부로 보존한다. 팔레트는 실제 원본 금색 테두리의 밝기 분위 RGB다. 원본 변경 시 재검수한다.
 3. 기중기/거위: `scripts/normalize-center-illustrations.py`. 알파 bbox를 trim하고 동일 32px 여백/최대 변 960px로 1024 캔버스 중앙에 비율을 보존하여 넣는다. 렌더링은 모든 중앙 일러스트에 공통 66단위 사각형을 쓴다.

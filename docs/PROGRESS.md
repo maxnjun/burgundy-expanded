@@ -1,3 +1,13 @@
+# 성·광산 이미지 GitHub 백업 준비 (2026-10-25)
+
+- 기준 main e2d5604 및 실제 origin/main 일치. 새 성/광산 4PNG+illustrations manifest가 미커밋으로 유지됐으며, 후속 작업 전후 해시가 같은 수정본임을 확인했다.
+- 현재 그림을 재생성/덮어쓰기하지 않고 5개 런타임 파일과 재현 입력5개·import 스크립트·가이드/노트를 선별한다. 혼합 PROGRESS/TODO는 이번 접두사만 스테이징한다. 수도원27/28·다른 승인 원본 폴더·이전 문서 본문은 보존/제외한다.
+- 이번 검사: node --check 및 import-castle-mine.mjs --check 통과(RGB 변경0), 공통 일러스트6/아이콘2 경고0, 배포 PNG80 통과. 검증 보고서는 기존 것을 덮지 않고 .local-data/castle-mine-push-hzSSUO/validation에 생성했다. 원본/파생/마스크의 해시·수정시각을 보존한다.
+- Render staging blueprint는 autoDeployTrigger:off. 실제 서비스의 현재 설정은 인증이 없어 미확인이다. 공식 [skip render] 및 기존 GitHub release의 [no-deploy] 제외 조건을 사용하며 Render 배포/재시작/Computer Use는 실행하지 않는다.
+- 백업 절차: 이번 변경만 main에 일반 Commit/Push 후 원격 SHA 확인. 성공 여부/SHA는 최종 채팅과 Git 기록으로 확인한다. 다음: 사용자 수동 배포 판단 및 남은 별도 TODO. 체크포인트 .local-data/castle-mine-push-hzSSUO/.
+
+--- 이전 진행 본문 보존 ---
+
 # Ver.2 14개 수정 — 구현·검증 완료 / Render 미배포 (2026-10-25)
 
 - 기준 cb28918에서 중단된 구현을 재사용해 1~14를 완료했다. 최초/최종 상태·원인·변경 파일은 docs/qa/ver2-14.md. 14번은 방패 PNG 흰 hover 덮임이며 툴팁 규격/위치는 바꾸지 않았다.
