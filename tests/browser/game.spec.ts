@@ -66,33 +66,34 @@ test("new AI demonstration plays a full 25-round game and survives reload",async
 });
 
 
-test("board drag mode preserves normal scrolling and supports touch pan and pinch",async({page},info)=>{
+test("common board retains drag mode and pinch while personal boards use native scrolling",async({page},info)=>{
   await page.goto("/");
-  const buttons=page.getByRole("button",{name:"엘레오노르 영지 확대",exact:true});
-  for(let i=0;i<5;i++)await buttons.click();
-  await page.getByRole("button",{name:"영지 드래그 이동",exact:true}).first().click();
-  const board=page.getByLabel("영지 이동 영역",{exact:true}).first();await board.scrollIntoViewIfNeeded();
+  const buttons=page.getByRole("button",{name:"공용 보드 확대",exact:true});
+  for(let i=0;i<2;i++)await buttons.click();
+  await page.getByRole("button",{name:"공용 보드 드래그 이동",exact:true}).first().click();
+  const board=page.getByLabel("공용 보드 이동 영역",{exact:true}).first();await board.scrollIntoViewIfNeeded();
   await expect(board).toHaveCSS("touch-action","none");
   const box=await board.boundingBox();if(!box)throw new Error("missing board");
-  const x=box.x+Math.min(box.width-20,250),y=Math.min(box.y+70,page.viewportSize()!.height-110);
+  const viewport=page.viewportSize()!,toolbar=(await page.getByLabel("직접 게임 조작",{exact:true}).boundingBox())!;
+  const x=Math.min(box.x+Math.min(box.width-20,250),viewport.width-30),y=(Math.max(box.y+10,toolbar.y+toolbar.height+10)+Math.min(box.y+box.height-10,viewport.height-40))/2;
   if(info.project.name.startsWith("mobile")){
     const cdp=await page.context().newCDPSession(page);
     await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x,y,id:0}]});
     await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:x-80,y,id:0}]});
     await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
     await expect.poll(()=>board.evaluate(el=>el.scrollLeft)).toBeGreaterThan(10);
-    const before=await page.getByRole("group",{name:"엘레오노르 영지",exact:true}).getAttribute("width");
+    const before=await page.locator(".common-board-svg").evaluate(el=>el.getBoundingClientRect().width);
     await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[{x:x-60,y,id:0},{x:x+10,y,id:1}]});
     await cdp.send("Input.dispatchTouchEvent",{type:"touchMove",touchPoints:[{x:x-90,y,id:0},{x:x+30,y,id:1}]});
     await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});
-    await expect.poll(()=>page.getByRole("group",{name:"엘레오노르 영지",exact:true}).getAttribute("width")).not.toBe(before);
+    await expect.poll(()=>page.locator(".common-board-svg").evaluate(el=>el.getBoundingClientRect().width)).not.toBe(before);
     await cdp.detach();
   }else{
     await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-80,y,{steps:8});await page.mouse.up();
     // A wide desktop board can fit without horizontal overflow; only overflowing boards must pan.
     if(await board.evaluate(el=>el.scrollWidth>el.clientWidth))expect(await board.evaluate(el=>el.scrollLeft)).toBeGreaterThan(10);
   }
-  await page.getByRole("button",{name:"영지 드래그 이동",exact:true}).first().click();
+  await page.getByRole("button",{name:"공용 보드 드래그 이동",exact:true}).first().click();
   await expect(board).toHaveCSS("touch-action","manipulation");
 });
 

@@ -63,7 +63,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
                     if (!intentIssue(state, player, intent))
                         intents.push({ intent, label: `${depot.number}번 공급처 ${tileName(state, slot.tileId)} 획득 · 보관${storageSlot + 1}${occupant ? " 교체" : ""}` });
                 }
-    if(kind==="castle")for(const intent of vineIntents(state,player))intents.push({intent,label:`포도 ${intent.command==="take"?"획득":"배치"} ${intent.slotId??intent.tileId}${intent.flipped?" · 뒤집기":""}`});
+    if(kind==="castle"||kind==="town-hall")for(const intent of vineIntents(state,player))if(kind==="castle"||intent.command==="place")intents.push({intent,label:`포도 ${intent.command==="take"?"획득":"배치"} ${intent.slotId??intent.tileId}${intent.flipped?" · 뒤집기":""}`});
     const options = intents.map(({ intent, label }) => ({ id: JSON.stringify(intent), label, payload: { intent } as unknown as JsonValue }));
     if (kind !== "castle")
         options.push({ id: "skip", label: "건물 효과 사용하지 않기", payload: null });
@@ -108,6 +108,14 @@ export function validImmediateChoice(state: GameState): boolean {
     }
 }
 export const validPendingChoice = (state: GameState): boolean => validVineChoice(state) || validShipChoice(state) || validImmediateChoice(state) || validShieldChoice(state);
+/** Upgrade only the exact pre-v2 town-hall list; malformed choices still fail validation. */
+export function upgradeTownHallChoice(state:GameState):GameState {
+    const choice=state.turn.pendingChoice,effect=state.turn.pendingEffects[0];
+    if(!choice||(effect?.payload as {kind?:string}|null)?.kind!=="town-hall")return state;
+    const refreshed=refreshPendingChoice(state),options=refreshed.turn.pendingChoice!.options;
+    const legacy=options.filter(o=>(o.payload as unknown as {intent?:ActionIntent})?.intent?.kind!=="vineyard");
+    return legacy.length!==options.length&&JSON.stringify(choice.options)===JSON.stringify(legacy)&&validImmediateChoice(refreshed)?refreshed:state;
+}
 /** Resolving consumes the parent benefit before scheduling a child: no replay, implicit dice or infinite queue. */
 export function resolveTileChoice(state: GameState, optionId: string): GameState {
     if(validVineChoice(state))return resolveVineChoice(state,optionId);

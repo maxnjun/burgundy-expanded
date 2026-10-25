@@ -3,7 +3,7 @@ import {customTradeSpaces,settleTradeReward,tradeSlotId,TRADE_REWARD_NAMES,type 
 import {immediateOptions} from "./effects";
 import {rewardShieldWorkerGain} from "../shields";
 
-/** Called ONLY from a direct use-die sale; every bonus/descendant sale bypasses it. */
+/** Each actual sale advances once; its goods have already left the player's inventory. */
 export function advanceCustomTrade(state:GameState,playerId:string,goodsType:DieValue,goodsIds:readonly string[]):GameState{
  const r=state.tradeRoutes?.routes[playerId];if(!r||r.sales.length===r.tileIds.length*3)return state;
  const index=r.sales.length,space=customTradeSpaces(r)[index],slotId=tradeSlotId(playerId,index),match=space.goodsType===goodsType;

@@ -10,7 +10,15 @@ import {tradeFixture,directSale,tradeStep} from "../fixtures/custom-trade";
 import type {GameState} from "../../src/game/types";
 import {createShieldLayout,setShieldLayout} from "../../src/game/shields";
 import {mount,placed} from "../fixtures/shields";
+import {prepareTileEffect} from "../../src/game/core/effects";
 const roundtrip=(game:GameState)=>parseSavedGame(serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game,logs:[],view:{zoom:1,focus:false,boardZooms:{}}})).game;
+for(const kind of ['castle','warehouse','white-castle'] as const)test(`${kind} sale advances trade once, keeps both dice and rejects replay`,()=>{
+ let g=tradeFixture('bank');if(kind==='white-castle')g={...g,config:{...g.config,extensions:[...g.config.extensions,{id:'white-castles',options:{}}]}};
+ const original=new Set(g.players[0].duchy.cells.map(c=>c.tileId)),tile=kind==='castle'?{type:'castle' as const,back:'matching-color' as const}:{type:'building' as const,building:kind,back:'matching-color' as const};g=placed(g,0,tile);const id=g.players[0].duchy.cells.find(c=>c.tileId&&!original.has(c.tileId))!.tileId!;g=prepareTileEffect(g,'seat-1',id);
+ const choice=g.turn.pendingChoice!,type=customTradeSpaces(g.tradeRoutes!.routes['seat-1'])[0].goodsType,option=choice.options.find(o=>{const i=(o.payload as {intent?:{kind?:string;goodsType?:number}})?.intent;return i?.kind==='sell-goods'&&i.goodsType===type;});assert.ok(option);
+ const action={type:'resolve-choice' as const,playerId:'seat-1',choiceId:choice.id,optionId:option.id},next=tradeStep(g,action),count=g.players[0].goods.find(s=>s.type===type)!.tiles.length,reward=goodsSaleReward(g,g.players[0],count);
+ assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,1);assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,'resolved');assert.equal(next.players[0].silver,g.players[0].silver+reward.silver+2);assert.equal(next.players[0].victoryPoints,g.players[0].victoryPoints+reward.points);assert.deepEqual(next.dice,g.dice);assert.equal(validateCoreAction(next,action).valid,false);assert.deepEqual(roundtrip(next),next);
+});
 
 test("custom36 cells match the exact user table:6 per color,4 per reward,unique3-color cards",()=>{
  assert.equal(CUSTOM_TRADE_CATALOG.length,12);assert.deepEqual(CUSTOM_TRADE_CATALOG.map(t=>t.id),Array.from({length:12},(_,i)=>String(i+1)));
@@ -34,7 +42,7 @@ for(const kind of Object.keys(TRADE_REWARD_NAMES) as TradeReward[])test(`custom 
  }else{
   assert.equal(route.sales[0].status,"pending");assert.ok(game.turn.pendingChoice);assert.equal(validateCoreAction(game,{type:"end-turn",playerId:"seat-1"}).valid,false);
   const choice=game.turn.pendingChoice!,option=choice.options.find(o=>o.id!=="skip"&&((kind!=="white-castle")||(o.payload as {intent?:{kind?:string}})?.intent?.kind==="take-workers"));assert.ok(option,kind);
-  const action={type:"resolve-choice" as const,playerId:"seat-1",choiceId:choice.id,optionId:option.id};const next=tradeStep(game,action);assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,1);assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,"resolved");assert.equal(validateCoreAction(next,action).valid,false);assert.deepEqual(roundtrip(next),next);
+  const action={type:"resolve-choice" as const,playerId:"seat-1",choiceId:choice.id,optionId:option.id};const next=tradeStep(game,action);assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,kind==="warehouse"?2:1);assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,"resolved");assert.equal(validateCoreAction(next,action).valid,false);assert.deepEqual(roundtrip(next),next);
   if(kind==="white-castle"){assert.equal(next.players[0].workers-game.players[0].workers,2);assert.deepEqual(next.dice,game.dice);}
   if(kind==="warehouse")assert.equal(next.players[0].goods.length,0);
  }
@@ -45,9 +53,9 @@ test("mismatch advances one slot without rewards; all completed routes still all
  const next=tradeStep(g,directSale(g));assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,"mismatch");assert.equal(next.players[0].silver-g.players[0].silver,1);
  assert.throws(()=>roundtrip({...next,tradeRoutes:{...next.tradeRoutes!,routes:{...next.tradeRoutes!.routes,'seat-1':{...next.tradeRoutes!.routes['seat-1'],tileIds:['99',...next.tradeRoutes!.routes['seat-1'].tileIds.slice(1)]}}}}));
 });
-test("white reward can sell with worker adjustment but cannot recursively progress trade route",()=>{
+test("white reward sale advances the next trade slot once without consuming a player die",()=>{
  const before=tradeFixture('white-castle'),g=tradeStep(before,directSale(before)),choice=g.turn.pendingChoice!,option=choice.options.find(o=>(o.payload as {intent?:{kind?:string}})?.intent?.kind==='sell-goods');assert.ok(option);
- const next=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:choice.id,optionId:option.id});assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,1);assert.equal(next.players[0].goods.length,0);assert.deepEqual(next.dice,g.dice);
+ const next=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:choice.id,optionId:option.id});assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,2);assert.equal(next.players[0].goods.length,0);assert.deepEqual(next.dice,g.dice);assert.deepEqual(roundtrip(next),next);assert.equal(validateCoreAction(next,{type:'resolve-choice',playerId:'seat-1',choiceId:choice.id,optionId:option.id}).valid,false);
 });
 test("full route stops at capacity and still sells normally, without duplicate or skipped slots",()=>{
  let g=tradeFixture('bank');const capacity=customTradeSpaces(g.tradeRoutes!.routes['seat-1']).length;
@@ -60,11 +68,11 @@ test("full route stops at capacity and still sells normally, without duplicate o
  assert.deepEqual(roundtrip(g),g);
  const route=g.tradeRoutes!.routes['seat-1'];assert.throws(()=>roundtrip({...g,tradeRoutes:{...g.tradeRoutes!,routes:{...g.tradeRoutes!.routes,'seat-1':{...route,sales:[...route.sales.slice(0,-1),{...route.sales.at(-1)!,revision:route.sales[0].revision}]}}}}));
 });
-test("town-hall reward chains physical white castle then sells without starting another route reward",()=>{
+test("town-hall reward chains physical white castle then advances trade on its sale",()=>{
  let g=tradeFixture('town-hall');const p=g.players[0];const cell=p.duchy.cells.find(c=>c.terrain==='building'&&!c.tileId&&p.duchy.cells.some(n=>n.tileId&&Math.max(Math.abs(c.coord.q-n.coord.q),Math.abs(c.coord.r-n.coord.r),Math.abs(c.coord.q+c.coord.r-n.coord.q-n.coord.r))===1))!;assert.ok(cell);
  g={...g,config:{...g.config,extensions:[...g.config.extensions,{id:'white-castles',options:{}}]},tiles:{...g.tiles,'TEST-WHITE':{id:'TEST-WHITE',type:'building',building:'white-castle',back:'matching-color'}},market:{...g.market,removedTileIds:[...g.market.removedTileIds,'TEST-TRADE-STASH']},players:g.players.map((p,i)=>i?p:{...p,storage:['TEST-WHITE',null,null]})};
  g=tradeStep(g,directSale(g));let c=g.turn.pendingChoice!,o=c.options.find(o=>(o.payload as {intent?:{cellId?:string}})?.intent?.cellId===cell.id)!;assert.ok(o);g=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:c.id,optionId:o.id});
- assert.equal(g.tradeRoutes!.routes['seat-1'].sales[0].status,'resolved');assert.ok(g.turn.pendingChoice?.source.section.includes('흰 성'));c=g.turn.pendingChoice!;o=c.options.find(o=>(o.payload as {intent?:{kind?:string}})?.intent?.kind==='sell-goods')!;assert.ok(o);g=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:c.id,optionId:o.id});assert.equal(g.tradeRoutes!.routes['seat-1'].sales.length,1);assert.deepEqual(roundtrip(g),g);
+ assert.equal(g.tradeRoutes!.routes['seat-1'].sales[0].status,'resolved');assert.ok(g.turn.pendingChoice?.source.section.includes('흰 성'));c=g.turn.pendingChoice!;o=c.options.find(o=>(o.payload as {intent?:{kind?:string}})?.intent?.kind==='sell-goods')!;assert.ok(o);g=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:c.id,optionId:o.id});assert.equal(g.tradeRoutes!.routes['seat-1'].sales.length,2);assert.deepEqual(roundtrip(g),g);
 });
 test("custom bank does not multiply shield9/monastery3 sale; boarding-house triggers other player's shield2 once",()=>{
  const enable=(g:GameState)=>{const s=createShieldLayout(2,g.random,true);return setShieldLayout({...g,random:s.random,config:{...g.config,extensions:[...g.config.extensions,{id:'shields',options:{rules:true}}]}},s.layout);};

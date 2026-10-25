@@ -13,3 +13,9 @@ export function ResourceIcon({type,size=24,style}:{type:ResourceType;size?:numbe
 export function ResourceGlyph({type,x,y,size=standard.effect.iconSize}:{type:ResourceType;x:number;y:number;size?:number}){
  return <image data-resource-icon={type} href={resourceAssets[type]} x={x} y={y} width={size} height={size} preserveAspectRatio="xMidYMid meet"/>;
 }
+export function WorkerCost({count}:{count:number}){
+ return count>0?<span className="worker-cost" data-worker-cost={count} aria-label={`보정 일꾼 ${count}개`}>{Array.from({length:count},(_,i)=><ResourceIcon key={i} type="worker" size={18}/>)}</span>:null;
+}
+export function WorkerCostGlyph({count,x,y,size=16}:{count:number;x:number;y:number;size?:number}){
+ return count>0?<g className="direct-cost" data-worker-cost={count} aria-label={`보정 일꾼 ${count}개`} pointerEvents="none">{Array.from({length:count},(_,i)=><ResourceGlyph key={i} type="worker" x={x-(count*(size+2)-2)/2+i*(size+2)} y={y} size={size}/>)}</g>:null;
+}

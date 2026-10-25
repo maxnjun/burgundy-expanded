@@ -6,7 +6,7 @@ import {playerPaint} from "../game/player-colors";
 import {tileHelpId} from "../game/tile-help";
 
 import {GoodsSpace,type GoodsOption} from "./goods-space";
-import { ResourceGlyph } from "./resource-icon";
+import { ResourceGlyph,WorkerCostGlyph } from "./resource-icon";
 import { InnStack } from "./inn-stack";
 import type { ShieldLayout } from "../game/shields";
 import { ShieldArt, shieldLabel } from "./shield-art";
@@ -76,7 +76,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
     <polygon data-tile-shadow="true" points={hex(x,y+2,width)} fill="#53351e" fillOpacity=".18" pointerEvents="none" aria-hidden="true"/>
     <TileArt tile={game.tiles[id]} x={x-width/2} y={y-width/Math.sqrt(3)} width={width} height={width*2/Math.sqrt(3)}/>
     <polygon data-supply-hit="true" points={hex(x,y,width)} fill="transparent"/>
-    {showCosts&&<g className="direct-cost" aria-hidden="true"><rect x={x-width*.48} y={y+width*.52} width={width*.96} height="14" rx="5"/><text x={x} y={y+width*.52+10} textAnchor="middle">{actionFor(id)?game.market.blackDepot.includes(id)?"2":`일꾼 ${costFor(actionFor(id)!)}`:"불가"}</text>{actionFor(id)&&game.market.blackDepot.includes(id)&&<ResourceGlyph type="silver" x={x-20} y={y+width*.52+1} size={12}/>}</g>}
+    {showCosts&&actionFor(id)&&!game.market.blackDepot.includes(id)&&<WorkerCostGlyph count={costFor(actionFor(id)!)} x={x} y={y+width*.52}/>}
     <polygon className="supply-selection" points={hex(x,y,width)} fill="none"/>
   </g>;
   const twoPlayer = game.config.marketRecipeId === "se:main:2";
@@ -87,7 +87,7 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   return <section className={`common-board-panel${shields ? " with-shields" : ""}`} aria-label="공용 공급처 보드">
     <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.75} onClick={()=>onZoom(Math.max(.75,+(zoom-.25).toFixed(2)))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(Math.min(2,zoom+.25))}>+</button></div></div>
     <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드</span><details className="common-board-help"><summary>조작 도움말</summary><p>주사위 선택 → 비용 확인 → 타일 터치. 검은 마름모는 검은 뒷면 타일입니다.{shields && " 방패 선택 → 강조된 성을 누르면 장착합니다."} 확대하거나 화면이 좁을 때는 스크롤 또는 드래그 이동을 사용하세요.</p></details></div>
-    <BoardViewport label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:fit?`${zoom*100}%`:`${(layout.width-layout.frameWidth*2)*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
+    <BoardViewport panControls label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:fit?`${zoom*100}%`:`${(layout.width-layout.frameWidth*2)*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
       <CommonBoardBackdrop width={layout.width} height={layout.height}/>
       <CornerPanel name="phase-goods" x={layout.panels.left} y={layout.panels.top} height={layout.panels.topHeight}/>
       <CornerPanel name="turn-order" x={layout.panels.right} y={layout.panels.top} height={layout.panels.topHeight}/>
@@ -134,15 +134,15 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
       {shields && game.market.numberedDepots.map(depot=>{
         const allSlots=shields.slots.filter(s=>s.depot===depot.number),pages=Math.ceil(allSlots.length/2),page=(shieldPages[depot.number]??0)%pages,slots=allSlots.slice(page*2,page*2+2);const [cx,cy]=shieldCenters[depot.number-1];
         const [dx]=shieldDepotCenters[depot.number-1];
-        const zoneHeight=slots.length===2?172:104;
+        const zoneHeight=slots.length===2?172:104;const firstCost=shieldSelection?.cost(slots[0].id),firstWorkers=firstCost?costFor(firstCost):null;
         const linkDirection=Math.sign(dx-cx);
         return <g key={`shields-${depot.number}`} data-shield-depot={depot.number} aria-label={`${depot.number}번 공급처 방패 그룹`}>
           {linkDirection!==0&&<path d={`M${cx+linkDirection*36} ${cy}h${linkDirection*16}`} className="shield-depot-link"/>}
           <rect data-shield-zone={depot.number} x={cx-36} y={cy-zoneHeight/2} width="72" height={zoneHeight} rx="28" fill="#b9bcb0" fillOpacity=".38" stroke="#929689" pointerEvents="none"/>
-          {pages>1&&<g role="button" tabIndex={0} aria-label={`${depot.number}번 방패 다음 묶음`} transform={`translate(${cx-30} ${cy-86})`} onClick={()=>setShieldPages(p=>({...p,[depot.number]:page+1}))} onKeyDown={e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();setShieldPages(p=>({...p,[depot.number]:page+1}));}}}><rect width="60" height="18" rx="3" fill="#f8edcb" stroke="#777b70"/><text x="30" y={showCosts&&slots[0].shieldNumber!==null?8:13} textAnchor="middle" fontSize={showCosts?8:10}>{depot.number}번 {page+1}/{pages} ▸</text>{showCosts&&slots[0].shieldNumber!==null&&<text x="30" y="16" textAnchor="middle" fontSize="8">{shieldSelection?.cost(slots[0].id)?`일꾼 ${costFor(shieldSelection.cost(slots[0].id)!)}`:"불가"}</text>}</g>}
-          {slots.map((slot,i)=>{const offset=slots.length===2?(i===0?-layout.shieldGap/2:layout.shieldGap/2):0;const x=cx,y=cy+offset,costAbove=slots.length===2&&i===0,costY=costAbove?-49:36;const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
+          {pages>1&&<g role="button" tabIndex={0} aria-label={`${depot.number}번 방패 다음 묶음`} transform={`translate(${cx-30} ${cy-86})`} onClick={()=>setShieldPages(p=>({...p,[depot.number]:page+1}))} onKeyDown={e=>{if(["Enter"," "].includes(e.key)){e.preventDefault();setShieldPages(p=>({...p,[depot.number]:page+1}));}}}><rect width="60" height="18" rx="3" fill="#f8edcb" stroke="#777b70"/><text x="30" y={showCosts&&slots[0].shieldNumber!==null?8:13} textAnchor="middle" fontSize={showCosts?8:10}>{depot.number}번 {page+1}/{pages} ▸</text>{showCosts&&slots[0].shieldNumber!==null&&<g>{firstWorkers?<WorkerCostGlyph count={firstWorkers} x={30} y={10} size={8}/>:<text x="30" y="16" textAnchor="middle" fontSize="8">{firstWorkers===0?"무료":"불가"}</text>}</g>}</g>}
+          {slots.map((slot,i)=>{const offset=slots.length===2?(i===0?-layout.shieldGap/2:layout.shieldGap/2):0;const x=cx,y=cy+offset,costAbove=slots.length===2&&i===0,costY=costAbove?-49:36;const costAction=shieldSelection?.cost(slot.id),workers=costAction?costFor(costAction):null,costWidth=Math.max(58,(workers??0)*14+4);const label=slot.shieldNumber===null?`${depot.number}번 공급처 빈 방패 슬롯`:`${depot.number}번 공급처 ${shieldLabel(slot.shieldNumber)}`;
             return <g key={slot.id} data-shield-slot={slot.id} data-empty={slot.shieldNumber===null} transform={`translate(${x} ${y})`} role={slot.shieldNumber===null?"img":"button"} tabIndex={slot.shieldNumber===null?undefined:0} aria-label={label} aria-pressed={slot.shieldNumber===null?undefined:shieldSelection?.slotId===slot.id} aria-disabled={slot.shieldNumber!==null&&!shieldSelection?.cost(slot.id)} className={slot.shieldNumber===null?"shield-slot empty":`shield-slot occupied ${shieldSelection?.cost(slot.id)?"direct-legal":"direct-unavailable"}`} onClick={slot.shieldNumber===null?undefined:()=>shieldSelection?.onSelect(slot.id)} onKeyDown={slot.shieldNumber===null?undefined:e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();shieldSelection?.onSelect(slot.id);}}}>
-              <title>{label}{slot.shieldNumber===null?" · 보충 없음":(shields.effectsActive?" · 장착 시 능력 활성":" · 능력은 검증 모드에서 미적용")}</title><ShieldArt number={slot.shieldNumber}/>{showCosts&&slot.shieldNumber!==null&&(i>0||pages===1)&&<g className="direct-cost shield-cost"><rect data-shield-cost x="-29" y={costY} width="58" height="14" rx="5"/><text y={costY+10} textAnchor="middle">{costAbove?`${depot.number}번 · `:""}{shieldSelection?.cost(slot.id)?`일꾼 ${costFor(shieldSelection.cost(slot.id)!)}`:"불가"}</text></g>}{(i===0&&pages===1&&!(showCosts&&slot.shieldNumber!==null&&costAbove))&&<text y={-40} textAnchor="middle" className="shield-depot-number">{depot.number}번</text>}
+              <title>{label}{slot.shieldNumber===null?" · 보충 없음":(shields.effectsActive?" · 장착 시 능력 활성":" · 능력은 검증 모드에서 미적용")}</title><ShieldArt number={slot.shieldNumber}/>{showCosts&&slot.shieldNumber!==null&&(i>0||pages===1)&&<g className="direct-cost shield-cost"><rect data-shield-cost x={-costWidth/2} y={costY} width={costWidth} height="14" rx="5"/>{workers?<WorkerCostGlyph count={workers} x={0} y={costY+1} size={12}/>:<text y={costY+10} textAnchor="middle">{workers===0?"무료":"불가"}</text>}</g>}{(i===0&&pages===1&&!(showCosts&&slot.shieldNumber!==null&&costAbove))&&<text y={-40} textAnchor="middle" className="shield-depot-number">{depot.number}번</text>}
             </g>;})}
         </g>;})}
       <text x={475} y={1020} textAnchor="middle" className="common-small">{game.turn.phase}단계 · {game.turn.round}라운드</text>

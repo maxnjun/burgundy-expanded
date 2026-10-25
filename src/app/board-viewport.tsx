@@ -1,13 +1,15 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 /** Ordinary wheel scrolls the page; Ctrl+wheel zooms only this estate. Alt/middle drag pans. */
-export function BoardViewport({ children, onZoom, label = "영지" }: {
+export function BoardViewport({ children, onZoom, label = "영지",panControls=false }: {
     children: ReactNode;
     label?: string;
     onZoom: (delta: number) => void;
+    panControls?:boolean;
 }) {
     const ref = useRef<HTMLDivElement>(null);
-    const [panMode, setPanMode] = useState(false);
+    const [panEnabled, setPanMode] = useState(false);
+    const panMode=panControls&&panEnabled;
     const moved = useRef(false);
     const touches = useRef(new Map<number, {x:number;y:number}>());
     const distance = useRef<number | null>(null);
@@ -26,7 +28,7 @@ export function BoardViewport({ children, onZoom, label = "영지" }: {
         element.addEventListener("wheel", wheel, { passive: false });
         return () => element.removeEventListener("wheel", wheel);
     }, [onZoom]);
-    return <><div className="board-touch-tools"><button type="button" aria-label={`${label} 드래그 이동`} aria-pressed={panMode} onClick={()=>setPanMode(p=>!p)}>{panMode ? "이동 모드 끄기" : "드래그 이동 켜기"}</button><span>{panMode ? "한 손가락 이동 · 두 손가락 확대/축소" : "타일을 탭해서 선택 · 일반 스크롤 유지"}</span></div><div ref={ref} className="live-board-scroll" style={{touchAction:panMode ? "none" : "pan-x pan-y pinch-zoom"}} aria-label={`${label} 이동 영역`} onPointerDown={e => {
+    return <>{panControls&&<div className="board-touch-tools"><button type="button" aria-label={`${label} 드래그 이동`} aria-pressed={panMode} onClick={()=>setPanMode(p=>!p)}>{panMode ? "이동 모드 끄기" : "드래그 이동 켜기"}</button><span>{panMode ? "한 손가락 이동 · 두 손가락 확대/축소" : "타일을 탭해서 선택 · 일반 스크롤 유지"}</span></div>}<div ref={ref} className="live-board-scroll" style={{touchAction:panMode ? "none" : "pan-x pan-y pinch-zoom"}} aria-label={`${label} 이동 영역`} onPointerDown={e => {
             moved.current = false;
             if (!panMode && !e.altKey && e.button !== 1)
                 return;

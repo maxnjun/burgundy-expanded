@@ -20,9 +20,9 @@ test("estate zoom preserves board cells and saved game while recording layout",a
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
   if(process.env.ESTATE_CAPTURE_PREFIX==="before"?((info.project.name==="mobile-375"||info.project.name==="desktop-1280")&&target===160):(info.project.name==="desktop-1280"||info.project.name==="mobile-375"||(info.project.name==="mobile-390"&&target===160)))await board.screenshot({path:`.local-data/qa/estate-${process.env.ESTATE_CAPTURE_PREFIX??"after"}-${info.project.name}-${target}.png`});
  }
- const panel=board.locator("xpath=ancestor::section[1]"),viewport=board.locator("..");await panel.getByRole("button",{name:"영지 드래그 이동",exact:true}).click();await viewport.scrollIntoViewIfNeeded();
- if(await viewport.evaluate(el=>el.scrollWidth>el.clientWidth)){await viewport.evaluate(el=>{el.scrollLeft=0;});const b=(await viewport.boundingBox())!,size=page.viewportSize()!,x=Math.min(b.x+b.width-30,size.width-30),y=(Math.max(130,b.y)+Math.min(b.y+b.height,size.height-80))/2;await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x-90,y,{steps:6});await page.mouse.up();expect(await viewport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);}
- await panel.getByRole("button",{name:"영지 드래그 이동",exact:true}).click();expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
+ const panel=board.locator("xpath=ancestor::section[1]"),viewport=board.locator("..");await expect(panel.getByRole("button",{name:"영지 드래그 이동",exact:true})).toHaveCount(0);await viewport.scrollIntoViewIfNeeded();
+ if(await viewport.evaluate(el=>el.scrollWidth>el.clientWidth)){await viewport.evaluate(el=>{el.scrollLeft=0;});const b=(await viewport.boundingBox())!,size=page.viewportSize()!,x=Math.min(b.x+b.width-30,size.width-30),y=(Math.max(130,b.y)+Math.min(b.y+b.height,size.height-80))/2;await page.mouse.move(x,y);await page.keyboard.down("Alt");await page.mouse.down();await page.mouse.move(x-90,y,{steps:6});await page.mouse.up();await page.keyboard.up("Alt");expect(await viewport.evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);}
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
 });
 
 test("adjacent estate cells share two exact corners and every tile shares the cell clip at all zooms",async({page})=>{

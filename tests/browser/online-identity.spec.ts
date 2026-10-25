@@ -17,6 +17,7 @@ test("online names, unique colors, editable own lobby profile and 58px dice surv
   await guest.getByLabel("온라인 색상",{exact:true}).selectOption("pink");await press(guest.getByRole("button",{name:"방 참가",exact:true}));await waitOnlineFresh(page);
   await expect(guest.getByLabel("내 이름 수정",{exact:true})).toHaveValue("영주 2");
   await expect(guest.getByLabel("내 색상 수정",{exact:true}).locator('option[value="purple"]')).toHaveJSProperty("disabled",true);
+  await expect(page.getByRole("region",{name:"게임 시작 준비",exact:true})).toContainText("2/2명");await waitOnlineFresh(page);
   await page.getByLabel("내 이름 수정",{exact:true}).fill("보라 영주");await press(page.getByRole("button",{name:"이름·색상 저장",exact:true}));await waitOnlineFresh(guest);
   await expect(guest.getByRole("region",{name:"게임 시작 준비",exact:true})).toContainText("보라 영주");
   await guest.getByLabel("내 이름 수정",{exact:true}).fill("분홍 영주");await press(guest.getByRole("button",{name:"이름·색상 저장",exact:true}));await waitOnlineFresh(page);

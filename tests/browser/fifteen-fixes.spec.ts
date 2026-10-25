@@ -17,13 +17,14 @@ test.setTimeout(90_000);
 async function local(page:Page,game:GameState){await page.addInitScript(s=>{if(!sessionStorage.getItem('fifteen-init')){localStorage.setItem('burgundy-expanded:local-v1',s);sessionStorage.setItem('fifteen-init','1');}},serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}}));await page.goto('/');}
 const state=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game as GameState);
 
-test('15 fixes: six rotation previews match placement grapes and do not rotate estate tiles',async({page},info)=>{
+test('15 fixes: slot preview and reversible half-turn match placement grapes and do not rotate estate tiles',async({page},info)=>{
  let game=vineFixture();const list=listCoreActionOptions(game,'seat-1');expect(list.ok).toBeTruthy();if(!list.ok)return;const take=list.value.actions.find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command==='take')!;const applied=applyCoreAction(game,take);expect(applied.ok).toBeTruthy();if(!applied.ok)return;game=applied.value.state;await local(page,game);
  const board=page.getByRole('region',{name:'포도1 포도밭',exact:true}),reserve=board.getByRole('button',{name:/^보관 포도 /});await reserve.click();await page.getByRole('button',{name:/^행동 주사위 2 눈/}).click();
  const art=reserve.locator('.vine-tile-art'),rotate=board.getByRole('button',{name:'돌려서 배치',exact:true});
- for(let n=0;n<6;n++){await expect(art).toHaveAttribute('data-rotation',String(n*60));await expect(page.locator('.vine-keyspace.selected .vine-tile-art')).toHaveAttribute('data-rotation',String(n*60));await expect(art.locator(':scope>g')).toHaveAttribute('transform',`rotate(${n*60} 50 28)`);await rotate.click();}
- for(let n=0;n<3;n++)await rotate.click();await expect(art).toHaveAttribute('data-rotation','180');await board.screenshot({path:info.outputPath('rotated-preview.png')});
- await board.getByRole('button',{name:/^V01 1층 눈4 배치 가능/}).click();await expect(board.locator('[data-vine-slot="V01"]')).toHaveAttribute('data-occupied','true');const current=await state(page),planted=current.vineyards!.players['seat-1'].placed[0];expect(planted.flipped).toBe(true);
+ await expect(rotate).toBeDisabled();await board.getByRole('button',{name:/^V01 1층 눈4 배치 가능/}).click();
+ for(const angle of [0,180,0]){await expect(art).toHaveAttribute('data-rotation',String(angle));await expect(art).toHaveAttribute('viewBox','0 0 100 57');await expect(page.locator('.vine-keyspace.selected .vine-tile-art')).toHaveAttribute('data-rotation',String(angle));await expect(art.locator(':scope>g')).toHaveAttribute('transform',`rotate(${angle} 50 28)`);expect(await state(page)).toEqual(game);await rotate.click();}
+ await expect(art).toHaveAttribute('data-rotation','180');await board.screenshot({path:info.outputPath('rotated-preview.png')});
+ await board.getByRole('button',{name:'포도 배치 확정',exact:true}).click();await expect(board.locator('[data-vine-slot="V01"]')).toHaveAttribute('data-occupied','true');const current=await state(page),planted=current.vineyards!.players['seat-1'].placed[0];expect(planted.flipped).toBe(true);
  const grapes=VINE_TILES[planted.tileId];for(let i=0;i<2;i++)await expect(board.locator(`[data-vine-cell="V01:${i}"] g[aria-label="${GRAPE_NAMES[grapes[1-i]]}"]`)).toHaveCount(1);
  expect(current.players[0].duchy).toEqual(game.players[0].duchy);await page.reload();await expect(board.locator('[data-vine-slot="V01"]')).toHaveAttribute('data-occupied','true');
 });

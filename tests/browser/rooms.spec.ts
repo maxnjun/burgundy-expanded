@@ -19,9 +19,12 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
     await expect(page.getByRole("button",{name:"되돌리기",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"이전 행동으로",exact:true})).toBeDisabled();await expect(page.getByRole("button",{name:"온라인 행동 실행",exact:true})).toHaveCount(0);
     await page.getByRole("button",{name:"주사위 굴리기",exact:true}).click();
     await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");
+    const auth=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));
+    const workers=async()=>(await(await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}})).json()).players[0].workers as number,initialWorkers=await workers();
     for(let i=0;i<2;i++){
       await page.getByLabel("온라인 일꾼 획득",{exact:true}).click();
-      await expect(page.locator(".online-logs p").filter({hasText:"일꾼2 획득"})).toHaveCount(i+1);
+      await expect(page.locator(".online-logs p").filter({hasText:"일꾼 획득"})).toHaveCount(i+1);
+      await expect.poll(workers).toBe(initialWorkers+2*(i+1));
     }
     await expect(page.getByRole("alertdialog",{name:"턴 종료 확인",exact:true})).toHaveCount(0);await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("온라인A의 차례");await expect(page.getByLabel("현재 행동 안내",{exact:true})).toContainText("턴을 종료하시겠습니까?");
     let endRequests=0;page.on("request",r=>{if(r.method()==="POST"&&r.url().endsWith("/actions")&&r.postDataJSON()?.action?.type==="end-turn")endRequests++;});
@@ -30,7 +33,6 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
     expect(endRequests).toBe(1);
     await guest.reload();await expect(guest.getByLabel("온라인 일꾼 획득",{exact:true})).toBeEnabled();
     await expect(page.getByRole("button",{name:"주사위 굴리기",exact:true})).toHaveCount(0);
-    const auth=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-online-seat-v1")!));
     const response=await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}});expect(response.status()).toBe(200);
     const publicState=await response.json();expect(publicState.random).toBeUndefined();expect(publicState.supplyPools).toBeUndefined();
     const stale=await page.request.post(`${isolated.url}/api/rooms/${code}/actions`,{headers:{Authorization:`Bearer ${auth.token}`},data:{revision:publicState.revision-1,action:{type:"end-turn",playerId:"seat-1"}}});expect(stale.status()).toBe(409);const unchanged=await(await page.request.get(`${isolated.url}/api/rooms/${code}`,{headers:{Authorization:`Bearer ${auth.token}`}})).json();expect(unchanged.revision).toBe(publicState.revision);

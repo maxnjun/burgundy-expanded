@@ -5,7 +5,7 @@ import {boardTarget,type BoardTarget} from "../game/direct-actions";
 import {isCastleAction} from "../game/castle-actions";
 import {automaticVineReward} from "../game/core/vineyard-effects";
 import {actionGuidance} from "../game/action-guidance";
-import { LIVESTOCK_NAMES } from "../game/tile-help";
+import {actionLabel,createActionLog} from "../game/action-log";
 import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
 import type { ScoreEntry } from "../game/types";
@@ -49,7 +49,7 @@ export interface RoomView {
   guidance:string;id:string;revision:number;seat:string;stage:GameState["turn"]["stage"];phase:GameState["turn"]["phase"];round:GameState["turn"]["round"];status:string;activePlayerId:string|null;
   players:readonly PlayerState[];tiles:Record<string,Tile>;
   depots:GameState["market"]["numberedDepots"];blackDepot:GameState["market"]["blackDepot"];inns?:GameState["market"]["inns"];dice:GameState["dice"];
-  castleAction:boolean;actions:readonly {action:GameAction;label:string;group:string;target:BoardTarget}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
+  castleAction:boolean;actions:readonly {action:GameAction;label:string;group:string;target:BoardTarget;cost?:number}[];logs:readonly string[];joined:boolean;winnerIds:readonly string[];
 }
 const digest=(token:string)=>createHash("sha256").update(token).digest("hex");
 const name=(value:unknown)=>typeof value==="string"&&value.trim().length>0&&value.trim().length<=30 ? value.trim() : (()=>{throw new RoomError(400,"이름은1~30자로 입력하세요.");})();
@@ -219,9 +219,8 @@ export class RoomStore {
     const before=room.game,previousLogs=room.logs;
     const next=applyCoreAction(room.game,action as GameAction);
     if(!next.ok)throw new RoomError(400,"차례·주사위·자원·선택 조건을 확인하세요.");
-    const after=next.value.state.players[seat],label=actionLabel(room.game,action as GameAction);
     const fortress=next.value.state.scoreLedger[player.id].filter(e=>e.id.startsWith("fortress:")&&!room.game.scoreLedger[player.id].some(old=>old.id===e.id)).map(e=>`${e.source.section} +${e.points}점`).join(" · ");
-    room.logs=[`${fortress?fortress+" · ":""}${player.name} · ${label} · 승점 ${after.victoryPoints-player.victoryPoints>=0?"+":""}${after.victoryPoints-player.victoryPoints}`,...room.logs].slice(0,60);
+    room.logs=[createActionLog(before,next.value.state,action as GameAction,fortress),...room.logs].slice(0,60);
     room.game=next.value.state;
     if(before.random.cursor!==room.game.random.cursor){room.history=beginHistory(room.game,room.logs);room.undoBarrier="새 무작위 결과가 공개된 행동 이전으로는 되돌릴 수 없습니다.";}
     else {room.history=recordTurnAction(room.history??beginHistory(before,previousLogs),before,room.game,action as GameAction,previousLogs,room.logs);if(room.history.start)delete room.undoBarrier;}
@@ -293,32 +292,10 @@ export class RoomStore {
     const legal=room.tokens[1]&&(!room.lobby||room.lobby.started)&&(!room.draft||draftReady(room.draft)) ? listCoreActionOptions(s,s.players[seat].id) : null;
     const engineActions=legal?.ok?legal.value.actions.filter(()=>s.status!=="setup"||s.turn.activePlayerId===s.players[seat].id):[];
     if(s.status==="setup"&&room.startingPreview&&room.startingPreview.playerId===s.players[seat].id)engineActions.push({type:"end-turn",playerId:s.players[seat].id});
-    const actions=engineActions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action)}));
+    const actions=engineActions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action),cost:directCost(s,action)}));
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
     const automatic=automaticVineReward(s,actions.map(a=>a.action));
     return {commonBoard:{marketRecipeId:s.config.marketRecipeId,orderTrack:s.turn.orderTrack,phaseGoodsCounts:{A:s.market.phaseGoods.A.length,B:s.market.phaseGoods.B.length,C:s.market.phaseGoods.C.length,D:s.market.phaseGoods.D.length,E:s.market.phaseGoods.E.length},roundGoodsCount:s.market.roundGoods.length,revealedGoods:publicPhaseGoods(s),bonusTiles:s.market.bonusTiles},undo:{turnReason:this.undoReason(room,s.players[seat].id,"turn"),actionReason:this.undoReason(room,s.players[seat].id,"action")},...(room.startingPreview?{startingPreview:room.startingPreview}:{}),release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
-}
-
-const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${LIVESTOCK_NAMES[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
-export function actionLabel(s:GameState,a:GameAction):string{
-  if(a.type==="place-starting-castle")return `시작 성 배치 · ${a.cellId}`;
-  if(a.type==="roll-round")return "라운드 주사위 굴리기";
-  if(a.type==="end-turn")return "차례 종료";
-  if(a.type==="advance-phase")return s.turn.phase==="E"?"최종 정산":"단계 수입·보충";
-  if(a.type==="resolve-choice")return s.turn.pendingChoice?.options.find(o=>o.id===a.optionId)?.label??"효과 선택";
-  if(a.type==="buy-black-tile"||a.type==="use-monastery-six")return `${tileName(s,a.tileId)} 획득 · ${a.type==="buy-black-tile"?"은화2":"일꾼2"} · 보관${a.storageSlot+1}${a.discardTileId?" 교체":""}`;
-  if(a.type==="extension"&&a.extensionId==="shields"){
-    const payload=a.payload as Record<string,unknown>;
-    if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
-    if(a.command==="change-die")return `방패16 · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
-    const number=shieldLayout(s)?.slots.find(slot=>slot.id===payload.slotId)?.shieldNumber;
-    return `방패${number} 획득 · 성 ${payload.castleCellId} · 두 주사위 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 반환·교체`:""}`;
-  }
-  if(a.type==="extension"&&a.extensionId==="vineyards")return "포도 상점 구매 · 은화2";
-  if(a.type==="use-die"&&a.intent.kind==="vineyard")return `포도 ${a.intent.command==="take"?"획득":"배치"} ${a.intent.slotId??a.intent.tileId}${a.intent.command==="place"?(a.intent.flipped?" · 뒤집은 방향":" · 기본 방향"):a.intent.discardIds?.length?` · 폐기 ${a.intent.discardIds.join(", ")}`:""} · 일꾼${a.adjustment.workersSpent}`;
-  if(a.type!=="use-die")return "확장 행동";
-  const i=a.intent,label=i.kind==="take-workers"?"일꾼2 획득":i.kind==="sell-goods"?`${i.goodsType}번 상품 판매`:i.kind==="take-tile"?`${i.depot}번 ${tileName(s,i.tileId)} 획득 · 보관${i.storageSlot+1}${i.discardTileId?" 교체":""}`:`${tileName(s,i.tileId)} → (${i.kind==="place-tile"?i.cellId:""}) 배치`;
-  return `${label} · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===a.dieId)+1} · 일꾼${a.adjustment.workersSpent}`;
 }

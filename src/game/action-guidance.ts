@@ -30,7 +30,7 @@ export function actionGuidance(game:GameState,actions:readonly GameAction[],sele
  if(selection.goodsTypes)return '가져올 상품 종류를 선택하세요.';
  if((game.turn.pendingChoice||game.turn.pendingEffects.length)&&!isCastleAction(game))return selection.tileId?'타일을 배치할 영지를 선택하세요.':effectGuidance(game);
  if(game.turn.stage==='round-setup')return '라운드를 준비하고 있습니다.';
- if(game.turn.stage==='phase-end')return '단계 수입과 보충을 처리하고 있습니다.';
+ if(game.turn.stage==='phase-end')return '';
  if(game.turn.stage!=='player-turn')return '게임 진행을 준비하고 있습니다.';
  if(selection.shieldNumber)return `방패 ${selection.shieldNumber}를 장착할 성을 선택하세요.`;
  if(selection.tileId)return player?.storage.includes(selection.tileId)?'타일을 배치할 영지를 선택하세요.':'교체할 저장고 타일을 선택하세요.';

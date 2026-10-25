@@ -3,6 +3,7 @@ import { hasShield, rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, DieValue, GameState, PlayerState } from "../types";
 import { placementIssue, resolvePlacement } from "./placement";
 import { monasteryNumbers } from "./state";
+import { advanceCustomTrade } from "./trade-effects";
 type Mutable<T, D extends unknown[] = [
 ]> = D["length"] extends 8 ? T : T extends object ? {
     -readonly [K in keyof T]: Mutable<T[K], [
@@ -41,7 +42,7 @@ export function goodsSaleReward(state: GameState, player: PlayerState, tileCount
         points: tileCount * state.config.playerCount * (hasShield(state, player.id, 12) ? 2 : 1),
     };
 }
-/** No dice or effect scheduling here: shared by ordinary actions and immediate tile benefits. */
+/** All sales, including bonus sales, settle once here before scheduling their route reward. */
 export function executeIntent(state: GameState, playerId: string, intent: ActionIntent): GameState {
     if(intent.kind==="vineyard"){if(intentIssue(state,state.players.find(p=>p.id===playerId)!,intent))throw new Error("Invalid vineyard intent");return executeVine(state,playerId,intent); }
     const prepared=intent.kind==="take-tile"&&intent.discardTileId?discardStored(state,playerId,[intent.discardTileId]):state;
@@ -83,5 +84,6 @@ export function executeIntent(state: GameState, playerId: string, intent: Action
             break;
         }
     }
-    return rewardShieldWorkerGain(draft,playerId,player.workers-state.players.find(p=>p.id===playerId)!.workers);
+    const next=rewardShieldWorkerGain(draft,playerId,player.workers-state.players.find(p=>p.id===playerId)!.workers);
+    return intent.kind==="sell-goods"?advanceCustomTrade(next,playerId,intent.goodsType,state.players.find(p=>p.id===playerId)!.goods.find(g=>g.type===intent.goodsType)!.tiles.map(g=>g.id)):next;
 }
