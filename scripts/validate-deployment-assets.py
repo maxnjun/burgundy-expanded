@@ -38,4 +38,11 @@ assert {a['number'] for a in m['assets']}==set(range(1,19))
 for a in m['assets']:
     assert a['file']==f"shield-{a['number']:02d}.png"
     validate(folder/a['file'],a['outputSha256'],m['canvas'])
+folder=ROOT/'public/assets/vineyards';m=json.loads((folder/'manifest.json').read_text(encoding='utf8'))
+assert len(m['assets'])==6 and {a['grape'] for a in m['assets']}==set('BKGORY')
+for a in m['assets']:
+    for kind,canvas in [('fruit',768),('candy',512)]:
+        item=a[kind]
+        assert item['canvas']==[canvas,canvas]
+        validate(folder/item['file'],item['sha256'],canvas,item['alphaBounds'])
 print(json.dumps({'validatedDeploymentPNGs':checked,'sourceAuthoring':'separate strict check; no regeneration in deployment'}))

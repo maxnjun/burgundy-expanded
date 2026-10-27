@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "sourceSha256": "59ecbcdfb77883c560f51930df134c8c2afb7365045848042f1712bda619ee8d",
+  "fruitCanvas": 768,
+  "fruitArtHeight": 720,
+  "candyCanvas": 512,
+  "candyArtWidth": 480,
+  "assets": [
+    {
+      "grape": "Y",
+      "id": "passionfruit",
+      "name": "패션후르츠",
+      "color": "#e1bf42",
+      "fruit": {
+        "file": "vineyard-passionfruit.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "82b27f8e3d746e53d877bde4b588e4e6f2c3faca7407c34bb2edffb985e59241",
+        "alphaBounds": [
+          61,
+          24,
+          706,
+          744
+        ],
+        "sourceBounds": [
+          213,
+          75,
+          523,
+          421
+        ]
+      },
+      "candy": {
+        "file": "candy-passionfruit.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "9c3faec647d1d0922a6d309bc884af6732eb400603dabdd37ff8dde4e8295416",
+        "alphaBounds": [
+          16,
+          90,
+          496,
+          421
+        ],
+        "sourceBounds": [
+          108,
+          820,
+          288,
+          944
+        ]
+      }
+    },
+    {
+      "grape": "G",
+      "id": "shine-muscat",
+      "name": "샤인머스켓",
+      "color": "#92b332",
+      "fruit": {
+        "file": "vineyard-shine-muscat.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "0b05722f4ab1e1bc42c3034c4baa18ef94980bf9bbc5bbc29da34a6f1ce01713",
+        "alphaBounds": [
+          62,
+          24,
+          705,
+          744
+        ],
+        "sourceBounds": [
+          609,
+          75,
+          920,
+          423
+        ]
+      },
+      "candy": {
+        "file": "candy-shine-muscat.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "70df5d582a7f8207f792d6e489da6395d585b7a5e5b6e7fa830b0e81b87d571b",
+        "alphaBounds": [
+          16,
+          88,
+          496,
+          423
+        ],
+        "sourceBounds": [
+          338,
+          820,
+          517,
+          945
+        ]
+      }
+    },
+    {
+      "grape": "O",
+      "id": "mandarin",
+      "name": "귤",
+      "color": "#e58a3f",
+      "fruit": {
+        "file": "vineyard-mandarin.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "a612efd936a1e8d16eb2dbcd45782c321132d96076ecfeb54d076185e23f5b98",
+        "alphaBounds": [
+          61,
+          24,
+          707,
+          744
+        ],
+        "sourceBounds": [
+          1008,
+          74,
+          1321,
+          423
+        ]
+      },
+      "candy": {
+        "file": "candy-mandarin.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "a0fcbe3a78a0effd77b4459f0ad39bd3341acc9b11e70e881f775196957f47a4",
+        "alphaBounds": [
+          16,
+          89,
+          496,
+          423
+        ],
+        "sourceBounds": [
+          565,
+          820,
+          746,
+          946
+        ]
+      }
+    },
+    {
+      "grape": "B",
+      "id": "blueberry",
+      "name": "블루베리",
+      "color": "#386db3",
+      "fruit": {
+        "file": "vineyard-blueberry.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "0031777a2e2c243207017a9b551ec714fe9283a95f5ec97713681f1fc9df05c2",
+        "alphaBounds": [
+          62,
+          24,
+          705,
+          744
+        ],
+        "sourceBounds": [
+          213,
+          428,
+          524,
+          776
+        ]
+      },
+      "candy": {
+        "file": "candy-blueberry.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "f658667fe16766e4fcb5cb84ebcbaab46169ab17c6217d1ae753aa50f628c0d4",
+        "alphaBounds": [
+          16,
+          88,
+          496,
+          424
+        ],
+        "sourceBounds": [
+          794,
+          819,
+          974,
+          945
+        ]
+      }
+    },
+    {
+      "grape": "R",
+      "id": "peach",
+      "name": "복숭아",
+      "color": "#ed93a8",
+      "fruit": {
+        "file": "vineyard-peach.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "63d191250fb1166a9d60b0b057cdc5e3ea18828b68c3f66ecff18df19e53ccfe",
+        "alphaBounds": [
+          62,
+          24,
+          705,
+          744
+        ],
+        "sourceBounds": [
+          609,
+          428,
+          920,
+          776
+        ]
+      },
+      "candy": {
+        "file": "candy-peach.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "3b19d9d1e89f3e80be94542ea559968582da4ca91ef269f2b3de113be412c53a",
+        "alphaBounds": [
+          16,
+          92,
+          496,
+          420
+        ],
+        "sourceBounds": [
+          1021,
+          821,
+          1204,
+          946
+        ]
+      }
+    },
+    {
+      "grape": "K",
+      "id": "strawberry",
+      "name": "딸기",
+      "color": "#d94745",
+      "fruit": {
+        "file": "vineyard-strawberry.png",
+        "canvas": [
+          768,
+          768
+        ],
+        "sha256": "d209ea70260d9a5fa42b868dfed130bd97faeb2330458a74e1f16eeeab46a8a6",
+        "alphaBounds": [
+          59,
+          24,
+          709,
+          744
+        ],
+        "sourceBounds": [
+          1006,
+          429,
+          1320,
+          777
+        ]
+      },
+      "candy": {
+        "file": "candy-strawberry.png",
+        "canvas": [
+          512,
+          512
+        ],
+        "sha256": "cb473bb1ff39773dd0e84a51913a1af60800b86932ffb1c53d825137560991b7",
+        "alphaBounds": [
+          16,
+          93,
+          496,
+          419
+        ],
+        "sourceBounds": [
+          1250,
+          819,
+          1434,
+          944
+        ]
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@ import {join} from 'node:path';
 import {vineFixture,blackVineFixture} from '../fixtures/vineyards';
 import {setup,mount,boundary,placed} from '../fixtures/shields';
 import {applyCoreAction,listCoreActionOptions} from '../../src/game/core';
-import {VINE_TILES,GRAPE_NAMES} from '../../src/game/vineyards';
+import {VINE_TILES} from '../../src/game/vineyards';
 import {beginHistory} from '../../src/game/turn-history';
 import {shieldLayout,setShieldLayout} from '../../src/game/shields';
 import {serializeSavedGame} from '../../src/game/save';
@@ -25,7 +25,7 @@ test('15 fixes: slot preview and reversible half-turn match placement grapes and
  for(const angle of [0,180,0]){await expect(art).toHaveAttribute('data-rotation',String(angle));await expect(art).toHaveAttribute('viewBox','0 0 100 57');await expect(page.locator('.vine-keyspace.selected .vine-tile-art')).toHaveAttribute('data-rotation',String(angle));await expect(art.locator(':scope>g')).toHaveAttribute('transform',`rotate(${angle} 50 28)`);expect(await state(page)).toEqual(game);await rotate.click();}
  await expect(art).toHaveAttribute('data-rotation','180');await board.screenshot({path:info.outputPath('rotated-preview.png')});
  await board.getByRole('button',{name:'포도 배치 확정',exact:true}).click();await expect(board.locator('[data-vine-slot="V01"]')).toHaveAttribute('data-occupied','true');const current=await state(page),planted=current.vineyards!.players['seat-1'].placed[0];expect(planted.flipped).toBe(true);
- const grapes=VINE_TILES[planted.tileId];for(let i=0;i<2;i++)await expect(board.locator(`[data-vine-cell="V01:${i}"] g[aria-label="${GRAPE_NAMES[grapes[1-i]]}"]`)).toHaveCount(1);
+ const grapes=VINE_TILES[planted.tileId];for(let i=0;i<2;i++)await expect(board.locator(`[data-vine-cell="V01:${i}"] [data-fruit="${grapes[1-i]}"]`)).toHaveCount(1);
  expect(current.players[0].duchy).toEqual(game.players[0].duchy);await page.reload();await expect(board.locator('[data-vine-slot="V01"]')).toHaveAttribute('data-occupied','true');
 });
 

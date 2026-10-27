@@ -1,0 +1,126 @@
+{
+  "source": "asset-inbox/vineyard-approved/originals/vineyard-fruit-candy-approved.png",
+  "sourceSha256": "59ecbcdfb77883c560f51930df134c8c2afb7365045848042f1712bda619ee8d",
+  "sourceCanvas": [
+    1536,
+    1024
+  ],
+  "fruitCanvas": 768,
+  "fruitArtHeight": 720,
+  "candyCanvas": 512,
+  "candyArtWidth": 480,
+  "background": {
+    "minChannelAbove": 205,
+    "chromaBelow": 38
+  },
+  "assets": [
+    {
+      "grape": "Y",
+      "id": "passionfruit",
+      "name": "패션후르츠",
+      "color": "#e1bf42",
+      "fruitCrop": [
+        190,
+        55,
+        540,
+        425
+      ],
+      "candyCrop": [
+        85,
+        805,
+        310,
+        965
+      ]
+    },
+    {
+      "grape": "G",
+      "id": "shine-muscat",
+      "name": "샤인머스켓",
+      "color": "#92b332",
+      "fruitCrop": [
+        590,
+        55,
+        940,
+        425
+      ],
+      "candyCrop": [
+        320,
+        805,
+        535,
+        965
+      ]
+    },
+    {
+      "grape": "O",
+      "id": "mandarin",
+      "name": "귤",
+      "color": "#e58a3f",
+      "fruitCrop": [
+        990,
+        55,
+        1340,
+        425
+      ],
+      "candyCrop": [
+        550,
+        805,
+        765,
+        965
+      ]
+    },
+    {
+      "grape": "B",
+      "id": "blueberry",
+      "name": "블루베리",
+      "color": "#386db3",
+      "fruitCrop": [
+        190,
+        425,
+        540,
+        795
+      ],
+      "candyCrop": [
+        780,
+        805,
+        995,
+        965
+      ]
+    },
+    {
+      "grape": "R",
+      "id": "peach",
+      "name": "복숭아",
+      "color": "#ed93a8",
+      "fruitCrop": [
+        590,
+        425,
+        940,
+        795
+      ],
+      "candyCrop": [
+        1010,
+        805,
+        1220,
+        965
+      ]
+    },
+    {
+      "grape": "K",
+      "id": "strawberry",
+      "name": "딸기",
+      "color": "#d94745",
+      "fruitCrop": [
+        990,
+        425,
+        1340,
+        795
+      ],
+      "candyCrop": [
+        1235,
+        805,
+        1450,
+        965
+      ]
+    }
+  ]
+}

@@ -40,3 +40,10 @@
 @media(max-width:760px){.estate-vineyard-row:has(.vineyard-personal){gap:6px}.estate-vineyard-row>.vineyard-personal{padding:4px}.vineyard-personal header{flex-wrap:wrap}.vineyard-personal header small{font-size:8px}}
 
 .vineyard-zoom-tools{display:flex;gap:6px;align-items:center;justify-content:flex-end;font-size:11px}.vineyard-zoom-tools button{min-width:32px;min-height:32px;background:#fff4d7;border:1px solid #b39d68;border-radius:4px}.vineyard-personal .board-touch-tools span{display:none}.vineyard-personal .live-board-scroll{min-width:0;max-width:100%;overflow:auto}.vineyard-personal .board-touch-tools{margin:4px 0}
+
+/* Approved PNGs carry their own rim; empty cells and layer edges keep the board geometry. */
+.vineyard-cell.planted,[data-vine-preview=true] .vineyard-cell{fill:none;stroke:none;filter:none}
+.vineyard-token-row>span{display:inline-flex;align-items:center;gap:4px;padding:0;border:0;border-radius:0;color:#57482d;text-shadow:none}
+.vineyard-token-row img{flex:none;object-fit:contain}
+.vineyard-personal{container-type:inline-size}
+.vineyard-personal .vineyard-token-row img{width:clamp(16px,7.65cqw,36px);height:auto}

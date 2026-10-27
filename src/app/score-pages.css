@@ -3,6 +3,7 @@
 .score-pages .score-page-title{font-size:17px;font-weight:700}
 .score-pages .score-page-number,.score-pages .score-page-total{font-size:13px;font-weight:700}
 .score-pages .score-page-note,.score-pages .score-page-grape{font-size:12px}
+.score-pages .score-page-grape{font-size:10px}
 .score-pages .score-page-points{font-size:14px;font-weight:700}
 .score-page-nav{cursor:pointer;touch-action:manipulation}
 .score-page-nav rect{fill:#ead6a4;stroke:#96733e}

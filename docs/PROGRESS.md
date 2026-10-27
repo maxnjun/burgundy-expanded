@@ -1,3 +1,16 @@
+# 승인 과일6·사탕6 에셋 적용 — 구현·검증 완료 (2026-10-28)
+
+- 기준 main f9a3f11. 승인 단일 원본을 그대로 분리한 과일768×768/사탕512×512 RGBA12개. 원본/이전SVG 보존·RGB변경0·추출 재현 검사 통과. 입력/출력/매핑/변경 파일 상세 docs/VINEYARD_ASSET_IMPORT.md.
+- UI B=블루베리 K=딸기 G=샤인머스켓 O=귤 R=복숭아 Y=패션후르츠. 게임 색상ID/51장/좌표/4층/최대5토큰/난수/규칙/저장·서버 무변경.
+- 공통 FruitGlyph/VineTile로 영지/미리보기/저장/공급/상점/도감/기록 연결. 사탕 보상/보유/공급/점수표·UI 전용 이름. 차지한 칸 문자·주사위·중복 SVG테두리 제거, 빈칸/외부 요구 주사위와 층 경계 유지. 사탕 공급 너비 약50%, 개인 보유16~36px.
+- 검사: core505/505·boards33/33·격리 저장/HTTP/WSS/재시작7/7·PNG92·일러스트6/자원2 경고0·타입/린트/최종빌드 통과. 최종PC/Chrome터치/WebKit36/36 및 기존 포도/공급/도감PC15통과(모바일전용3제외).
+- 첫 관련 브라우저68통과/휠1실패. 기존 WebKit 합성 wheel을 렌더2프레임 뒤 보내도록 테스트 타이밍만 보정, 정확10%·100/160/200 기준 유지 및 동일검사3회/최종3엔진 모두 통과. 신규 reload DOM 대기도 hydration 완료를 기다린다.
+- 실제 캡처 직접 검토: .local-data/vineyard-art-6ODuhn/screens/{desktop-board,mobile-board,mobile-supply,iphone-board,online-board}.png. 원본 비교12종 preview-sheet.png. 최종검사 browser-final.log/related-pc.log, 모든 증거는 같은 체크포인트 폴더.
+- 보존: 이전 문서 본문과 미커밋 수도원27/28 해시 일치. 이번 관련 파일/문서 접두사만 명시 선별해 main 일반 Commit/Push 후 원격SHA 확인. 결과/SHA는 Git 기록·최종 보고.
+- Render Auto-Deploy Off 사용자 확인. [skip render] [no-deploy]로 배포 제외. Render 배포/재시작/설정변경·운영 Redis/기존 방 쓰기 없음. GitHub CI와 실기기/외부망 검증은 별도이며 전체 프로젝트 완료로 간주하지 않는다.
+
+--- 기존 본문 보존 ---
+
 # Ver.3 8개 수정 — 구현·검증 완료 / Render 미배포 (2026-10-27)
 
 - 기준 main d3d5106. 항목별 최초 원인·변경 파일·구현·검증 결과: docs/qa/ver3-8.md. 체크포인트 .local-data/ver3-0peRz2/. 1~8 모두 완료하며 전체 프로젝트/실기기/운영 Redis 완료를 뜻하지 않는다.

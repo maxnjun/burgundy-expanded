@@ -1,19 +1,20 @@
 import type {PlayerState,GameState} from "../game/types";
 import {GoodsArt} from "./tile-art";
-import {GRAPES,GRAPE_NAMES,type Grape} from "../game/vineyards";
+import {GRAPES,type Grape} from "../game/vineyards";
+import {FRUIT_NAMES,vineyardAsset} from './vineyard-art';
 
-// Replace these placeholder SVG paths when approved token illustrations arrive.
-export const REWARD_ASSETS={grape:(g:Grape)=>`/assets/tokens/grape/${g.toLowerCase()}.svg`,estate:(color:string)=>`/assets/tokens/estate/${color}.svg`};
+// Estate illustrations remain placeholders; vineyard candy uses the approved source extraction.
+export const REWARD_ASSETS={grape:(g:Grape)=>vineyardAsset(g,'candy'),estate:(color:string)=>`/assets/tokens/estate/${color}.svg`};
 export function GrapeToken({grape,size=32}:{grape:Grape;size?:number}){
  // eslint-disable-next-line @next/next/no-img-element
- return <img data-grape-token={grape} src={REWARD_ASSETS.grape(grape)} alt={`${GRAPE_NAMES[grape]} 포도 점수 토큰`} width={size} height={size}/>;
+ return <img data-grape-token={grape} data-candy-token={grape} src={REWARD_ASSETS.grape(grape)} alt={`${FRUIT_NAMES[grape]} 사탕 토큰`} width={size} height={size} style={{objectFit:'contain'}}/>;
 }
 export function RewardChoiceLabel({id,label,depots=[]}:{id:string;label:string;depots?:GameState['market']['numberedDepots']}){
  const type=/^shield5:([1-6])$/.exec(id)?.[1];
  if(type){const count=depots.reduce((n,d)=>n+d.goods.filter(g=>g.type===Number(type)).length,0);return <span className="shield-goods-choice" aria-label={`${type}번 상품 ${count}개 획득`}><GoodsArt value={Number(type)} width={52} height={52}/><b>×{count}</b></span>;}
  if(id==='shield5:skip'&&!depots.some(d=>d.goods.length))return '획득할 상품 없음 · 건너뛰기';
  const grape=id.startsWith("vine-token:")?id.slice(11) as Grape:null;
- return grape&&GRAPES.includes(grape)?<GrapeToken grape={grape} size={48}/>:label;
+ return grape&&GRAPES.includes(grape)?<GrapeToken grape={grape} size={36}/>:label;
 }
 export function EarnedBonusTiles({player}:{player:PlayerState}){
  if(!player.bonuses.length)return null;

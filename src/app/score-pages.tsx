@@ -3,7 +3,8 @@ import {useState} from "react";
 import type {PlayerState} from "../game/types";
 import {PHASE_COMPLETION_POINTS} from "../game/core/fortress-lines";
 import {regionSizePoints} from "../game/inns";
-import {GRAPE_COLORS,GRAPE_NAMES,vineScoreBreakdown,type VineyardState} from "../game/vineyards";
+import {vineScoreBreakdown,type VineyardState} from "../game/vineyards";
+import {CandyGlyph,FRUIT_NAMES} from './vineyard-art';
 import "./score-pages.css";
 
 type Props={player?:Pick<PlayerState,"id"|"name"|"victoryPoints">;vineyards?:VineyardState;label:string};
@@ -29,8 +30,8 @@ export function ScorePages({player,vineyards,label}:Props){
   </>:rows?<>
    <text x="12" y="50" className="score-page-note">토큰 수 · 채점 연결 영역(칸) · 점수</text>
    {rows.map((row,i)=><g key={row.grape} data-grape-score={row.grape} transform={`translate(${14+i%2*190} ${70+Math.floor(i/2)*25})`}>
-    <circle cx="5" cy="-4" r="6" fill={GRAPE_COLORS[row.grape]}/>
-    <text x="16" className="score-page-grape">{GRAPE_NAMES[row.grape]} ×{row.tokens} · {row.counted.join("+")||"—"}칸</text>
+    <CandyGlyph grape={row.grape} x={7} y={-4} size={22}/>
+    <text x="23" className="score-page-grape">{FRUIT_NAMES[row.grape]} ×{row.tokens} · {row.counted.join("+")||"—"}칸</text>
     <text x="168" textAnchor="end" className="score-page-points">{row.points}</text>
    </g>)}
    <text x="195" y="146" textAnchor="middle" className="score-page-total" data-vine-score={total}>{player!.name} · 종료 예상 {total}점</text>
