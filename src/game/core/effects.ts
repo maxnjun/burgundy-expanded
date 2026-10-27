@@ -1,7 +1,7 @@
 import {vineIntents,vineValues,keyOccupant} from "../vineyards";
 import {refreshVineChoice,validVineChoice,resolveVineChoice,validVineBenefit} from "./vineyard-effects";
 import {pendingTradeReward,settleTradeReward} from "../custom-trade-routes";
-import { validShieldChoice, resolveShieldChoice, castleShieldOptions, resolveCastleShield } from "./shield-effects";
+import { validShieldChoice, resolveShieldChoice, castleShieldOptions, bonusShieldOptions, resolveCastleShield, type BonusShieldTarget } from "./shield-effects";
 import { rewardShieldWorkerGain } from "../shields";
 import type { ActionIntent, DieAdjustment, DieValue, GameState, JsonValue, PendingChoice, PlayerState } from "../types";
 import { adjustmentValid, planAdjustment } from "./modifiers";
@@ -33,7 +33,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
             if (!adjustmentValid(state, player, intent, adjustment) || intentIssue(state, player, intent, value as DieValue)) return [];
             const payload = { intent, adjustment };
             return [{ id: JSON.stringify(payload), label: `흰 주사위 ${white} → ${value} · 일꾼 ${adjustment.workersSpent} · ${option.label}`, payload: payload as unknown as JsonValue }];
-        }).concat([{ id: "skip", label: "흰 성 추가 행동 사용하지 않기", payload: null }]);
+        }).concat([...bonusShieldOptions(state,player,true),{ id: "skip", label: "흰 성 추가 행동 사용하지 않기", payload: null }]);
     }
     if(kind==="crane")return [...([...(["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower"] as const), ...(state.config.extensions.some(e=>e.id==="white-castles") ? ["white-castle" as const] : [])]).map(building=>({id:`crane:${building}`,label:({"white-castle":"흰 성",market:"시장","carpenters-workshop":"목공소",church:"교회",warehouse:"창고","boarding-house":"숙소",bank:"은행","town-hall":"시청",watchtower:"감시탑"})[building],payload:{building}})),{id:"skip",label:"기중기 효과 사용하지 않기",payload:null}];
     const intents: {
@@ -67,7 +67,7 @@ export function immediateOptions(state: GameState, player: PlayerState, kind: Ki
     const options = intents.map(({ intent, label }) => ({ id: JSON.stringify(intent), label, payload: { intent } as unknown as JsonValue }));
     if (kind !== "castle")
         options.push({ id: "skip", label: "건물 효과 사용하지 않기", payload: null });
-    return kind==="castle"?[...options,...castleShieldOptions(state,player)]:options;
+    return kind==="castle"?[...options,...castleShieldOptions(state,player),...bonusShieldOptions(state,player)]:options;
 }
 export function prepareTileEffect(state: GameState, playerId: string, tileId: string): GameState {
     const tile = state.tiles[tileId];
@@ -116,6 +116,13 @@ export function upgradeTownHallChoice(state:GameState):GameState {
     const legacy=options.filter(o=>(o.payload as unknown as {intent?:ActionIntent})?.intent?.kind!=="vineyard");
     return legacy.length!==options.length&&JSON.stringify(choice.options)===JSON.stringify(legacy)&&validImmediateChoice(refreshed)?refreshed:state;
 }
+/** Preserve pending old rewards; only the exact menu without the newly added combinations can migrate. */
+export function upgradeBonusShieldChoice(state:GameState):GameState {
+ const c=state.turn.pendingChoice,p=state.turn.pendingEffects[0]?.payload as {kind?:string}|null;
+ if(!c||!['castle','white-castle'].includes(p?.kind??''))return state;
+ const next=refreshPendingChoice(state),legacy=next.turn.pendingChoice!.options.filter(o=>!o.id.startsWith('bonus-shield:'));
+ return JSON.stringify(c.options)===JSON.stringify(legacy)&&validImmediateChoice(next)?next:state;
+}
 /** Resolving consumes the parent benefit before scheduling a child: no replay, implicit dice or infinite queue. */
 export function resolveTileChoice(state: GameState, optionId: string): GameState {
     if(validVineChoice(state))return resolveVineChoice(state,optionId);
@@ -132,7 +139,7 @@ export function resolveTileChoice(state: GameState, optionId: string): GameState
     const cleared = { ...consumed, turn: { ...consumed.turn, pendingChoice: null, pendingEffects: [] } };
     if (option.id === "skip")
         return cleared;
-    if(option.id.startsWith("castle-shield:"))return resolveCastleShield(cleared,(option.payload as unknown as {shield:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}).shield);
+    if(option.id.startsWith("castle-shield:")||option.id.startsWith("bonus-shield:"))return resolveCastleShield(cleared,(option.payload as unknown as {shield:BonusShieldTarget}).shield);
     if(option.id.startsWith("crane:")){
         const building=(option.payload as {building:string}).building,playerId=state.turn.activePlayerId!;
         if(building==="bank"||building==="boarding-house"||building==="watchtower"){

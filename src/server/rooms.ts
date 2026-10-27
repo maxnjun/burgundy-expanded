@@ -157,7 +157,7 @@ export class RoomStore {
     const index=room.tokens.findIndex(t=>t!==null&&timingSafeEqual(Buffer.from(t,"hex"),hash));
     if(index<0)throw new RoomError(401,"좌석 인증이 필요합니다.");return index;
   }
-  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[],chooseStartingCastles:unknown=false,connection:unknown={}){return this.serial("create",async()=>{
+  async create(ownerName:unknown,shieldRules:unknown=false,whiteCastles:unknown=false,boardRange:unknown=null,inns:unknown=false,tradeRoutes:unknown=false,vineyards:unknown=false,excludedGrapes:unknown=[],chooseStartingCastles:unknown=false,connection:unknown={},geese:unknown=true){return this.serial("create",async()=>{
     if(boardRange!==null&&!["base","fortress","all"].includes(boardRange as string))throw new RoomError(400,"영지 범위를 확인하세요.");
     if(!Array.isArray(excludedGrapes)||excludedGrapes.length>2||new Set(excludedGrapes).size!==excludedGrapes.length||excludedGrapes.some(g=>!GRAPES.includes(g))||(!vineyards&&excludedGrapes.length))throw new RoomError(400,"포도 품종 축소 설정을 확인하세요.");
     if(typeof chooseStartingCastles!=="boolean")throw new RoomError(400,"시작 성 선택 설정을 확인하세요.");
@@ -166,6 +166,7 @@ export class RoomStore {
     if(typeof inns!=="boolean")throw new RoomError(400,"여관 설정은 참/거짓이어야 합니다.");
     if(typeof whiteCastles!=="boolean")throw new RoomError(400,"흰 성 설정은 참/거짓이어야 합니다.");
 
+    if(typeof geese!=="boolean")throw new RoomError(400,"하프물범 설정은 참/거짓이어야 합니다.");
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     if(!connection||typeof connection!=="object"||Array.isArray(connection))throw new RoomError(400,"연결 정보를 확인하세요.");
     const c=connection as {id?:unknown;token?:unknown;lobby?:unknown;color?:unknown};
@@ -176,7 +177,7 @@ export class RoomStore {
     if(c.color!==undefined&&!isPlayerColor(c.color))throw new RoomError(400,"플레이어 색상을 확인하세요.");
     const ownerColor=isPlayerColor(c.color)?c.color:"blue",guestColor=PLAYER_COLORS.find(color=>color!==ownerColor)!;
     if(!this.remote){await mkdir(this.directory,{recursive:true});await this.maintain();const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);}
-    const game=createPracticeSession({names:[name(ownerName),"영주 2"],colors:[ownerColor,guestColor],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
+    const game=createPracticeSession({names:[name(ownerName),"영주 2"],colors:[ownerColor,guestColor],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,geese,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
     const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
@@ -278,7 +279,7 @@ export class RoomStore {
     const nextRevision=room.game.revision+1;
     if(draftReady(room.draft)){
       const g=room.game;
-      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,chooseStartingCastles:g.status==="setup",boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,shieldRules:!!shieldLayout(g)?.effectsActive,excludedGrapes:g.vineyards?.excluded,vineyards:g.config.extensions.some(e=>e.id==="vineyards"),tradeRoutes:g.config.extensions.some(e=>e.id==="trade-routes"),inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
+      room.game=createPracticeSession({names:g.players.map(p=>p.name),seed:g.config.seed,chooseStartingCastles:g.status==="setup",boardIds:room.draft.seats.map(s=>s.selected!),officialSlots:true,geese:g.config.extensions.some(e=>e.id==="geese"),shieldRules:!!shieldLayout(g)?.effectsActive,excludedGrapes:g.vineyards?.excluded,vineyards:g.config.extensions.some(e=>e.id==="vineyards"),tradeRoutes:g.config.extensions.some(e=>e.id==="trade-routes"),inns:g.config.extensions.some(e=>e.id==="inns"),whiteCastles:g.config.extensions.some(e=>e.id==="white-castles")});
       room.logs=["양쪽 영지 선택 완료 · 게임 준비 완료",...room.logs].slice(0,60);
     }
     room.game={...room.game,revision:nextRevision};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);

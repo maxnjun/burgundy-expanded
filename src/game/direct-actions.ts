@@ -4,8 +4,9 @@ import { shieldLayout, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAc
 import type { ActionIntent, GameAction, GameState } from "./types";
 import {isCastleAction} from './castle-actions';
 import {automaticVineReward} from './core/vineyard-effects';
+import type {BonusShieldTarget} from './core/shield-effects';
 
-export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}}
+export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:BonusShieldTarget}
 /** Public click targets are projections of canonical engine options, never executable UI payloads. */
 export function boardTarget(game:GameState,action:GameAction):BoardTarget {
  if(action.type==='use-die')return {intent:action.intent};
@@ -34,7 +35,7 @@ export function directShieldActions(game:GameState,playerId:string,slotId:string
 }
 export function directCost(game:GameState,action:GameAction):number{
  if(action.type==="use-die")return action.adjustment.workersSpent;
- if(action.type==='resolve-choice')return (game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {adjustment?:{workersSpent:number}}|null)?.adjustment?.workersSpent??0;
+ if(action.type==='resolve-choice'){const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {adjustment?:{workersSpent:number};shield?:BonusShieldTarget}|null;return p?.shield?.steps?p.shield.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0):p?.adjustment?.workersSpent??0;}
  if(action.type==="use-monastery-six")return 2;
  if(action.type==="extension"&&action.extensionId==="shields"&&["acquire","acquire-preview"].includes(action.command))return (action as ShieldAcquireAction).payload.steps.reduce((n,s)=>n+shieldWorkerCost(game,action.playerId,s),0);
  return 0;

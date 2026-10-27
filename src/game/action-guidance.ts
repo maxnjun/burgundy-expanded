@@ -28,11 +28,11 @@ export function actionGuidance(game:GameState,actions:readonly GameAction[],sele
  if(selection.purchase&&canPurchaseTile(actions))return '은화 2개로 구매할 타일을 선택하세요. 남은 보상은 유지됩니다.';
  if(selection.special)return actions.some(a=>a.type==='use-monastery-six')?'수도원 6으로 가져올 건물 타일을 선택하세요.':'현재 가능한 수도원 6 행동이 없습니다. 선택을 취소하세요.';
  if(selection.goodsTypes)return '가져올 상품 종류를 선택하세요.';
+ if(selection.shieldNumber)return `방패 ${selection.shieldNumber}를 장착할 성을 선택하세요.`;
  if((game.turn.pendingChoice||game.turn.pendingEffects.length)&&!isCastleAction(game))return selection.tileId?'타일을 배치할 영지를 선택하세요.':effectGuidance(game);
  if(game.turn.stage==='round-setup')return '라운드를 준비하고 있습니다.';
  if(game.turn.stage==='phase-end')return '';
  if(game.turn.stage!=='player-turn')return '게임 진행을 준비하고 있습니다.';
- if(selection.shieldNumber)return `방패 ${selection.shieldNumber}를 장착할 성을 선택하세요.`;
  if(selection.tileId)return player?.storage.includes(selection.tileId)?'타일을 배치할 영지를 선택하세요.':'교체할 저장고 타일을 선택하세요.';
  if(selection.vineTileId)return '포도 타일을 배치할 포도밭 자리를 선택하세요.';
  if(canEndTurn(actions))return `턴을 종료하시겠습니까?${canPurchaseTile(actions)?' (구매 가능)':''}`;

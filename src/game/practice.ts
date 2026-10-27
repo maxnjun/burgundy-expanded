@@ -42,7 +42,7 @@ export interface PracticeConfig { readonly chooseStartingCastles?:boolean; reado
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
   if (config.names.length < 2 || config.names.length > 4 || !config.seed.trim()) throw new Error("연습은 2~4명과 시드가 필요합니다.");
-  const geese = !!(config.geese || config.additionalHexes);
+  const geese = !!(config.geese ?? config.additionalHexes);
   const count = config.names.length as 2 | 3 | 4;
   const firstSeat = config.firstSeat ?? 0;
   if (!Number.isInteger(firstSeat) || firstSeat < 0 || firstSeat >= count) throw new Error("시작 플레이어가 올바르지 않습니다.");

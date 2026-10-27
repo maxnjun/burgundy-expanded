@@ -24,7 +24,7 @@ test("online white castle validates configuration, paid actions, seat ownership,
   assert.equal(next.players[0].workers,1);assert.equal(next.players[0].silver,before.players[0].silver+1);assert.equal(next.dice.whiteDie,6);
   const reconnect=await new RoomStore(directory).view(owner.id,guest.token);assert.deepEqual(next.players,reconnect.players);assert.deepEqual(next.dice,reconnect.dice);
   await assert.rejects(()=>store.act(owner.id,owner.token,next.revision,action),e=>e instanceof RoomError&&e.status===400);
-  assert.ok(next.logs[0].includes("상품 판매"));assert.deepEqual(readActionLog(next.logs[0]).dice,[]);
+  assert.ok(next.logs[0].includes("상품 판매"));assert.deepEqual(readActionLog(next.logs[0]).dice,[{index:0,value:1,source:'white'}]);assert.deepEqual(next.dice.players,before.dice.players);
   room=JSON.parse(await readFile(path,"utf8"));assert.equal(room.game.turn.pendingChoice,null);
  }finally{assert.equal(dirname(directory),tmpdir());assert.ok(basename(directory).startsWith("burgundy-white-online-"));await rm(directory,{recursive:true});}
 });

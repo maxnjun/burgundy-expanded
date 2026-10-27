@@ -2,6 +2,8 @@ import type {GameAction,GameState} from "./types";
 import {LIVESTOCK_NAMES} from "./tile-help";
 import {directCost} from "./direct-actions";
 import {shieldLayout} from "./shields";
+import {playerColorKey} from './player-colors';
+import {vineValues} from './vineyards';
 const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${LIVESTOCK_NAMES[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
 const intentLabel=(s:GameState,i:import("./types").ActionIntent):string=>i.kind==="take-workers"?"일꾼 획득":i.kind==="sell-goods"?`${i.goodsType}번 상품 판매`:i.kind==="vineyard"?`포도 타일 ${i.command==="take"?"획득":"배치"}`:i.kind==="take-tile"?`${i.depot}번 ${tileName(s,i.tileId)} 획득 · 보관${i.storageSlot+1}${i.discardTileId?" 교체":""}`:`${tileName(s,i.tileId)} 배치`;
 export function actionLabel(s:GameState,a:GameAction):string{
@@ -23,17 +25,24 @@ export function actionLabel(s:GameState,a:GameAction):string{
   return `${intentLabel(s,a.intent)}${a.adjustment.workersSpent?` · 일꾼${a.adjustment.workersSpent}`:""}`;
 }
 
-export interface ActionLogData {text:string;dice:{index:number;value:number}[];tileId?:string}
+export interface ActionLogData {text:string;dice:{index:number;value:number|null;source?:'player'|'white'|'bonus';color?:import('./types').PlayerColor}[];tileId?:string}
 /** Keep the existing string[] save format; old plain-text records remain readable. */
 export function createActionLog(before:GameState,after:GameState,action:GameAction,prefix=""):string {
  const p=before.players.find(p=>p.id===action.playerId)!,next=after.players.find(other=>other.id===p.id)!;
  const delta=([['승점',next.victoryPoints-p.victoryPoints],['은화',next.silver-p.silver],['일꾼',next.workers-p.workers]] as const).filter(([,n])=>n!==0).map(([name,n])=>`${name} ${n>0?'+':''}${n}`);
- const dice=(before.dice.players[p.id]??[]).flatMap((d,i)=>!d.used&&after.dice.players[p.id]?.[i]?.used?[{index:i+1,value:after.dice.players[p.id][i].value}]:[]);
- const intent=action.type==='use-die'?action.intent:action.type==='resolve-choice'?(before.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as unknown as {intent?:import('./types').ActionIntent})?.intent:undefined;
- const tileId=intent?.kind==='place-tile'||intent?.kind==='vineyard'&&intent.command==='place'?intent.tileId:action.type==='place-starting-castle'?p.storage[0]??undefined:undefined;
+ const dice:ActionLogData['dice']=(before.dice.players[p.id]??[]).flatMap((d,i)=>!d.used&&after.dice.players[p.id]?.[i]?.used?[{index:i+1,value:after.dice.players[p.id][i].value,source:'player' as const,color:playerColorKey(p)}]:[]);
+ const payload=action.type==='resolve-choice'?before.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as unknown as {intent?:import('./types').ActionIntent;tileId?:string;vineBlack?:{tileId:string};shield?:import('./core/shield-effects').BonusShieldTarget}|null:undefined;
+ const intent=action.type==='use-die'?action.intent:payload?.intent;
+ const effect=before.turn.pendingEffects[0]?.payload as {kind?:string}|null;
+ if(action.type==='resolve-choice'&&(effect?.kind==='castle'||effect?.kind==='white-castle')&&(intent||payload?.shield)){
+  const shield=payload?.shield,slot=shield?shieldLayout(before)?.slots.find(s=>s.id===shield.slotId):undefined;
+  const value=slot?.depot??(intent?.kind==='take-tile'?intent.depot:intent?.kind==='place-tile'?p.duchy.cells.find(c=>c.id===intent.cellId)?.number:intent?.kind==='sell-goods'?intent.goodsType:intent?.kind==='vineyard'?vineValues(before,intent)[0]:null);
+  dice.unshift({index:0,value:value??(effect.kind==='white-castle'?before.dice.whiteDie:null),source:effect.kind==='white-castle'?'white':'bonus'});
+ }
+ const tileId=intent&&'tileId' in intent?intent.tileId:payload?.vineBlack?.tileId??payload?.tileId??(action.type==='buy-black-tile'||action.type==='use-monastery-six'?action.tileId:action.type==='extension'&&action.extensionId==='vineyards'?(action.payload as {tileId?:string}).tileId:action.type==='place-starting-castle'?p.storage[0]??undefined:undefined);
  return JSON.stringify({format:'action-log-v1',text:[prefix,p.name,actionLabel(before,action),...delta].filter(Boolean).join(' · '),dice,...(tileId?{tileId}:{})});
 }
 export function readActionLog(record:string):ActionLogData {
- try{const d=JSON.parse(record);if(d?.format==='action-log-v1'&&typeof d.text==='string'&&Array.isArray(d.dice)&&d.dice.length<=2&&d.dice.every((x:{index:number;value:number})=>[1,2].includes(x.index)&&Number.isInteger(x.value)&&x.value>=1&&x.value<=6)&&(d.tileId===undefined||typeof d.tileId==='string'))return d;}catch{}
+ try{const d=JSON.parse(record);if(d?.format==='action-log-v1'&&typeof d.text==='string'&&Array.isArray(d.dice)&&d.dice.length<=3&&d.dice.every((x:ActionLogData['dice'][number])=>[0,1,2].includes(x.index)&&(x.value===null||Number.isInteger(x.value)&&x.value>=1&&x.value<=6)&&(x.source===undefined||['player','white','bonus'].includes(x.source))&&(x.color===undefined||['blue','red','green','yellow','purple','pink'].includes(x.color)))&&(d.tileId===undefined||typeof d.tileId==='string'))return d;}catch{}
  return {text:record.replace(/(\(| · )승점 \+0(?= · |\)|$)/g,'$1').replace(/ ·\s*· /g,' · ').replace(/\(\s*· /g,'(').replace(/ ·\s*$/g,'').replace(/ → \([^)]*\) 배치/g,' 배치').replace(/\s*\([^)]*\) 배치/g,' 배치').replace(/시작 성 배치 · [^ ·)]+/g,'시작 성 배치').replace(/포도 배치 V\d{2}(?= · |$)/g,'포도 배치').replace(/(방패\d+ 획득) · 성 [^ ·]+ · 두 주사위/g,'$1 · 두 주사위'),dice:[]};
 }

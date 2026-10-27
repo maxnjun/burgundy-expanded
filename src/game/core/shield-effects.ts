@@ -1,7 +1,7 @@
 import { LIVESTOCK_NAMES } from "../tile-help";
 import {keyOccupant,storedWeight,compactVineStorage,discardStored,VINE_TILES} from "../vineyards";
 import type { GameState, JsonValue, PendingChoice, PlayerState, DieValue } from "../types";
-import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, type ShieldAcquireAction } from "../shields";
+import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAction } from "../shields";
 import { placementIssue } from "./placement";
 import { executeIntent } from "./intents";
 import { prepareTileEffect, refreshPendingChoice } from "./effects";
@@ -43,10 +43,11 @@ function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingCh
     return options.length?options:[{id:`free:${m.shieldNumber}:none`,label:`방패${m.shieldNumber} · 합법 배치 없음`,payload:json({shieldNumber:m.shieldNumber})}];
   });
 }
-function optionsFor(state:GameState,player:PlayerState,window:Window):PendingChoice["options"] {
+function optionsFor(state:GameState,player:PlayerState,window:Window,legacy=false):PendingChoice["options"] {
   if(window.kind==="shield-phase")return phaseOptions(state,player);
   if(window.kind==="shield-storage")return [...player.storage.flatMap((id,i)=>id?[{id:`discard:${i}:${id}`,label:`초과 보관 타일 ${i+1} 폐기 · ${tileLabel(state,id)}`,payload:json({tileId:id,index:i})}]:[]),...(player.vineyardReserve??[]).map(r=>({id:`discard:vine:${r.tileId}`,label:`초과 포도 ${r.tileId} 폐기 (2칸)`,payload:json({tileId:r.tileId})}))];
-  return [{id:"shield5:skip",label:"방패5 추가 상품 가져오지 않기",payload:null},...([1,2,3,4,5,6] as const).filter(type=>player.goods.length<3||player.goods.some(g=>g.type===type)).map(type=>({id:`shield5:${type}`,label:`방패5 · ${type}번 상품 전 공급처에서 수령`,payload:json({goodsType:type})}))];
+  const types=([1,2,3,4,5,6] as const).filter(type=>(legacy||state.market.numberedDepots.some(d=>d.goods.some(g=>g.type===type)))&&(player.goods.length<3||player.goods.some(g=>g.type===type)));
+  return [{id:"shield5:skip",label:legacy||types.length?"방패5 추가 상품 가져오지 않기":"가져올 수 있는 상품 없음 · 건너뛰기",payload:null},...types.map(type=>({id:`shield5:${type}`,label:`방패5 · ${type}번 상품 전 공급처에서 수령`,payload:json({goodsType:type})}))];
 }
 function prepare(state:GameState,playerId:string,window:Window):GameState {
   const player=state.players.find(p=>p.id===playerId)!;
@@ -58,6 +59,11 @@ export function upgradeShieldPhaseChoice(state:GameState):GameState {
  const choice=state.turn.pendingChoice,p=state.players.find(p=>p.id===state.turn.activePlayerId);
  if(windowOf(state)?.kind!=='shield-phase'||!choice||!p||shieldLayout(state)?.rules?.phase?.stage!=='tribute')return state;
  return JSON.stringify(choice.options)===JSON.stringify(phaseOptions(state,p,true))?{...state,turn:{...state.turn,pendingChoice:{...choice,options:phaseOptions(state,p)}}}:state;
+}
+/** Only an exact old shield5 menu is migrated; injected choices remain invalid. */
+export function upgradeShieldFiveChoice(state:GameState):GameState {
+ const w=windowOf(state),c=state.turn.pendingChoice,p=state.players.find(p=>p.id===c?.playerId);
+ return w?.kind==='shield-five'&&c&&p&&JSON.stringify(c.options)===JSON.stringify(optionsFor(state,p,w,true))?{...state,turn:{...state.turn,pendingChoice:{...c,options:optionsFor(state,p,w)}}}:state;
 }
 export function validShieldChoice(state:GameState):boolean {
   try{
@@ -154,14 +160,31 @@ export function castleShieldOptions(state:GameState,player:PlayerState):PendingC
     return {id:`castle-shield:${slot.id}:${c.id}`,label:`방패11 · 방패${slot.shieldNumber} → 성 ${c.id}${old?` (방패${old} 반환·교체)`:""}`,payload:json({shield})};
   }));
 }
-export function resolveCastleShield(state:GameState,payload:{slotId:string;castleCellId:string;replaceShieldNumber:number|null}):GameState {
+export interface BonusShieldTarget {slotId:string;castleCellId:string;replaceShieldNumber:number|null;dieId?:string;steps?:readonly [readonly (1|-1)[],readonly (1|-1)[]]}
+/** One virtual reward die plus exactly one unused owned die; shield11 stays a separate free option. */
+export function bonusShieldOptions(state:GameState,player:PlayerState,white=false):PendingChoice['options'] {
+ const layout=shieldLayout(state);if(!layout?.effectsActive||white&&state.dice.whiteDie===null)return [];
+ return layout.slots.filter(s=>s.shieldNumber!==null).flatMap(slot=>state.dice.players[player.id].filter(d=>!d.used).flatMap(die=>{
+  const steps=[white?shieldWorkerSteps(state.dice.whiteDie!,slot.depot):[],shieldWorkerSteps(die.value,slot.depot)] as const;
+  if(steps.reduce((n,s)=>n+shieldWorkerCost(state,player.id,s),0)>player.workers)return [];
+  return player.duchy.cells.filter(c=>c.tileId&&state.tiles[c.tileId].type==='castle').map(c=>{
+   const shield:BonusShieldTarget={slotId:slot.id,castleCellId:c.id,replaceShieldNumber:layout.mounted.find(m=>m.playerId===player.id&&m.cellId===c.id)?.shieldNumber??null,dieId:die.id,steps};
+   return {id:`bonus-shield:${JSON.stringify(shield)}`,label:`보상 주사위 + 주사위 ${state.dice.players[player.id].findIndex(d=>d.id===die.id)+1} · ${slot.depot}번 방패${slot.shieldNumber}`,payload:json({shield})};
+  });
+ }));
+}
+export function resolveCastleShield(state:GameState,payload:BonusShieldTarget):GameState {
+  if(payload.dieId){
+   const playerId=state.turn.activePlayerId!,slot=shieldLayout(state)!.slots.find(s=>s.id===payload.slotId)!,cost=payload.steps!.reduce((n,s)=>n+shieldWorkerCost(state,playerId,s),0);
+   state={...state,players:state.players.map(p=>p.id===playerId?{...p,workers:p.workers-cost}:p),dice:{...state.dice,players:{...state.dice.players,[playerId]:state.dice.players[playerId].map(d=>d.id===payload.dieId?{...d,used:true,value:slot.depot}:d) as unknown as GameState['dice']['players'][string]}}};
+  }
   const action:ShieldAcquireAction={type:"extension",extensionId:"shields",command:"acquire",playerId:state.turn.activePlayerId!,payload:{...payload,steps:[[],[]]}};
   return settleShieldState(acquireShieldPreview(state,action,true));
 }
 export function shieldSpecialIssue(state:GameState,action:Extract<import("../types").GameAction,{type:"extension"}>):string|null {
   const layout=shieldLayout(state),p=action.payload as Record<string,unknown>|null;
   if(!layout?.effectsActive||!p||typeof p!=="object"||Array.isArray(p))return "Active shield rules required";
-  if(action.command==="choose-monastery-target")return hasShield(state,action.playerId,6)&&layout.rules!.monasteryTarget===null&&Object.keys(p).join() ==="targetPlayerId"&&state.players.some(player=>player.id===p.targetPlayerId)?null:"Choose a player once for shield6";
+  if(action.command==="choose-monastery-target")return hasShield(state,action.playerId,6)&&layout.rules!.monasteryTarget===null&&Object.keys(p).join() ==="targetPlayerId"&&state.players.some(player=>player.id!==action.playerId&&player.id===p.targetPlayerId)?null:"Choose another player once for shield6";
   if(action.command==="change-die")return hasShield(state,action.playerId,16)&&Object.keys(p).sort().join() ==="dieId,value"&&layout.rules!.dieChangedTurn!==shieldTurnKey(state,action.playerId)&&state.dice.players[action.playerId]?.some(d=>d.id===p.dieId&&!d.used)&&Number.isInteger(p.value)&&Number(p.value)>=1&&Number(p.value)<=6?null:"Shield16 changes one unused die once per turn";
   return "Unknown shield command";
 }

@@ -31,7 +31,7 @@ test("all unrestricted reserve placement rewards allow vines, consume no die, pr
 });
 test("public action logs use real consumed dice, hide zero points and coordinates, and handle player two",()=>{
  const g=coreFixture();g.turn.activePlayerId="p2";const a={type:"use-die" as const,playerId:"p2",dieId:"p2:a",adjustment:{steps:[] as const,workersSpent:0},intent:{kind:"take-workers" as const}};
- const result=applyCoreAction(g,a);assert.ok(result.ok);const log=readActionLog(createActionLog(g,result.value.state,a));assert.deepEqual(log.dice,[{index:1,value:1}]);assert.match(log.text,/일꾼 \+2/);assert.ok(!log.text.includes("승점 +0"));assert.ok(!log.text.includes("일꾼 +0"));
+ const result=applyCoreAction(g,a);assert.ok(result.ok);const log=readActionLog(createActionLog(g,result.value.state,a));assert.deepEqual(log.dice,[{index:1,value:1,source:'player',color:'red'}]);assert.match(log.text,/일꾼 \+2/);assert.ok(!log.text.includes("승점 +0"));assert.ok(!log.text.includes("일꾼 +0"));
  const start={type:"place-starting-castle" as const,playerId:"p2",cellId:"private-cell-coordinate"};assert.equal(actionLabel(g,start),"시작 성 배치");
  const legacy=readActionLog("성 → (q2,r3) 배치 · 승점 +0");assert.deepEqual(legacy,{text:"성 배치",dice:[]});
  assert.equal(readActionLog('행동 (승점 +0 · 은화 +1 · 일꾼 +0)').text,'행동 (은화 +1 · 일꾼 +0)');
