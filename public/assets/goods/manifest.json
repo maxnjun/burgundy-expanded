@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "canvas": 768,
+  "artMaxExtent": 744,
+  "assets": [
+    {
+      "file": "goods_1.png",
+      "name": "wine",
+      "value": 1,
+      "color": "purple",
+      "sha256": "5f6164571ee3ddbe921a86e82273c8262ee9dc31193f44718feacae78aca2776",
+      "sourceBounds": [
+        189,
+        9,
+        567,
+        356
+      ],
+      "alphaBounds": [
+        12,
+        42,
+        756,
+        725
+      ],
+      "printedPips": 1,
+      "pipBounds": [
+        100.571,
+        126.635,
+        226.54,
+        230.952
+      ]
+    },
+    {
+      "file": "goods_2.png",
+      "name": "grain",
+      "value": 2,
+      "color": "yellow",
+      "sha256": "c216f9ac889bf832ad2f4c63d7b02b398deedac52891c19188a9dbf9b885c043",
+      "sourceBounds": [
+        584,
+        9,
+        954,
+        356
+      ],
+      "alphaBounds": [
+        12,
+        35,
+        756,
+        733
+      ],
+      "printedPips": 2,
+      "pipBounds": [
+        114.551,
+        121.465,
+        231.178,
+        228.038
+      ]
+    },
+    {
+      "file": "goods_3.png",
+      "name": "textiles",
+      "value": 3,
+      "color": "red",
+      "sha256": "e2ac7fb9629229209ddf5ff66a2150af886a686093b72cff7cb468a2531d83c1",
+      "sourceBounds": [
+        971,
+        9,
+        1349,
+        356
+      ],
+      "alphaBounds": [
+        12,
+        42,
+        756,
+        725
+      ],
+      "printedPips": 3,
+      "pipBounds": [
+        112.381,
+        126.635,
+        232.444,
+        230.952
+      ]
+    },
+    {
+      "file": "goods_4.png",
+      "name": "pottery",
+      "value": 4,
+      "color": "blue",
+      "sha256": "2df3e188a18705b618976afcf78a8667c91f6daf55f92db5bc6fefce1afb8b0f",
+      "sourceBounds": [
+        189,
+        363,
+        567,
+        709
+      ],
+      "alphaBounds": [
+        12,
+        43,
+        756,
+        724
+      ],
+      "printedPips": 4,
+      "pipBounds": [
+        100.571,
+        121.73,
+        230.476,
+        235.889
+      ]
+    },
+    {
+      "file": "goods_5.png",
+      "name": "spices",
+      "value": 5,
+      "color": "orange",
+      "sha256": "1efb20713a970f8d665432b11ed5b2f658611837357657516e50098c540b2417",
+      "sourceBounds": [
+        584,
+        363,
+        954,
+        709
+      ],
+      "alphaBounds": [
+        12,
+        36,
+        756,
+        732
+      ],
+      "printedPips": 5,
+      "pipBounds": [
+        114.551,
+        118.443,
+        231.178,
+        233.059
+      ]
+    },
+    {
+      "file": "goods_6.png",
+      "name": "herbs",
+      "value": 6,
+      "color": "green",
+      "sha256": "bf31288db329da74616fefaacad3ad70909b2ca12f9029db9cb4760c8c5e2674",
+      "sourceBounds": [
+        971,
+        363,
+        1349,
+        709
+      ],
+      "alphaBounds": [
+        12,
+        43,
+        756,
+        724
+      ],
+      "printedPips": 6,
+      "pipBounds": [
+        112.381,
+        123.698,
+        232.444,
+        235.889
+      ]
+    },
+    {
+      "file": "goods_back.png",
+      "name": "common-wooden-back",
+      "sha256": "f03584b5ed48051fdf9eac4d3363ea79c24101b9ff6d4f84bf39808900fa5bb5",
+      "sourceBounds": [
+        60,
+        632,
+        572,
+        1144
+      ],
+      "alphaBounds": [
+        12,
+        12,
+        756,
+        756
+      ]
+    }
+  ]
+}

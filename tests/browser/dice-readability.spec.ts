@@ -24,7 +24,9 @@ test("white requirements, larger layered goods and trade rewards keep game state
  for(const slot of VINE_SLOTS){const d=vine.locator(`[data-vine-slot="${slot.id}"] [data-white-die]`);await expect(d).toHaveCount(2);for(const face of await d.all()){await expect(face).toHaveAttribute("data-white-die",String(slot.value));await expect(face.locator("circle")).toHaveCount(slot.value);}}
  const overlaps=await vine.locator("[data-vine-cell]").evaluateAll(cells=>cells.some(c=>{const a=c.querySelector("[data-white-die]")!.getBoundingClientRect(),b=c.querySelector(".vineyard-bonus")!.getBoundingClientRect();return Math.min(a.right,b.right)-Math.max(a.left,b.left)>0&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>0;}));expect(overlaps).toBe(false);
  await expect(estate.locator('[data-goods-layer]')).toHaveCount(held.length);const goods=estate.locator('[data-goods-layer="0"]'),size=await goods.boundingBox();expect(size!.width).toBe(52);expect(size!.height).toBe(52);
- await expect(goods.locator(`[data-white-die="${value}"] circle`)).toHaveCount(value);
+ // Approved faces bake in the die; source pip counts are checked by prepare-goods-assets.py.
+ await expect(goods.locator('image')).toHaveAttribute('data-goods-image',`goods_${value}.png`);
+ await expect(goods.locator('[data-white-die]')).toHaveCount(0);
  const tradeSize=await route.locator('[data-trade-cell]').first().boundingBox();expect(tradeSize!.width).toBe(101);const artSize=await route.locator('[data-goods-value]').first().boundingBox();expect(artSize!.width).toBe(42);
  const before=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game);expect(before).toEqual(game);
  await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();await estate.getByRole('button',{name:new RegExp(`${value}번 상품 ${held.length}개 판매$`)}).click();

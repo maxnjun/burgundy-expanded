@@ -12,6 +12,7 @@ import {serializeSavedGame} from '../../src/game/save';
 import type {GameState} from '../../src/game/types';
 import type {RoomView} from '../../src/server/rooms';
 import {isolatedRooms} from './isolated-rooms';
+import goodsAssets from '../../public/assets/goods/manifest.json';
 
 test.setTimeout(90_000);
 
@@ -37,7 +38,11 @@ test('15 fixes: fitted personal boards, independent score pages, bright tiles an
  await scores.getByRole('button',{name:'포도1 점수판 다음 페이지'}).click();await expect(scores.locator('[data-score-page]')).toHaveAttribute('data-score-page','2');await expect(page.locator('[data-region-score-panel] [data-score-page]')).toHaveAttribute('data-score-page','1');
  const common=page.locator('.common-board-panel');await expect(common).not.toContainText('검은 공급처 · 은화');expect(await common.locator('.supply-art-tile').first().evaluate(el=>getComputedStyle(el).opacity)).toBe('1');await expect(common.locator('[data-market-price="black"] image')).toHaveCount(2);
  await expect(common.locator('[data-round-supply] [data-goods-value]')).toHaveCount(4);await expect(common.locator('[data-region-score-panel]')).toContainText('10칸');await expect(common.locator('[data-region-score-panel]')).toContainText('A 10');
- for(const zoom of [1,1.6,2]){await common.locator('.common-board-svg').evaluate((el,z)=>(el as SVGElement).style.width=`${940*z}px`,zoom);const depot=common.locator('[data-depot="5"]');const badge=await depot.locator(':scope>[data-white-die]').boundingBox();const faces=depot.locator('[data-goods-value] [data-white-die]');expect(await faces.count()).toBeGreaterThan(0);for(const face of await faces.all()){const f=await face.boundingBox();expect(Math.max(0,Math.min(badge!.x+badge!.width,f!.x+f!.width)-Math.max(badge!.x,f!.x))*Math.max(0,Math.min(badge!.y+badge!.height,f!.y+f!.height)-Math.max(badge!.y,f!.y))).toBe(0);const value=await face.getAttribute('data-white-die');expect(await face.locator('circle').count()).toBe(Number(value));}}
+ for(const zoom of [1,1.6,2]){await common.locator('.common-board-svg').evaluate((el,z)=>(el as SVGElement).style.width=`${940*z}px`,zoom);const depot=common.locator('[data-depot="5"]');const badge=(await depot.locator(':scope>[data-white-die]').boundingBox())!;const faces=depot.locator('[data-goods-value]');expect(await faces.count()).toBeGreaterThan(0);for(const face of await faces.all()){
+  const value=Number(await face.getAttribute('data-goods-value')),asset=goodsAssets.assets.find(a=>'value' in a&&a.value===value)!;expect(asset.printedPips).toBe(value);await expect(face.locator('image')).toHaveAttribute('data-goods-image',asset.file);
+  // Measure the approved PNG's printed pip region instead of adding a second SVG die.
+  const box=(await face.boundingBox())!,p=asset.pipBounds!,f={x:box.x+p[0]/768*box.width,y:box.y+p[1]/768*box.height,width:(p[2]-p[0])/768*box.width,height:(p[3]-p[1])/768*box.height};expect(Math.max(0,Math.min(badge.x+badge.width,f.x+f.width)-Math.max(badge.x,f.x))*Math.max(0,Math.min(badge.y+badge.height,f.y+f.height)-Math.max(badge.y,f.y))).toBe(0);
+ }}
  await common.locator('.common-board-svg').evaluate(el=>(el as SVGElement).style.removeProperty('width'));const viewport=page.viewportSize()!;await page.setViewportSize({...viewport,height:2000});await common.scrollIntoViewIfNeeded();await common.screenshot({path:info.outputPath('common-five-goods.png')});await row.scrollIntoViewIfNeeded();await row.screenshot({path:info.outputPath('personal-fit.png')});await page.setViewportSize(viewport);await page.screenshot({path:info.outputPath('mobile-or-pc.png')});expect(await state(page)).toEqual(game);
 });
 

@@ -51,4 +51,9 @@ assert m['canvas']==768 and len(m['assets'])==6 and {a['grape'] for a in m['asse
 for a in m['assets']:
     assert a['sourceSha256']==fruits[a['grape']]['sha256']
     validate(mask_folder/a['file'],a['sha256'],m['canvas'],a['alphaBounds'])
+folder=ROOT/'public/assets/goods';m=json.loads((folder/'manifest.json').read_text())
+assert m['canvas']==768 and len(m['assets'])==7
+assert [a['value'] for a in m['assets'] if 'value' in a]==[1,2,3,4,5,6]
+assert [a['file'] for a in m['assets']]==[f'goods_{n}.png' for n in range(1,7)]+['goods_back.png']
+for a in m['assets']: validate(folder/a['file'],a['sha256'],m['canvas'],a['alphaBounds'])
 print(json.dumps({'validatedDeploymentPNGs':checked,'sourceAuthoring':'separate strict check; no regeneration in deployment'}))

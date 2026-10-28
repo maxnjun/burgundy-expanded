@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "sources": {
+    "fronts": {
+      "file": "asset-inbox/goods-approved/originals/fronts.png",
+      "sha256": "94f73c1451106310a87ac2631b9283f7140d93c751515cfbe8cc06f4f81bfe23",
+      "canvas": [
+        1536,
+        1024
+      ]
+    },
+    "backs": {
+      "file": "asset-inbox/goods-approved/originals/backs.png",
+      "sha256": "610049771b5f9411c6dba49b5e583c7afb0aaf55a9ae583e62926f564c5aa720",
+      "canvas": [
+        1704,
+        1200
+      ]
+    }
+  },
+  "assets": [
+    {
+      "file": "goods_1.png",
+      "name": "wine",
+      "value": 1,
+      "color": "purple",
+      "source": "fronts",
+      "crop": [
+        180,
+        0,
+        576,
+        361
+      ],
+      "pipCrop": [
+        234,
+        52,
+        298,
+        105
+      ]
+    },
+    {
+      "file": "goods_2.png",
+      "name": "grain",
+      "value": 2,
+      "color": "yellow",
+      "source": "fronts",
+      "crop": [
+        577,
+        0,
+        963,
+        361
+      ],
+      "pipCrop": [
+        635,
+        52,
+        693,
+        105
+      ]
+    },
+    {
+      "file": "goods_3.png",
+      "name": "textiles",
+      "value": 3,
+      "color": "red",
+      "source": "fronts",
+      "crop": [
+        964,
+        0,
+        1359,
+        361
+      ],
+      "pipCrop": [
+        1022,
+        52,
+        1083,
+        105
+      ]
+    },
+    {
+      "file": "goods_4.png",
+      "name": "pottery",
+      "value": 4,
+      "color": "blue",
+      "source": "fronts",
+      "crop": [
+        180,
+        361,
+        576,
+        716
+      ],
+      "pipCrop": [
+        234,
+        403,
+        300,
+        461
+      ]
+    },
+    {
+      "file": "goods_5.png",
+      "name": "spices",
+      "value": 5,
+      "color": "orange",
+      "source": "fronts",
+      "crop": [
+        577,
+        361,
+        963,
+        716
+      ],
+      "pipCrop": [
+        635,
+        404,
+        693,
+        461
+      ]
+    },
+    {
+      "file": "goods_6.png",
+      "name": "herbs",
+      "value": 6,
+      "color": "green",
+      "source": "fronts",
+      "crop": [
+        964,
+        361,
+        1359,
+        716
+      ],
+      "pipCrop": [
+        1022,
+        404,
+        1083,
+        461
+      ]
+    },
+    {
+      "file": "goods_back.png",
+      "name": "common-wooden-back",
+      "source": "backs",
+      "crop": [
+        50,
+        620,
+        582,
+        1155
+      ]
+    }
+  ]
+}

@@ -46,7 +46,7 @@ test('Ver3 estate costs match canonical workers and acquired/placed logs show im
 });
 
 test('Ver3 shield5 shows actual goods art/count, transfers once and supports reload',async({page},info)=>{
- await install(page);const g=shieldFiveFixture();await load(page,g);const choice=page.locator('.shield-goods-choice');await expect(choice).toHaveCount(2);for(const type of [1,4]){const c=page.getByLabel(`${type}번 상품 5개 획득`,{exact:true});await expect(c.locator(`[data-goods-value="${type}"]`)).toHaveCount(1);await expect(c.locator('[data-white-die] circle')).toHaveCount(type);}
+ await install(page);const g=shieldFiveFixture();await load(page,g);const choice=page.locator('.shield-goods-choice');await expect(choice).toHaveCount(2);for(const type of [1,4]){const c=page.getByLabel(`${type}번 상품 5개 획득`,{exact:true});await expect(c.locator(`[data-goods-value="${type}"]`)).toHaveCount(1);await expect(c.locator('image')).toHaveAttribute('data-goods-image',`goods_${type}.png`);await expect(c.locator('[data-white-die]')).toHaveCount(0);}
  await page.getByLabel('타일 효과 선택',{exact:true}).screenshot({path:info.outputPath('shield5-goods.png')});await page.reload();await press(page.getByLabel('4번 상품 5개 획득',{exact:true}));await expect.poll(async()=>(await state(page)).turn.pendingChoice).toBe(null);const n=await state(page);expect(n.players[0].goods.find(x=>x.type===4)!.tiles.length).toBe(6);expect(n.market.numberedDepots.flatMap(d=>d.goods).some(x=>x.type===4)).toBe(false);expect(n.players[1]).toEqual(g.players[1]);
 });
 

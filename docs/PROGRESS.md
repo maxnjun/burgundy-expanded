@@ -1,3 +1,15 @@
+# 승인 상품 앞면6·공통 나무상자 뒷면 — 구현·검증 완료 (2026-10-29)
+
+- 원본 합본2장 그대로 보존. 요청한 2행1열 나무상자만 공통뒷면, 1보라와인/2노랑곡물/3빨강직물/4파랑도자기/5주황향신료/6초록허브 매핑. 768×768 RGBA7장·최대744px·외부배경 투명화·원본비율/중심/금색프레임/눈금 유지, preview와 재현script/manifest 등록. 소스 앞면이 가로로 약간 길어 뒷면과 세로여백 차이는 유지하며 왜곡하지 않음.
+- 공통 GoodsArt/Back SVG viewBox·크기props·슬롯·클릭좌표 유지, 해시URL·PNG로딩실패시 기존SVG복구. 정상PNG 위 이중테두리/주사위0, 비공개뒷면은 종류정보 없는 단일URL. 로컬/온라인 공급/라운드/보관/판매/무역로/보상/도움말·두디자인에 적용. 게임/서버/저장/난수 변경0.
+- 이번 실행 core515/515·boards33/33·타입·전체ESLint·최종production build 통과. 상품추출 재현/원본 눈금1~6/투명7장·전체배포PNG105/기존육각경고0. 첫 sandbox mkdir/rename EPERM은 같은코드 로컬권한 재검으로 해결, 엔진무수정.
+- 선택 브라우저 고유67시나리오 검증: 관련PC30(초기 구SVG눈금검사1건은PNG검사로 적응후 재검), 15fixes 3환경18, 신규상품3환경9, 모바일/WebKit 상품동작추가10. 실제획득/3종제한/전량판매·성/창고보상/무역로/방패5/Undo/두좌석sync·새로고침·재접속. 최종빌드 신규9 재검, PC/Chrome터치/WebKit·100/160/200%·ON/OFF 캡처 직접확인. 현재5개공개규칙과 익명뷰fallback을 구분해서 검사한다.
+- 증거 .local-data/goods-assets/: before-browser/, screenshots/, verified-build/, regression.log(29pass+1적응전실패), goods-actions-final.log(15pass), five-goods.log(18pass), browser-final/verified-build.log(각9pass), inventory-comparison.png, *-verified.log·core/boards-final.log. 관련 테스트3곳의 SVG눈금 확인만PNG매핑/원본눈금/화면영역 검사로 바꾸고 원래 게임결과·겹침 기준은 유지했다. 상세 docs/GOODS_TILE_IMPORT_NOTES.md.
+- 사용자 AutoDeploy Off 확인·release [no-deploy] 차단 유지. 커밋 [skip render] [no-deploy]으로 이번23파일만 일반main 백업; 기존 dirty문서본문/수도원27·28/입력 폴더는 보존·미포함. 원격/Push·CI상태·운영버전은 backup-result.json/완료보고 참조. 실제Render 배포/API/ManualDeploy/재시작/설정변경·운영Redis접근은 미실행. 사전조회 health version399f67c(사용자 배포본).
+- 남은 범위: 실제Android/iPhone기기·운영Redis플레이·GitHub전체CI 완료는 별도 확인. 운영반영은 사용자가 직접 배포. 향후 승인된 완전정사각형 원본이 있다면 같은 importer의 crop만 검토해 세로여백차이 없이 적용 가능.
+
+--- 이전 기록 보존 ---
+
 # 디자인 1 메뉴 누락 재조사·main 반영 (2026-10-29)
 
 - 원인: 사용자 화면은 Render 수동배포본12e773f. 원격main도12e773f이고 디자인1 구현은 별도codex/design-1-toggle의89bfa27에만 있었다. 운영PC/모바일 새브라우저에서 안내checkbox1/디자인switch0 재현. 로컬 양쪽메뉴에 이미DesignSetting 연결, 즉시ON/OFF/LS/독립설정 정상→앱코드/위젯 중복추가 안 함.
