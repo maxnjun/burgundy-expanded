@@ -1,3 +1,19 @@
+# 영지 완성 보상 에셋·공통 숫자·문구 정리 — 완료 (2026-10-28)
+
+- 후속 사용자 승인으로 이번 검증된 변경만 GitHub main Commit/Push 진행. Render 배포/재시작/Manual Deploy 금지. 기준 HEAD 4b994e4. 기존 dirty 문서 본문·수도원27/28 PNG·입력 자료 보존.
+- 승인 원본5파일→6종, 원본/입력 SHA 보존. 외곽 알파 동일·1024 RGBA, 공통 숫자2/3/4/5/6/7로36장+숫자6장. 5 본체220×300/중심(513,509), 6종 숫자 윤곽 차이0. 원본 숫자 뒤 중앙 영역만 보완, 바깥 프레임/나머지 그림 보존. 상세 docs/qa/estate-bonus-assets.md 및 입력 폴더 EDIT_NOTES.md.
+- 공용 오른쪽 아래 기존 패널 안에 이미지 전용3열×2행. 설명·종류명·소진 문구0. 1위66px/2위49.5px(75%) 겹침·획득 후 공개. 개인 기존 상단 오른쪽에 실제 보상60/45px, 옆5점/2점 문구0·이미지 내부 숫자 유지.
+- 엔진/서버/저장 형식 무변경. 기존 색상 전체 완성·선착순/소진·보유/즉시 점수·실행취소 재사용. 인원별2인5/2·3인6/3·4인7/4 유지(사용자 확정). 종료 시 중복 가산 없음.
+- 검사: 전체 core515/515(신규10 포함), boards33/33,36PNG/숫자6 레이어 재현·알파·불투명 숫자 픽셀 일치, 기존 타일 검증 경고0, 타입/전체린트/프로덕션 build-final 통과.
+- 최종 브라우저 신규18/18(PC·Chrome터치·WebKit) + 기존 공용/방패/점수판/온라인 조작16/16 + 기존 획득 보상1/1 =35/35. 2·3·4인 표시/100·160·200%, 75% 아래 타일 완전 가림 픽셀 일치, 로컬/온라인2인5점→2점→소진, 양쪽 재접속·Undo 검증. 격리 저장소 재생성/동시 중복은 신규 core에서 검증.
+- 초기 모바일 픽셀 검사1건 불일치 후 이미지 decode/2프레임 대기를 추가했다. 완전 일치 기준 유지·집중3회/최종3엔진 모두 통과. 기존 테스트는 제거하지 않았고, 문구 검사는 실제 PNG 점수/표시 문구0 검증으로 갱신했다.
+- 증거 .local-data/estate-bonus-assets/: five-point-comparison,number-crops,number-outline-overlay,all-36-variants,alignment.json,common-final-pc,common-panel-final,personal-final-mobile,online-final-iphone.png 및 core/boards/browser-verified/regression/earned-regression/types-final/lint-final/build-final 로그. 실제 캡처 직접 확인.
+- 원래 문서 본문은 시작 백업에서 바이트 보존해 접두사만 추가했다. 운영 Redis/기존 방/환경변수 쓰기 없음. localhost3000은 격리 file 저장 서버로 열어 둠. 실기기·운영망/Redis/Render QA는 범위 밖이며 실행하지 않았다.
+
+--- 기존 본문 보존 ---
+
+- 백업: origin/main과 기준 SHA 일치·무관한 선행 커밋0 확인. 기존 공개 main Push 허용 유지. [skip render] [no-deploy]로 배포 차단, 원본/이번 코드·테스트·문서 접두사만 선별. 최종 커밋/원격SHA는 Git 기록과 완료 보고에서 확인. 기존 dirty 문서 본문/수도원27·28/무관한 입력은 백업 제외·보존.
+
 # 개인 포도밭 보상 칸 ID 표시 제거 — 완료 (2026-10-28)
 
 - 기준66f4355. vineyard-board.tsx의 화면용 Vxxa/b text만 제거하고, 내부slot/cell ID·aria-label·클릭/게임데이터는 유지했다. 남은 주사위/보상 묶음을 칸 중앙에 정렬했으며 이름/아이콘크기/hex좌표/색상은 무변경. 미사용 CSS만 제거했다.

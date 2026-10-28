@@ -12,6 +12,7 @@ cases.push("upstash-rooms");
 cases.push("online-controls", "online-identity");
 cases.push("ver2");
 cases.push("ver3");
+cases.push("estate-bonuses");
 const requested=process.argv.slice(2);
 if(requested.some(name=>!cases.includes(name)))throw new Error("Unknown core test suite");
 const selected=requested.length?requested:cases;

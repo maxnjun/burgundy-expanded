@@ -1,0 +1,73 @@
+{
+  "originals": [
+    {
+      "file": "광산 보너스.png",
+      "sha256": "a2096c7b870a687642760f4b58cc188c7479d7673f9fb91cbf724218296c9f81"
+    },
+    {
+      "file": "동물 보너스.png",
+      "sha256": "0e1ee1735b403ebce0235ecbf4d84c01be24177a8b4f175117caecd42e4f2ac5"
+    },
+    {
+      "file": "선박 보너스.png",
+      "sha256": "d3283ea66f6622a07f6983bb303f5b2d2c065b264f3c201c5a49d7762114f83d"
+    },
+    {
+      "file": "성 보너스.png",
+      "sha256": "bbcbc94148cd4fa2f13e227f43923e48e65aff0aa2f755af0846a3f1520d435b"
+    },
+    {
+      "file": "베이지, 수도원 보너스.png",
+      "sha256": "36bb852d6e8f4b6927343bb33fddc2990d37f271e0b8ab7f7687f86f054fecee"
+    }
+  ],
+  "mapping": {
+    "mine": "광산 보너스.png",
+    "livestock": "동물 보너스.png",
+    "ship": "선박 보너스.png",
+    "castle": "성 보너스.png",
+    "building": "베이지, 수도원 보너스.png",
+    "monastery": "베이지, 수도원 보너스.png"
+  },
+  "canonicalFrame": "mine",
+  "canvas": 1024,
+  "artWidth": 960,
+  "derivationInputs": [
+    {
+      "file": "number-removal-input.png",
+      "sha256": "0cd6cde898fe6afb967aee49f5580a4f8e92118ba49fba31e600236756ae99bd"
+    },
+    {
+      "file": "number-removal-plate.png",
+      "sha256": "5425490706216d7a963f32303bf7557d4a1ae62ddccf861c9b8018f4898a82db"
+    },
+    {
+      "file": "numerals/5-body.png",
+      "sha256": "9b890b584ecf980c9ad849512ccddce85ccc8794b968d258b164ab70738df6ca"
+    },
+    {
+      "file": "numerals/2-generated.png",
+      "sha256": "5d523ca0caa978c5e65b19785e95f3451c3804690cfc21b82b503e59ce9666e4"
+    },
+    {
+      "file": "numerals/3-generated.png",
+      "sha256": "cec8e2f0ca82451dd065900121e90ce47c9b4a6ffd1d660897d3898296647e11"
+    },
+    {
+      "file": "numerals/4-generated.png",
+      "sha256": "ff2a5bcc6149aba2928b7b4ddeef6e97b5cee1ea91857429463eb4918df8f573"
+    },
+    {
+      "file": "numerals/5-generated.png",
+      "sha256": "d42d1c8c3c32fb3bec2a6b5b09db4fe65233c0db90f5985e8cc8cfffaecefb5c"
+    },
+    {
+      "file": "numerals/6-generated.png",
+      "sha256": "d21193f987e8ed2432ccb950ca70b574fb805167d7c6dd897d4fe6c80d0e660e"
+    },
+    {
+      "file": "numerals/7-generated.png",
+      "sha256": "8ad5964c57df4011909de2736b48b3faa4088db8c1dce1857822fc6d65dceb4a"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import {ScorePages} from "./score-pages";
+import {EstateBonusArt,BONUS_NAMES} from './estate-bonus-art';
 import {WhiteDie} from "./white-die";
 import {playerPaint} from "../game/player-colors";
 import {tileHelpId} from "../game/tile-help";
@@ -124,12 +125,13 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
         <ScorePages player={game.players.find(p=>p.id===game.turn.activePlayerId)??game.players[0]} vineyards={game.vineyards} label="공용 점수판"/>
       </g>
       <g data-color-bonuses="true" transform={`translate(${layout.panels.right} ${layout.panels.bottom})`}>
-        <text x="195" y="29" textAnchor="middle" className="common-small">지형 전체 완성 · 1위 / 2위</text>
-        {(["castle","mine","ship","livestock","building","monastery"] as const).map((type,i)=><g key={type} transform={`translate(${24+(i%2)*176} ${43+Math.floor(i/2)*33})`}>
-          <rect width="166" height="28" rx="9" fill={terrainPaint[type]} stroke="#877c4f"/>
-          <text x="83" y="11" textAnchor="middle" fontSize="10" fill="#fff6d6">{terrainNames[type]}</text>
-          <text x="83" y="23" textAnchor="middle" fontSize="11" fill="#fff6d6">{["first","second"].map(rank=>{const b=game.market.bonusTiles.find(b=>b.color===type&&b.rank===rank);return b ? b.points : "완료";}).join(" / ")}</text>
-        </g>)}
+        {(["castle","mine","ship","livestock","building","monastery"] as const).map((type,i)=>{
+          const center={x:65+(i%3)*130,y:layout.panels.bottomHeight*(Math.floor(i/3)+.5)/2};
+          const remaining=game.market.bonusTiles.filter(b=>b.color===type);
+          return <g key={type} data-bonus-stack={type} aria-label={`${BONUS_NAMES[type]} 남은 영지 완성 보상`}>
+            {(['second','first'] as const).map(rank=>{const bonus=remaining.find(b=>b.rank===rank);const size=rank==='second'?49.5:66;return bonus&&<g key={rank} data-supply-bonus={bonus.id}><EstateBonusArt bonus={bonus} size={size} x={center.x-size/2} y={center.y-size/2}/></g>;})}
+          </g>;
+        })}
       </g>
       {shields && game.market.numberedDepots.map(depot=>{
         const allSlots=shields.slots.filter(s=>s.depot===depot.number),pages=Math.ceil(allSlots.length/2),page=(shieldPages[depot.number]??0)%pages,slots=allSlots.slice(page*2,page*2+2);const [cx,cy]=shieldCenters[depot.number-1];

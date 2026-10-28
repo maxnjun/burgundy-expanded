@@ -2,9 +2,9 @@ import type {PlayerState,GameState} from "../game/types";
 import {GoodsArt} from "./tile-art";
 import {GRAPES,type Grape} from "../game/vineyards";
 import {FRUIT_NAMES,vineyardAsset} from './vineyard-art';
+import {EstateBonusArt,BONUS_NAMES} from './estate-bonus-art';
 
-// Estate illustrations remain placeholders; vineyard candy uses the approved source extraction.
-export const REWARD_ASSETS={grape:(g:Grape)=>vineyardAsset(g,'candy'),estate:(color:string)=>`/assets/tokens/estate/${color}.svg`};
+export const REWARD_ASSETS={grape:(g:Grape)=>vineyardAsset(g,'candy')};
 export function GrapeToken({grape,size=32}:{grape:Grape;size?:number}){
  // eslint-disable-next-line @next/next/no-img-element
  return <img data-grape-token={grape} data-candy-token={grape} src={REWARD_ASSETS.grape(grape)} alt={`${FRUIT_NAMES[grape]} 사탕 토큰`} width={size} height={size} style={{objectFit:'contain'}}/>;
@@ -18,7 +18,6 @@ export function RewardChoiceLabel({id,label,depots=[]}:{id:string;label:string;d
 }
 export function EarnedBonusTiles({player}:{player:PlayerState}){
  if(!player.bonuses.length)return null;
- return <div className="earned-bonuses" aria-label={`${player.name} 획득 영지 완성 보너스`}>{player.bonuses.map(b=><span key={b.id} data-earned-bonus={b.id} title={`${b.color} · ${b.rank==="first"?"1위":"2위"} · ${b.points}점`}>
- {/* eslint-disable-next-line @next/next/no-img-element */}
- <img src={REWARD_ASSETS.estate(b.color)} alt="영지 완성 보너스" width={34} height={34}/><b>{b.points}점</b></span>)}</div>;
+ return <div className="earned-bonuses" aria-label={`${player.name} 획득 영지 완성 보너스`}>{player.bonuses.map(b=><span key={b.id} data-earned-bonus={b.id} title={`${BONUS_NAMES[b.color]} · ${b.rank==="first"?"1위":"2위"} · ${b.points}점`}>
+ <EstateBonusArt bonus={b} size={b.rank==='second'?45:60}/></span>)}</div>;
 }

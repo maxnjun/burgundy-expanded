@@ -1,0 +1,237 @@
+{
+  "canvas": [
+    1024,
+    1024
+  ],
+  "source": "asset-inbox/estate-bonus-approved/manifest.json",
+  "silhouette": "mine alpha; identical for every color and points variant",
+  "numberCenter": [
+    513,
+    509
+  ],
+  "alphaBounds": [
+    32,
+    115,
+    992,
+    908
+  ],
+  "secondDisplayScale": 0.75,
+  "assets": [
+    {
+      "color": "mine",
+      "points": 2,
+      "file": "mine-2.png",
+      "sha256": "5476a7f82d07ec8c08064ce68a65adb6046e793c869020505758fec6b211eadc"
+    },
+    {
+      "color": "mine",
+      "points": 3,
+      "file": "mine-3.png",
+      "sha256": "a30d1190b8b9ad35d613c251f2eadb678a5a0a539b37bd03458bcb086e47a595"
+    },
+    {
+      "color": "mine",
+      "points": 4,
+      "file": "mine-4.png",
+      "sha256": "63e8598ba84bd6aa5335f25789abc77a7f3daadbbdf7662a2ced6399561084c6"
+    },
+    {
+      "color": "mine",
+      "points": 5,
+      "file": "mine-5.png",
+      "sha256": "5ccceb607f32980aae023b9ec78fc40c442a8c193b993099e2eb5423ec8363c3"
+    },
+    {
+      "color": "mine",
+      "points": 6,
+      "file": "mine-6.png",
+      "sha256": "15ec40107bf52b96f2fcf0826b7c75bcfe82029850de0c2c0e9422ad1c11f9e0"
+    },
+    {
+      "color": "mine",
+      "points": 7,
+      "file": "mine-7.png",
+      "sha256": "a953ca56c6e985fa37fd4bc28ca076ff44e8a1410341746247a83ea8378840db"
+    },
+    {
+      "color": "livestock",
+      "points": 2,
+      "file": "livestock-2.png",
+      "sha256": "794cf7b63c88dde4bde3c273b96893061e7bf9a474055356b30abbf9dbc905bd"
+    },
+    {
+      "color": "livestock",
+      "points": 3,
+      "file": "livestock-3.png",
+      "sha256": "e50e97e3f4651b5ba1697232e720d7e49369a20409739e1581168d9c2466c0d2"
+    },
+    {
+      "color": "livestock",
+      "points": 4,
+      "file": "livestock-4.png",
+      "sha256": "9af203fb23476a36b9331ab230662b232707251461b539a1834fe2c6470bb308"
+    },
+    {
+      "color": "livestock",
+      "points": 5,
+      "file": "livestock-5.png",
+      "sha256": "0929162f1df0b2469c50d5759df7cc116cde96d32c7d0f917e520fccb5c37b2b"
+    },
+    {
+      "color": "livestock",
+      "points": 6,
+      "file": "livestock-6.png",
+      "sha256": "655317477daba5836577266feef79d5cd52c4114fd794cac991b6ce677890fec"
+    },
+    {
+      "color": "livestock",
+      "points": 7,
+      "file": "livestock-7.png",
+      "sha256": "040d7ead810c32640df600d081dd98512f26cca068fc7d64958050e39c0d1ce2"
+    },
+    {
+      "color": "ship",
+      "points": 2,
+      "file": "ship-2.png",
+      "sha256": "c8f9dd6004e0d3327b5465a98a47fe523606b48ffb6a6cae0b06304c970dad3c"
+    },
+    {
+      "color": "ship",
+      "points": 3,
+      "file": "ship-3.png",
+      "sha256": "ad2b96348b2a1673c30d2978f2d5d49d893a92fa84744094052007088b1fec86"
+    },
+    {
+      "color": "ship",
+      "points": 4,
+      "file": "ship-4.png",
+      "sha256": "3382ca181aa61d026654eab9a7f7b94e8159111252ed8374360e769fb835acd3"
+    },
+    {
+      "color": "ship",
+      "points": 5,
+      "file": "ship-5.png",
+      "sha256": "4350e3523308638ebf5d5d25490d6f7d0656f289998878e9a9a8e8f84b0f29cd"
+    },
+    {
+      "color": "ship",
+      "points": 6,
+      "file": "ship-6.png",
+      "sha256": "2c90aad5a5800c647020579552885f67946facbf00e17b3b414939a6e396ba7f"
+    },
+    {
+      "color": "ship",
+      "points": 7,
+      "file": "ship-7.png",
+      "sha256": "ae4e4f5996fb318c2a553ba48f2379748e0281c919f0306103f4b615b0098654"
+    },
+    {
+      "color": "castle",
+      "points": 2,
+      "file": "castle-2.png",
+      "sha256": "df36388aa798fe772ca090506afaaaf5b2989475b14df663da302073e1d966b3"
+    },
+    {
+      "color": "castle",
+      "points": 3,
+      "file": "castle-3.png",
+      "sha256": "359fa01b1b876136c0c8cfa94a7e1ab1277baf0f59d40039a661f72968f12768"
+    },
+    {
+      "color": "castle",
+      "points": 4,
+      "file": "castle-4.png",
+      "sha256": "57a4cf16c2b22df62c72ef238b23e860bebd242bfc5814a17f1611a3aeb5782b"
+    },
+    {
+      "color": "castle",
+      "points": 5,
+      "file": "castle-5.png",
+      "sha256": "edee9fb9fbc23e70c5df3b7df39845e0a67ef6c7ed50e034faa9229b0b683480"
+    },
+    {
+      "color": "castle",
+      "points": 6,
+      "file": "castle-6.png",
+      "sha256": "a23c1a2cd4321c4a4df0dbc185e28b33602e6c216abedca34fd0705d5955900e"
+    },
+    {
+      "color": "castle",
+      "points": 7,
+      "file": "castle-7.png",
+      "sha256": "4f3ebff8f8c534d51bdf1ac7a78485837c2136d1130a4a22e17e0de2c1e51499"
+    },
+    {
+      "color": "building",
+      "points": 2,
+      "file": "building-2.png",
+      "sha256": "e0accdba57b7424ff9fb03f564027fcbe9cad94511f58a7d26dc0e3d4a9fb3d7"
+    },
+    {
+      "color": "building",
+      "points": 3,
+      "file": "building-3.png",
+      "sha256": "799d4316790dd81eccae48fc160a1c54caef4b586db3fa7b1fd6e0b96dc6be5a"
+    },
+    {
+      "color": "building",
+      "points": 4,
+      "file": "building-4.png",
+      "sha256": "940fced94256f7d6669f74fa40a67113231934cd53a2d19eb5609978cb6a2d32"
+    },
+    {
+      "color": "building",
+      "points": 5,
+      "file": "building-5.png",
+      "sha256": "82aa5d663a65ad17859c6e5836112880c2f9ba589e74e2527507d4e162fb993b"
+    },
+    {
+      "color": "building",
+      "points": 6,
+      "file": "building-6.png",
+      "sha256": "2e6f1a670c2915b8c9a569291b47bd65db24c8369bc9483e35fc2730eeedab92"
+    },
+    {
+      "color": "building",
+      "points": 7,
+      "file": "building-7.png",
+      "sha256": "a218e6e8b3a6962213d8a8798dbd622d0c1ce31e26c7562b6fd13d9a7da85baf"
+    },
+    {
+      "color": "monastery",
+      "points": 2,
+      "file": "monastery-2.png",
+      "sha256": "8e7eaac47c62ab2c06d959a0839f1fcfa4c32d114762c0f773dafe9863800bd1"
+    },
+    {
+      "color": "monastery",
+      "points": 3,
+      "file": "monastery-3.png",
+      "sha256": "9611b0530586b7033c69bbaa2f28e6c08ed70848d09a77e3a984a50004b747ae"
+    },
+    {
+      "color": "monastery",
+      "points": 4,
+      "file": "monastery-4.png",
+      "sha256": "9c5664484cc56738e091ad9ff04ecfc651d785c7df9e54f4109808c18491cf7c"
+    },
+    {
+      "color": "monastery",
+      "points": 5,
+      "file": "monastery-5.png",
+      "sha256": "ffa7180c6f49cd4fa37c156f7af5717d5729a59e469e3e028c93740e3102c7bb"
+    },
+    {
+      "color": "monastery",
+      "points": 6,
+      "file": "monastery-6.png",
+      "sha256": "d9bceec717f292b89a4acb6ee67687a58be02f2b1c42c48d24e1b6f192c53b89"
+    },
+    {
+      "color": "monastery",
+      "points": 7,
+      "file": "monastery-7.png",
+      "sha256": "6b6b52f299ed3819c23baeb0f6604d01ab1e8f2375691aca3b918efc0e1d48d8"
+    }
+  ]
+}
