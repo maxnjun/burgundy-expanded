@@ -8,6 +8,20 @@ import {isolatedRooms} from './isolated-rooms';
 
 const key='burgundy-expanded:design-1-v1';
 const current=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game);
+test('online entry menu visibly contains Design 1 OFF and ON before joining a room',async({page},info)=>{
+ await page.goto('/online');const menu=page.locator('.online-game-settings'),options=menu.locator('.online-settings-options');
+ await menu.locator('summary').click();const toggle=menu.getByRole('switch',{name:'디자인 1',exact:true}),guidance=menu.getByRole('checkbox',{name:'합법 행동 및 안내 문구 상단 고정',exact:true});
+ await expect(toggle).toBeVisible();await expect(toggle).not.toBeChecked();await expect(guidance).toBeChecked();
+ for(const enabled of [false,true]){
+  await toggle.setChecked(enabled);await expect(page.locator('html')).toHaveAttribute('data-design-1',enabled?'on':'off');
+  await expect(toggle).toHaveCount(1);await expect(guidance).toBeChecked();
+  const bounds=(await options.boundingBox())!;expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(page.viewportSize()!.width);expect(bounds.y+bounds.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await options.screenshot({path:info.outputPath(`settings-${enabled?'on':'off'}.png`)});
+  await page.screenshot({path:info.outputPath(`settings-${enabled?'on':'off'}-viewport.png`)});
+ }
+ await guidance.uncheck();await page.reload();await menu.locator('summary').click();await expect(toggle).toBeVisible();await expect(toggle).toBeChecked();await expect(guidance).not.toBeChecked();
+ expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBe('on');
+});
 async function install(page:Page){
  const game=vineFixture(),saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.addInitScript(s=>{if(!sessionStorage.getItem('design-installed')){localStorage.setItem('burgundy-expanded:local-v1',s);sessionStorage.setItem('design-installed','1');}},saved);

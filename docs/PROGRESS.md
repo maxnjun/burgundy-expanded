@@ -1,3 +1,14 @@
+# 디자인 1 메뉴 누락 재조사·main 반영 (2026-10-29)
+
+- 원인: 사용자 화면은 Render 수동배포본12e773f. 원격main도12e773f이고 디자인1 구현은 별도codex/design-1-toggle의89bfa27에만 있었다. 운영PC/모바일 새브라우저에서 안내checkbox1/디자인switch0 재현. 로컬 양쪽메뉴에 이미DesignSetting 연결, 즉시ON/OFF/LS/독립설정 정상→앱코드/위젯 중복추가 안 함.
+- 사용자 이번Auto-Deploy Off 확인. 이전 관련89bfa27+이번 검사/문서만 main에 일반fast-forward Push. [skip render] [no-deploy] 유지·기존release 배포조건 확인. Render Deploy/API/ManualDeploy/재시작/환경변수/설정변경 금지. 새main 반영만으로 현재운영UI는 바뀌지 않으며 사용자 별도 수동배포 전까지 구버전 메뉴가 정상이다.
+- 신규: 방 참가 전 실제 온라인설정에서 스위치정확1개/가시성/팝업경계/기본OFF→ON·reload/기존안내 유지검사. 기존 게임중 전환·미리보기/회전/확정·Undo·두온라인좌석 독립도 재검. PC1280/Chrome터치390/WebKit390 12/12 +375px1/1=13/13. 메뉴 OFF/ON과전체viewport 직접확인.
+- 이번실행 core515/515·boards33/33·타입·전체린트·프로덕션build 통과. 런타임/엔진/저장/이미지 변경 없음. .github/workflows/ci.yml의두모바일검사목록에 design-settings.spec.ts만 추가, CI/release 배포조건은 유지했다. 이전 전체PC207검증과 이번13검사를 구분한다.
+- 증거 .local-data/design-menu-visible/: render-browser.json/render-old-pc/mobile.png, browser/, narrow/, settings-off/on-{desktop-1280,mobile-390,iphone-webkit}(.png/-viewport.png), core/boards/types/lint/build.log. 변경5파일=검사/CI/QA/PROGRESS/TODO. 기존 dirty 문서본문·수도원27/28 PNG·입력 보존·해당문서 접두사만 선별.
+- Commit/Push·main/백업브랜치 원격SHA·운영health 실제결과는 Git/완료보고/.local-data/design-menu-visible/backup-result.json 참조. Render 배포는 미실행, 새GitHubCI는 별도확인/진행상태로 보고하며 성공을 가정하지 않는다. 실제Android/iPhone기기는 미검증.
+
+--- 이전 기록 보존 ---
+
 # 디자인 1 ON/OFF — 구현·검증 완료 / 안전 백업 (2026-10-28)
 
 - 기본OFF, 게임 준비/온라인 게임 설정의 디자인1 스위치. ON=이전 질감 전부, OFF=기존 영지/아이보리 주사위/포도밭/격자/공용SVG패턴. localStorage key burgundy-expanded:design-1-v1, 즉시 적용/다음접속 유지·온라인 브라우저별 독립. 원래 디자인/에셋 보존, 게임/서버/저장/난수/규칙 무변경.
