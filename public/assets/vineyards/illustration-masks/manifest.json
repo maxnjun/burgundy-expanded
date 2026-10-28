@@ -1,0 +1,77 @@
+{
+  "canvas": 768,
+  "assets": [
+    {
+      "grape": "Y",
+      "file": "passionfruit.png",
+      "sourceSha256": "82b27f8e3d746e53d877bde4b588e4e6f2c3faca7407c34bb2edffb985e59241",
+      "sha256": "f2a258e4c3b07a89d91fd9a9511b41edd177a9d3c29057dd8e13c5582239a2ee",
+      "alphaBounds": [
+        159,
+        183,
+        599,
+        634
+      ]
+    },
+    {
+      "grape": "G",
+      "file": "shine-muscat.png",
+      "sourceSha256": "0b05722f4ab1e1bc42c3034c4baa18ef94980bf9bbc5bbc29da34a6f1ce01713",
+      "sha256": "011ae7e61dd5016e95d4ac11afe49fe4e1c45b8e9ce09bb468e9dfea45a3fe44",
+      "alphaBounds": [
+        158,
+        182,
+        607,
+        634
+      ]
+    },
+    {
+      "grape": "O",
+      "file": "mandarin.png",
+      "sourceSha256": "a612efd936a1e8d16eb2dbcd45782c321132d96076ecfeb54d076185e23f5b98",
+      "sha256": "f41814dbff4c4dbafea95bd9414214d1d9cea141b09a6ab2c5569c12529d73cd",
+      "alphaBounds": [
+        164,
+        175,
+        605,
+        621
+      ]
+    },
+    {
+      "grape": "B",
+      "file": "blueberry.png",
+      "sourceSha256": "0031777a2e2c243207017a9b551ec714fe9283a95f5ec97713681f1fc9df05c2",
+      "sha256": "3ea65cfa27e01dd458b5cf8c998a0c58360f758cbbfb385168ea607d9f68c8bd",
+      "alphaBounds": [
+        140,
+        175,
+        582,
+        590
+      ]
+    },
+    {
+      "grape": "R",
+      "file": "peach.png",
+      "sourceSha256": "63d191250fb1166a9d60b0b057cdc5e3ea18828b68c3f66ecff18df19e53ccfe",
+      "sha256": "b9bbaecea8364adfff2e515299cfb6ae1641974db6cabdc862e698ec52a9a967",
+      "alphaBounds": [
+        164,
+        178,
+        602,
+        595
+      ]
+    },
+    {
+      "grape": "K",
+      "file": "strawberry.png",
+      "sourceSha256": "d209ea70260d9a5fa42b868dfed130bd97faeb2330458a74e1f16eeeab46a8a6",
+      "sha256": "a69effa2823046257752305ce50c0333c4403fc469b51b3541e26489ccd4e268",
+      "alphaBounds": [
+        210,
+        172,
+        585,
+        606
+      ]
+    }
+  ]
+}

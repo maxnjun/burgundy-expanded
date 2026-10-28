@@ -45,4 +45,10 @@ for a in m['assets']:
         item=a[kind]
         assert item['canvas']==[canvas,canvas]
         validate(folder/item['file'],item['sha256'],canvas,item['alphaBounds'])
+fruits={a['grape']:a['fruit'] for a in m['assets']}
+mask_folder=folder/'illustration-masks';m=json.loads((mask_folder/'manifest.json').read_text())
+assert m['canvas']==768 and len(m['assets'])==6 and {a['grape'] for a in m['assets']}==set('BKGORY')
+for a in m['assets']:
+    assert a['sourceSha256']==fruits[a['grape']]['sha256']
+    validate(mask_folder/a['file'],a['sha256'],m['canvas'],a['alphaBounds'])
 print(json.dumps({'validatedDeploymentPNGs':checked,'sourceAuthoring':'separate strict check; no regeneration in deployment'}))

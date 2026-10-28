@@ -47,3 +47,13 @@
 .vineyard-token-row img{flex:none;object-fit:contain}
 .vineyard-personal{container-type:inline-size}
 .vineyard-personal .vineyard-token-row img{width:clamp(16px,7.65cqw,36px);height:auto}
+
+/* Supply/shop only: one joined rim and a compact, read-only stock tray. */
+.vineyard-supply.panel{--vine-supply-tile-width:min(140px,100%);box-sizing:border-box;background:linear-gradient(110deg,#fff9e9,#fcf5df)}
+.vineyard-candy-stock{min-inline-size:0;margin:14px 0 0;padding:4px 6px 7px;border:1px dashed #c4a576;border-radius:5px;background:#fff9e6}
+.vineyard-candy-stock legend{padding:3px 9px;border-radius:4px;background:#795436;color:#fff5df;font-size:13px;font-weight:700;line-height:1.3}
+.vineyard-candy-items{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;align-items:start}
+.vineyard-candy-items>div{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.vineyard-candy-items img{display:block;width:min(32px,100%);height:auto;object-fit:contain}
+.vineyard-candy-items b{font-size:12px;line-height:1.2;color:#4e3923}
+@media(max-width:760px){.vineyard-supply.panel{flex:0 1 360px;width:min(360px,100%);max-width:100%;padding:12px}.vineyard-supply .vineyard-depots{gap:10px}.vineyard-supply .vineyard-depots button{min-width:0}}
