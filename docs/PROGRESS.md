@@ -1,3 +1,11 @@
+# 개인 포도밭 보상 칸 ID 표시 제거 — 완료 (2026-10-28)
+
+- 기준66f4355. vineyard-board.tsx의 화면용 Vxxa/b text만 제거하고, 내부slot/cell ID·aria-label·클릭/게임데이터는 유지했다. 남은 주사위/보상 묶음을 칸 중앙에 정렬했으며 이름/아이콘크기/hex좌표/색상은 무변경. 미사용 CSS만 제거했다.
+- 로컬 실제게임 준비 UI로24칸/12자리/주사위24/보상명24/화면ID0 확인. .local-data/vineyard-hide-ids/personal-no-ids.png·visual.json. 기존 PC격자/클릭/배치2 + PC/Chrome터치/WebKit 표시3 통과. 타입/전체린트/빌드 통과. UI 한정이라 전체코어는 반복하지 않았다.
+- 기존 dirty본문/수도원27·28/이미지 보존. 이번4파일과 문서 접두사만 선별 main Commit/Push 후 원격SHA 확인. 결과는Git/최종보고. Render Off 사용자확인·[skip render] [no-deploy] 유지, 배포/재시작/ManualDeploy/운영방·Redis 변경 없음.
+
+--- 기존 본문 보존 ---
+
 # 개인 포도밭 연결형·과일 정방향·보유 사탕20% — 구현·검증 완료 (2026-10-28)
 
 - 기준3461450. 공급처 VineTile connected를 개인 배치/미리보기에 재사용한다. 원래 슬롯 중심 거리/48과 각도로 SVG만 정렬하며 격자/클릭/효과/점수/저장/서버 무변경. 상세/변경9파일 docs/qa/vineyard-placed-connected.md.
