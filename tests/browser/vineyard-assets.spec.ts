@@ -1,11 +1,12 @@
 import {test,expect,type Page,type Locator} from '@playwright/test';
 import sharp from 'sharp';
+import {renderedVinePair} from './vineyard-rendered-pair';
 import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import manifest from '../../public/assets/vineyards/manifest.json';
 import {vineFixture,layeredVineFixture} from '../fixtures/vineyards';
 import {serializeSavedGame} from '../../src/game/save';
-import {vineScore,type Grape} from '../../src/game/vineyards';
+import {vineScore,VINE_TILES,VINE_SLOTS,type Grape} from '../../src/game/vineyards';
 import {beginHistory} from '../../src/game/turn-history';
 import type {GameState} from '../../src/game/types';
 import {isolatedRooms} from './isolated-rooms';
@@ -46,7 +47,7 @@ for(const zoom of [100,160,200])test(`approved vineyard fruit and candy assets, 
 test('approved vineyard art follows preview, half-turn, reward, score, undo and reload',async({page},info)=>{
  const g=galleryFixture();await local(page,g);const board=page.getByRole('region',{name:'포도1 포도밭',exact:true});
  await press(page.getByRole('button',{name:/^행동 주사위 2 눈/}));await press(board.getByRole('button',{name:'보관 포도 B-O:1',exact:true}));const slot=board.locator('[data-vine-slot=V01]');await press(slot);
- const pair=async()=>slot.locator('[data-vineyard-fruit]').evaluateAll(es=>es.map(e=>e.getAttribute('data-vineyard-fruit')));
+ const pair=()=>renderedVinePair(slot);
  expect(await pair()).toEqual(['B','O']);expect(await current(page)).toEqual(g);await press(board.getByRole('button',{name:'돌려서 배치',exact:true}));expect(await pair()).toEqual(['O','B']);expect(await current(page)).toEqual(g);
  await board.screenshot({path:info.outputPath('fruit-half-turn-preview.png')});await press(board.getByRole('button',{name:'포도 배치 확정',exact:true}));await expect(slot).toHaveAttribute('data-occupied','true');expect(await pair()).toEqual(['O','B']);
  await expect(slot.locator('[data-white-die],text')).toHaveCount(0);expect((await current(page)).players[0].vineyardReserve).toHaveLength(0);await page.reload();await expect(slot).toHaveAttribute('data-occupied','true');expect(await pair()).toEqual(['O','B']);
@@ -82,6 +83,27 @@ test('remaining candy tray keeps six actual stocks on one row down to 320px',asy
  }expect(await current(page)).toEqual(g);
 });
 
+for(const flipped of [false,true])test(`placed vineyard reuses the supply outline in every slot direction, flipped=${flipped}`,async({page},info)=>{
+ const initial=layeredVineFixture(),g={...initial,vineyards:{...initial.vineyards!,players:{...initial.vineyards!.players,'seat-1':{...initial.vineyards!.players['seat-1'],placed:initial.vineyards!.players['seat-1'].placed.map(p=>({...p,flipped}))}}}};
+ await local(page,g);await unpin(page);const board=page.locator('.vineyard-personal').first(),supply=page.getByRole('region',{name:'공용 포도 공급처',exact:true}),reference=supply.locator('[data-connected-vine] path').first();
+ const style=await reference.evaluate(e=>({d:e.getAttribute('d'),fill:e.getAttribute('fill'),stroke:e.getAttribute('stroke'),width:e.getAttribute('stroke-width')}));
+ const angles=new Set<number>();
+ for(const placed of g.vineyards.players['seat-1'].placed){
+  const slot=board.locator(`[data-vine-slot="${placed.slotId}"]`),path=slot.locator('[data-connected-vine] path');await expect(path).toHaveCount(1);
+  expect(await path.evaluate(e=>({d:e.getAttribute('d'),fill:e.getAttribute('fill'),stroke:e.getAttribute('stroke'),width:e.getAttribute('stroke-width')}))).toEqual(style);
+  await expect(slot.locator('[data-vineyard-fruit]')).toHaveCount(2);await expect(slot.locator('[data-fruit-illustration=true]')).toHaveCount(2);expect(await renderedVinePair(slot)).toEqual(flipped?[...VINE_TILES[placed.tileId]].reverse():VINE_TILES[placed.tileId]);
+  const cells=VINE_SLOTS.find(s=>s.id===placed.slotId)!.cells;angles.add(Math.round(Math.atan2(-1.5*(cells[1].q-cells[0].q),Math.sqrt(3)*(cells[1].r-cells[0].r+(cells[1].q-cells[0].q)/2))*180/Math.PI));
+ }
+ expect([...angles].sort((a,b)=>a-b)).toEqual([-120,-60,0]);
+ const widths=async()=>({owned:await board.locator('.vineyard-token-row img').evaluateAll(es=>es.map(e=>e.getBoundingClientRect().width)),stock:await supply.locator('[data-candy-stock] img').evaluateAll(es=>es.map(e=>e.getBoundingClientRect().width))});
+ const after=await widths(),old=await page.addStyleTag({content:'.vineyard-personal .vineyard-token-row img{width:clamp(16px,7.65cqw,36px)}'}),before=await widths();await old.evaluate(e=>(e as Element).remove());
+ for(let i=0;i<after.owned.length;i++)expect(after.owned[i]/before.owned[i]).toBeCloseTo(1.2,2);expect(after.stock).toEqual(before.stock);
+ const boxes=await board.locator('.vineyard-token-row>span,.vineyard-token-row>b').evaluateAll(es=>es.map(e=>{const b=e.getBoundingClientRect();return {left:b.left,right:b.right,top:b.top,bottom:b.bottom};}));
+ for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){const a=boxes[i],b=boxes[j];expect(Math.min(a.right,b.right)-Math.max(a.left,b.left)<=1||Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)<=1).toBe(true);}
+ expect(await board.locator('[data-occupied=true] .vineyard-cell').evaluateAll(es=>es.every(e=>getComputedStyle(e).stroke==='none'))).toBe(true);
+ expect(await current(page)).toEqual(g);expect(await board.locator('.vineyard-token-row b').textContent()).toBe(`예상 ${vineScore(g.vineyards,'seat-1')}점`);await board.screenshot({path:info.outputPath(`connected-board-${flipped?'flipped':'normal'}.png`)});await page.reload();await expect(board.locator('[data-occupied=true]')).toHaveCount(g.vineyards.players['seat-1'].placed.length);
+});
+
 test('online two seats see the same approved fruit, placement and authenticated reload/undo',async({page,browser},info)=>{
  const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL:'http://127.0.0.1:3000'});
  try{
@@ -90,7 +112,7 @@ test('online two seats see the same approved fruit, placement and authenticated 
   for(const context of [page.context(),peer])await context.route('**/api/rooms{,/**}',async r=>{const q=r.request(),res=await fetch(server.url+new URL(q.url()).pathname,{method:q.method(),headers:{...q.headers(),host:new URL(server.url).host,origin:server.url},body:q.postData()??undefined});await r.fulfill({status:res.status,headers:Object.fromEntries(res.headers),body:Buffer.from(await res.arrayBuffer())});});
   await page.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),owner);await peer.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),{id:owner.id,token:guest.token});const other=await peer.newPage();await page.goto('/online');await other.goto('/online');
   const board=page.locator('.vineyard-personal').first(),slot=board.locator('[data-vine-slot=V01]');await press(page.getByLabel('온라인 주사위 2',{exact:true}));await press(board.getByRole('button',{name:'보관 포도 B-O:1',exact:true}));await press(slot);await press(board.getByRole('button',{name:'돌려서 배치',exact:true}));await press(board.getByRole('button',{name:'포도 배치 확정',exact:true}));await expect(slot).toHaveAttribute('data-occupied','true');
-  await other.reload();const peerSlot=other.locator('.vineyard-personal').first().locator('[data-vine-slot=V01]');await expect(peerSlot.locator('[data-vineyard-fruit=O]')).toHaveCount(1);await expect(peerSlot.locator('[data-vineyard-fruit=B]')).toHaveCount(1);await page.reload();await expect(slot).toHaveAttribute('data-occupied','true');await page.locator('.online-estates .estate-panel').first().screenshot({path:info.outputPath('online-fruit-sync.png')});
+  await other.reload();const peerSlot=other.locator('.vineyard-personal').first().locator('[data-vine-slot=V01]');await expect(peerSlot.locator('[data-vineyard-fruit=O]')).toHaveCount(1);await expect(peerSlot.locator('[data-vineyard-fruit=B]')).toHaveCount(1);expect(await renderedVinePair(peerSlot)).toEqual(['O','B']);await page.reload();await expect(slot).toHaveAttribute('data-occupied','true');expect(await renderedVinePair(slot)).toEqual(['O','B']);await page.locator('.online-estates .estate-panel').first().screenshot({path:info.outputPath('online-fruit-sync.png')});
   await press(page.getByRole('button',{name:'이전 행동으로',exact:true}));await expect(slot).not.toHaveAttribute('data-occupied','true');await other.reload();await expect(peerSlot).not.toHaveAttribute('data-occupied','true');expect(JSON.parse(await readFile(file,'utf8')).game.vineyards).toEqual(g.vineyards);
   const rawReward=JSON.parse(await readFile(file,'utf8')),reward={...layeredVineFixture(true,4),revision:rawReward.game.revision+10};rawReward.game=reward;rawReward.history=beginHistory(reward,[],true);rawReward.logs=[];await writeFile(file,JSON.stringify(rawReward));await page.reload();await other.reload();
   const choice=page.getByLabel('필수 효과 및 준비 행동',{exact:true}).locator('button:has([data-candy-token])').first(),grape=await choice.locator('[data-candy-token]').getAttribute('data-candy-token') as Grape;await press(choice);

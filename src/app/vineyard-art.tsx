@@ -9,11 +9,11 @@ const visibleWidth=Math.max(...manifest.assets.map(a=>a.fruit.alphaBounds[2]-a.f
 export const vineyardAsset=(g:Grape,kind:'fruit'|'candy')=>`/assets/vineyards/${FRUIT_ASSETS[g][kind].file}?v=${FRUIT_ASSETS[g][kind].sha256.slice(0,12)}`;
 
 /** All six approved silhouettes use one fit; the original baked rim is the only rim. */
-export function FruitGlyph({grape,x,y,width,illustrationOnly=false}:{grape:Grape;x:number;y:number;width:number;illustrationOnly?:boolean}){
+export function FruitGlyph({grape,x,y,width,illustrationOnly=false,rotation=0}:{grape:Grape;x:number;y:number;width:number;illustrationOnly?:boolean;rotation?:number}){
  const size=width/visibleWidth;
  const id=useId(),mask=masks.assets.find(a=>a.grape===grape)!;
  const box={x:x-size/2,y:y-size/2,width:size,height:size};
- return <g data-fruit={grape} aria-label={FRUIT_NAMES[grape]}>{illustrationOnly&&<defs><mask id={id} maskUnits="userSpaceOnUse" {...box} style={{maskType:'alpha'}}><image href={`/assets/vineyards/illustration-masks/${mask.file}?v=${mask.sha256.slice(0,12)}`} {...box}/></mask></defs>}<image data-vineyard-fruit={grape} data-fruit-illustration={illustrationOnly||undefined} pointerEvents="none" href={vineyardAsset(grape,'fruit')} {...box} mask={illustrationOnly?`url(#${id})`:undefined} preserveAspectRatio="xMidYMid meet"/></g>;
+ return <g data-fruit={grape} aria-label={FRUIT_NAMES[grape]} transform={rotation?`rotate(${rotation} ${x} ${y})`:undefined}>{illustrationOnly&&<defs><mask id={id} maskUnits="userSpaceOnUse" {...box} style={{maskType:'alpha'}}><image href={`/assets/vineyards/illustration-masks/${mask.file}?v=${mask.sha256.slice(0,12)}`} {...box}/></mask></defs>}<image data-vineyard-fruit={grape} data-fruit-illustration={illustrationOnly||undefined} pointerEvents="none" href={vineyardAsset(grape,'fruit')} {...box} mask={illustrationOnly?`url(#${id})`:undefined} preserveAspectRatio="xMidYMid meet"/></g>;
 }
 export function CandyGlyph({grape,x,y,size=22}:{grape:Grape;x:number;y:number;size?:number}){
  const box=size/(manifest.candyArtWidth/manifest.candyCanvas);

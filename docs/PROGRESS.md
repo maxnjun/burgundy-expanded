@@ -1,3 +1,16 @@
+# 개인 포도밭 연결형·과일 정방향·보유 사탕20% — 구현·검증 완료 (2026-10-28)
+
+- 기준3461450. 공급처 VineTile connected를 개인 배치/미리보기에 재사용한다. 원래 슬롯 중심 거리/48과 각도로 SVG만 정렬하며 격자/클릭/효과/점수/저장/서버 무변경. 상세/변경9파일 docs/qa/vineyard-placed-connected.md.
+- 후속 요청 반영: 전체타일 회전이 과일에도 전파되던 구조를 수정했다. FruitGlyph를 자기 중심에서 -(슬롯각도+뒤집기각도)만큼 역회전하여 최종 화면 기준 정방향을 유지한다. 과일6종·마스크·연결 외곽 경로 변경 없음.
+- 개인 보유 사탕만 clamp19.2/9.18cqw/43.2로 기존값의 정확1.2배. 공급 남은 사탕·보상 선택/점수표 크기 유지.
+- 검사: 전체 core505/505·boards33/33·원본12PNG/마스크6 재현·PNG98·최종 타입/린트/build-upright 통과. 후속 정방향 최종PC/Chrome터치/WebKit30/30+일반/무료 배치/회전/Undo6/6. 원래 요청의 기존회귀24+3+10도 먼저 통과했고 반복 실행 수를 합산하지 않는다.
+- 실제 과일 화면 행렬의 회전성분0/양의축 및 각 칸 중심을 검사한다. 가로/대각선 3방향×뒤집기2가지,6품종·점수·미리보기/취소/배치/새로고침/온라인두좌석 재접속 검증. 보유사탕1.2배/공급너비불변/문구비겹침 확인.
+- 직접 화면 확인 .local-data/vineyard-placed-connected/{personal-upright,personal-upright-mobile,personal-upright-iphone}.png. upright.log30/30·upright-regression.log6/6, core/boards/types-upright/lint-upright/build-upright 로그 보관.
+- 기존 dirty PNG2/문서 본문/입력과 모든 과일/사탕/마스크 SHA 보존. 이번9파일과 문서 접두사만 선별하여 main 일반 Commit/Push 후 원격SHA 확인. 결과/SHA는 Git 기록·최종 보고.
+- Render Off 사용자 확인·[skip render] [no-deploy] 유지. 배포/ManualDeploy/재시작/설정변경·운영 Redis/기존 방 쓰기 없음. 실기기/운영망 및 새 GitHub CI 결과는 별도.
+
+--- 기존 본문 보존 ---
+
 # 포도 공급대·상점 연결형/남은 사탕 박스 — 구현·검증 완료 / GitHub 백업 (2026-10-28)
 
 - 기준74c7c34. 공급/상점에만 동일한 두 칸을 잇는 단일 SVG 외곽+연녹색 바탕, 기존 과일PNG를 알파 전용 마스크6개로 재사용. 중앙 이중선 없음. 원본12PNG 불변·개인/저장/도감/다른 보드·규칙/서버 무변경. 상세/파일목록 docs/qa/vineyard-supply-connected.md.

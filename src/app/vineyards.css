@@ -46,7 +46,7 @@
 .vineyard-token-row>span{display:inline-flex;align-items:center;gap:4px;padding:0;border:0;border-radius:0;color:#57482d;text-shadow:none}
 .vineyard-token-row img{flex:none;object-fit:contain}
 .vineyard-personal{container-type:inline-size}
-.vineyard-personal .vineyard-token-row img{width:clamp(16px,7.65cqw,36px);height:auto}
+.vineyard-personal .vineyard-token-row img{width:clamp(19.2px,9.18cqw,43.2px);height:auto}
 
 /* Supply/shop only: one joined rim and a compact, read-only stock tray. */
 .vineyard-supply.panel{--vine-supply-tile-width:min(140px,100%);box-sizing:border-box;background:linear-gradient(110deg,#fff9e9,#fcf5df)}
