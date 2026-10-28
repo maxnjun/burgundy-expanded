@@ -37,7 +37,7 @@ test('all six approved faces and common back keep geometry in both designs and a
   await page.getByRole('button',{name:'상품 판매 내역 닫기',exact:true}).click();
   await common.screenshot({path:info.outputPath(`common-design-${on?'on':'off'}.png`),style:'.direct-toolbar{visibility:hidden !important}'});
   for(const zoom of [1,1.6,2]){
-   await page.evaluate(z=>document.body.style.zoom=String(z),zoom);await inventory.scrollIntoViewIfNeeded();const b=await inventory.locator('[data-goods-layer]').first().boundingBox();expect(b!.width).toBeCloseTo(52*zoom,0);expect(b!.height).toBeCloseTo(52*zoom,0);
+   await page.evaluate(z=>document.body.style.zoom=String(z),zoom);await inventory.scrollIntoViewIfNeeded();const b=await inventory.locator('[data-goods-layer]').first().boundingBox();expect(b!.width).toBeCloseTo(60*zoom,0);expect(b!.height).toBeCloseTo(60*zoom,0);
    await inventory.screenshot({path:info.outputPath(`inventory-${on?'on':'off'}-${zoom*100}.png`)});
   }
   await page.evaluate(()=>document.body.style.zoom='1');expect(await current(page)).toEqual(g);

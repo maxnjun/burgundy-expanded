@@ -1,3 +1,14 @@
+# 상품 타일 소폭 확대·기울임 쌓기 — 완료 (2026-10-29)
+
+- 개인보관52→60px(+15.4%), 무역로앞면42→50px(+19.0%). 앞장정면/뒤장오른쪽·아래4px와3~4도회전, 최대펼침8px로긴묶음폭제한. 실제카드전장수 유지, 2장부터 ×N배지·1장숨김. 배지는그림/주사위와경계가겹치지않게 위여백사용. 기존74px보관슬롯/높이/좌표, 무역로101×154칸 유지·내부세로여백만5→1px조정. PNG/공용보드·판매내역·보상/도움말 크기는무변경.
+- 변경10파일: src/app/player-inventory.tsx·trade-route-panel.tsx·game-screen.css, tests/browser/player-inventory-zoom.spec.ts·dice-readability.spec.ts·goods-assets.spec.ts·player-improvements.spec.ts, .github/workflows/ci.yml, PROGRESS/TODO. 기존상품검사의52/42기준을60/50으로변경·SVGfront회전0/뒤각도/오프셋/실알파경계/배지가림0/슬롯크기유지/실판매·Undo 상태비교 추가, 모바일CI에기존inventory검사파일등록. 다른검증조건 완화0.
+- 이번실행 core515/515·boards33/33·타입·전체ESLint·production build 통과. 브라우저 고유34/34=상품/쌓기3환경15 +관련PC15 +모바일직접판매/온라인두좌석재접속4. 마지막경계/캡처3/3재검. PC/Chrome터치/WebKit100·160·200%, 1/3/7장·실제판매엔진상태동일·Undo/reload·두디자인·무역로/창고보너스/온라인sync 확인. 변경전후보관슬롯 좌표/크기와무역로칸 비교차이≤1px, 무역로PNG외곽크기완전동일·배지와실그림경계교차0.
+- 캡처직접확인: .local-data/goods-stack/comparison-{desktop-1280,mobile-390,iphone-webkit}.png, before-browser/·browser/·final-screens/·regression/·mobile-actions/. 로그build/types/lint(-final)·core/boards·browser(15)/regression(15)/mobile-actions(4)/final-screens(3), *-geometry.json. 실기기Android/iPhone·운영Redis게임은미검증.
+- 게임/서버/저장/자원·점수/상품규칙 무변경. 기존 dirty문서본문·수도원27/28PNG·입력파일 해시/전체본문 보존, 이번10파일/문서접두사만 선별. 사용자AutoDeployOff확인 유지, release [no-deploy] 조건무변경·커밋 [skip render] [no-deploy]. Render배포/API/수동배포/재시작/설정변경·운영Redis접근은 미실행.
+- 사전운영health version cb4f7ac(사용자배포본). Commit/일반mainPush·원격SHA/후속health/새CI상태는 .local-data/goods-stack/backup-result.json과 완료보고 참조. 전체GitHubCI 완료와사용자 수동Render배포는 별도범위.
+
+--- 이전 기록 보존 ---
+
 # 승인 상품 앞면6·공통 나무상자 뒷면 — 구현·검증 완료 (2026-10-29)
 
 - 원본 합본2장 그대로 보존. 요청한 2행1열 나무상자만 공통뒷면, 1보라와인/2노랑곡물/3빨강직물/4파랑도자기/5주황향신료/6초록허브 매핑. 768×768 RGBA7장·최대744px·외부배경 투명화·원본비율/중심/금색프레임/눈금 유지, preview와 재현script/manifest 등록. 소스 앞면이 가로로 약간 길어 뒷면과 세로여백 차이는 유지하며 왜곡하지 않음.

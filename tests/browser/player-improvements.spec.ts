@@ -25,10 +25,10 @@ test("final settlement rows sum to engine totals with recorded earned and final 
 
 import {vineFixture} from "../fixtures/vineyards";
 import {createShieldLayout,setShieldLayout} from "../../src/game/shields";
-test("goods three slots use real layers without quantity badges; sales and six-type history persist",async({page},info)=>{
+test("goods three slots use real layers and compact count badges; sales and six-type history persist",async({page},info)=>{
  for(const kinds of [0,1,2,3]){
   let g=setup();g={...g,players:g.players.map((p,i)=>i?p:{...p,goods:Array.from({length:kinds},(_,k)=>({type:(k+1) as 1|2|3,tiles:Array.from({length:k+1},(_,n)=>({id:`TEST-GOODS:${k}:${n}`,type:(k+1) as 1|2|3}))})),soldGoods:[{id:"TEST-SOLD:a",type:6},{id:"TEST-SOLD:b",type:6}]})};await load(page,g);
-  const storage=page.getByLabel("규칙A 상품 저장고",{exact:true});await expect(storage.locator("[data-goods-slot]")).toHaveCount(3);await expect(storage.locator("[data-goods-layer]")).toHaveCount(kinds*(kinds+1)/2);await expect(storage.locator("button>b,button>strong")).toHaveCount(0);
+  const storage=page.getByLabel("규칙A 상품 저장고",{exact:true});await expect(storage.locator("[data-goods-slot]")).toHaveCount(3);await expect(storage.locator("[data-goods-layer]")).toHaveCount(kinds*(kinds+1)/2);await expect(storage.locator("button>b,button>strong")).toHaveCount(0);await expect(storage.locator("[data-goods-count]")).toHaveCount(Math.max(0,kinds-1));
   if(kinds===3){await page.getByRole("button",{name:/^행동 주사위 1 눈/}).click();await storage.getByRole("button",{name:"규칙A 3번 상품 3개 판매",exact:true}).click();await expect(storage.locator("[data-goods-layer]")).toHaveCount(3);await page.reload();await expect(storage.locator("[data-goods-layer]")).toHaveCount(3);
    await page.getByRole("button",{name:"규칙A 상품 판매 내역 · 총 5개",exact:true}).click();const popup=page.getByRole("dialog",{name:"규칙A 상품 판매 내역",exact:true});await expect(popup.locator("[data-sold-type]")).toHaveCount(6);await expect(popup.locator('[data-sold-type="3"]')).toHaveText("3");await expect(popup.locator('[data-sold-type="6"]')).toHaveText("2");await expect(popup.locator('[data-sold-type="2"]')).toHaveText("0");await popup.locator("h3").click();await expect(popup).toBeVisible();await page.screenshot({path:`.local-data/player-improvements/${info.project.name}-goods-history.png`});await page.locator(".goods-history-backdrop").click({position:{x:3,y:3}});await expect(popup).toHaveCount(0);
   }
