@@ -1,8 +1,10 @@
 import { useId } from "react";
+import {useDesign1} from './design-settings';
 
 /** Decorative layer only: no market coordinates, hit targets or game state. */
 export function CommonBoardBackdrop({ width: boardWidth, height }: { width: number; height: number }) {
   const id = useId().replace(/:/g, "");
+  const design1=useDesign1();
   const left = 2, width = boardWidth - 4;
   const right = left + width;
   const paper = `${id}-paper`, grain = `${id}-grain`, gold = `${id}-gold`;
@@ -15,9 +17,11 @@ export function CommonBoardBackdrop({ width: boardWidth, height }: { width: numb
       <linearGradient id={gold} x2=".25" y2="1">
         <stop stopColor="#74512d"/><stop offset=".25" stopColor="#d9bd7b"/><stop offset=".55" stopColor="#a47c42"/><stop offset=".8" stopColor="#ead49a"/><stop offset="1" stopColor="#76532f"/>
       </linearGradient>
-      <pattern id={grain} width="23" height="19" patternUnits="userSpaceOnUse">
+      <pattern id={grain} data-common-paper-grain={design1?'design-1':'default'} width={design1?83:23} height={design1?71:19} patternUnits="userSpaceOnUse">
+        {design1?<><path d="M2 4l5 .4M26 13l7-.7M55 5l6 .5M15 37l8-.6M44 49l5 .3M69 28l7-.4M4 64l7 .5M61 65l9-.7" stroke="#856132" strokeWidth=".4" opacity=".16"/>
+        <path d="M9 19l8-.5M39 32l6 .4M70 54l5-.3M28 61l7 .6" stroke="#fffbee" strokeWidth=".8" opacity=".4"/></>:<>
         <path d="M2 3l4 .3M13 12l6-.4M7 17l3 .2" stroke="#856132" strokeWidth=".45" opacity=".11"/>
-        <path d="M17 4l3-.3M1 10l4 .4" stroke="#fffbee" strokeWidth=".8" opacity=".35"/>
+        <path d="M17 4l3-.3M1 10l4 .4" stroke="#fffbee" strokeWidth=".8" opacity=".35"/></>}
       </pattern>
     </defs>
     <rect x={left} y="2" width={width} height={height-4} rx="4" fill={`url(#${paper})`} stroke="#80613b" strokeWidth="3"/>

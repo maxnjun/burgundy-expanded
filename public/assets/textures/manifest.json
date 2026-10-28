@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "size": 256,
+  "layerColors": [
+    "#27664A",
+    "#79A64C",
+    "#C1C99A",
+    "#E9C66C"
+  ],
+  "assets": [
+    {
+      "file": "terrain-livestock.webp",
+      "bytes": 5224,
+      "sha256": "4a43d73dff4e31d379ae0d64aed229a192c3ad0642a8b0cc5c51871147d37513"
+    },
+    {
+      "file": "terrain-castle.webp",
+      "bytes": 6482,
+      "sha256": "d061aec2194b6acf095ccb0ed1898c2d472ee31221a4a699f8cb94ae0ed2205c"
+    },
+    {
+      "file": "terrain-building.webp",
+      "bytes": 4760,
+      "sha256": "77d1813cc27434d0fa59780a3c26a95e4d028fd815caefece61f3c5045f429a8"
+    },
+    {
+      "file": "terrain-monastery.webp",
+      "bytes": 4630,
+      "sha256": "fbc945d8e9682ac91c9cf70456465b22f22f23b3574181eff3f3ce5df990389f"
+    },
+    {
+      "file": "terrain-mine.webp",
+      "bytes": 4430,
+      "sha256": "cdacd461b7d75a20b72ccd454489100f9bbf8fa927d6d5ede308b8ec6533c538"
+    },
+    {
+      "file": "terrain-ship.webp",
+      "bytes": 7350,
+      "sha256": "b020bc937ea86a04ea25eabe36f6de18979972de326a0771c6396342e13e9248"
+    },
+    {
+      "file": "vineyard-1-0.webp",
+      "bytes": 5664,
+      "sha256": "c6d965a549c85d0f0dae130c2fb28aa474629381bfb851f3435155b481f8e551"
+    },
+    {
+      "file": "vineyard-1-1.webp",
+      "bytes": 5612,
+      "sha256": "bcdba00e9714e0a308140c273cfad661cae2a3438e5e5935e42d15df172987f3"
+    },
+    {
+      "file": "vineyard-2-0.webp",
+      "bytes": 3644,
+      "sha256": "2198567378abb0cf69f430354dd36ef378be0a9920f5be0f07ca6796aca7207f"
+    },
+    {
+      "file": "vineyard-2-1.webp",
+      "bytes": 3686,
+      "sha256": "6a363b8bcb44377255780cd11676996f7675900950f59c2ab80bf981ce34201b"
+    },
+    {
+      "file": "vineyard-3-0.webp",
+      "bytes": 3422,
+      "sha256": "4f7a2f06d8fbb03da315bfbc6692f92d602826d86477143d02c6642087a186eb"
+    },
+    {
+      "file": "vineyard-3-1.webp",
+      "bytes": 3386,
+      "sha256": "da666617b7cdc018ba6311af7484fc8967497961d3f005b2643d68aadc2f4f5c"
+    },
+    {
+      "file": "vineyard-4-0.webp",
+      "bytes": 4168,
+      "sha256": "00b5d2b51b2cd6fedb7fd4b2829a5c15dcc64110598b9a79a1b16af42286da4b"
+    },
+    {
+      "file": "vineyard-4-1.webp",
+      "bytes": 4154,
+      "sha256": "58d111f84f1ec9a7751b08b18e426cadbbe1b5104ea9b72e02fbdee6fee510fe"
+    },
+    {
+      "file": "parchment.webp",
+      "bytes": 1502,
+      "sha256": "b15b7a9909cf048042b4e688283239ea7923da46d1647d010071f508d88cb294"
+    },
+    {
+      "file": "wood.webp",
+      "bytes": 7696,
+      "sha256": "1a514865a4d9f08c167fe4d008d3aa0d337e1b3faede22567120d69911dbeb9c"
+    }
+  ]
+}

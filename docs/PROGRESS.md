@@ -1,3 +1,29 @@
+# 디자인 1 ON/OFF — 구현·검증 완료 / 안전 백업 (2026-10-28)
+
+- 기본OFF, 게임 준비/온라인 게임 설정의 디자인1 스위치. ON=이전 질감 전부, OFF=기존 영지/아이보리 주사위/포도밭/격자/공용SVG패턴. localStorage key burgundy-expanded:design-1-v1, 즉시 적용/다음접속 유지·온라인 브라우저별 독립. 원래 디자인/에셋 보존, 게임/서버/저장/난수/규칙 무변경.
+- 최종 프로덕션 신규/표면3엔진15/15(PC5+Chrome터치5+WebKit5), 기존 관련PC28/28. 선택 주사위 유지, 미리보기 중 OFF/ON→회전→확정→reload→Undo, 실제 서버revision/게임상태 불변을 검증했다.
+- 전체PC210개 실행:205통과·모바일전용3제외·초기가림검사2실패. 실제SVG/동일PNG를 브라우저Canvas에서 분리해 재페인트 RGB1~2 오차를 제거하고, 오차0/완전일치·아래타일 노출 검출 조건을 유지했다. 2/3/4인2회씩6/6 재검통과로 실행대상207개 검증 완료. 실제게임100/160/200% 캡처·경계검사 그대로 유지. 초기 reload테스트는 저장 revision 준비를 기다리도록 보완했다.
+- core515/515·boards33/33·최종 타입/전체린트/프로덕션 build-final·질감16 재현·기존타일 경고0/배포PNG98 통과. 방패AI25라운드·기존 온라인/저장/재접속/보상/점수 회귀 포함. 실기기·운영 Redis 플레이는 이번 범위 밖.
+- 백업범위37파일(이전 시범+이번토글/검사/문서). 기존 dirty PNG2/문서본문/입력 보존·민감파일 제외·이번 문서접두사만 선별. 대상브랜치 codex/design-1-toggle, 운영main 미변경. Commit/일반Push와 원격SHA 실제결과는 Git 기록·최종보고 및 .local-data/design-1/backup-result.json을 따른다.
+- Render live Auto-Deploy 조회인증 없음→사용자가 허용한 별도 브랜치만 사용. 기존public저장소 Push허용 유지/공개설정 무변경. 기존 CI/release는 main조건, 커밋 [skip render] [no-deploy]. Render Deploy/API/ManualDeploy/환경변수/재시작을 실행하지 않는다. 운영health 사전SHA=원격main=12e773f; 백업 후 같은 버전인지 읽기로만 재확인한다.
+- 증거 .local-data/design-1/: production/(15), regression/(28), full-pc.log, occlusion-svg/(6), core/boards/types-final/lint-final/build-final 로그 및 settings/design-on/off-{desktop-1280,mobile-390,iphone-webkit}.png. 화면 직접 확인. 상세/변경파일/활용·복구는 docs/qa/design-1-toggle.md. localhost3000 최종 빌드·격리 file 저장소로 열어 둠.
+- 남은 별도 범위: 사용자 승인에 따른 main 반영/운영 배포, 실기기/운영망 QA. 별도 브랜치 CI는 자동실행 대상이 아니므로 통과했다고 주장하지 않는다.
+
+--- 이전 기록 보존 ---
+
+# 중세 보드 표면 디자인 시범 — 로컬 구현·검증 완료 (2026-10-28)
+
+- 사용자 첨부 전문 및 후속 4층 색상 지시 반영. Commit/Push/PR/모든 배포 금지. HEAD 12e773f/스테이징 비움 유지. 기존 dirty 문서 본문·수도원27/28 PNG·입력 자료 보존.
+- 빈 영지6지형+색상 요구 주사위(공통 눈 배열/36크기/중심 유지), 빈 포도밭 actual layer 1~4=#27664A/#79A64C/#C1C99A/#E9C66C·층별2패턴/아이보리 주사위/밝은 글자 바탕, 약한 양피지/지도 펜화/기존 폭 목재 프레임/패널 질감 구현. 기존 게임 그림/배치좌표/규칙/서버/저장/난수 무변경.
+- 공통 EmptyEstateCell/VineyardCellSurface는 로컬/온라인 양쪽에서 재사용. 정적 WebP16장 합계75,810B+지도SVG, 실시간 노이즈필터/외부이미지/새 의존성 없음. 장식 pointer-events none, 기존 그림이 놓인 칸에는 빈칸 질감0.
+- 최종 검사: core515/515·boards33/33, 타입/전체린트/프로덕션 build-final/기존타일 경고0/질감16 재현 --check 통과. 최종 신규/주사위 PC·Chrome터치·WebKit9/9(100·160·200%, 좌표/눈/대비4.5↑/150%내부스크롤/클릭·Undo·reload), 기존 공용6/6·기존 다른회귀21/21·모바일 온라인2/2 = 선택한 브라우저38/38 검증.
+- 초기 fixture 장수 오기(2→실제1) 수정, temp rename EPERM은 허용된 로컬 검사에서 재실행, 공용 장식 image0 기준은 완화하지 않고 순수SVG패턴으로 수정해6/6 재검사. 종이 반복 원형 음영/글자 뒤 강한 타원도 직접 화면 확인 후 완화했다.
+- 증거 .local-data/texture-preview/: estate-comparison.png·vineyard-comparison.png·before/after-{estate,vineyard,common}-{desktop-1280,mobile-390}.png, production-browser/100·160·200%, regression/, common-final/, online-mobile/ 및 *-final.log. PC/모바일 실제 캡처 직접 확인.
+- 변경파일/구현/복구 상세: docs/qa/board-surfaces-preview.md. 시작 백업 before/ 및 before.patch 유지. 이번32파일(새질감18 포함)만 작업; 원래 문서 본문은 바이트 보존.
+- localhost3000은 최종 프로덕션 빌드를 격리 file 저장소(.local-data/texture-preview/rooms)로 열어 둠. 운영 Redis/기존 방/환경변수 쓰기 및 Git 업로드/배포 없음. 남음: 사용자 디자인 승인·실제 Android/iPhone 실기기/운영망 QA. 다음 작업은 사용자 요청에 따른 시범 유지/강도 조절/백업 원본 비교 복원.
+
+--- 기존 본문 보존 ---
+
 # 영지 완성 보상 에셋·공통 숫자·문구 정리 — 완료 (2026-10-28)
 
 - 후속 사용자 승인으로 이번 검증된 변경만 GitHub main Commit/Push 진행. Render 배포/재시작/Manual Deploy 금지. 기준 HEAD 4b994e4. 기존 dirty 문서 본문·수도원27/28 PNG·입력 자료 보존.

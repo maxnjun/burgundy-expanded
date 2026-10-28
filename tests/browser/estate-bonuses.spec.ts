@@ -11,6 +11,21 @@ import {isolatedRooms} from './isolated-rooms';
 import type {GameState} from '../../src/game/types';
 
 const current=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game as GameState);
+// Rasterize the actual SVG layers in isolation, avoiding unrelated GPU repaint dithering.
+async function bonusPixels(panel:Locator){
+ const url=await panel.evaluate(async node=>{
+  const box=(node as SVGGraphicsElement).getBBox(),bounds=node.getBoundingClientRect(),clone=node.cloneNode(true) as SVGElement;
+  clone.removeAttribute('transform');
+  await Promise.all([...clone.querySelectorAll('image')].map(async image=>{
+   const response=await fetch(image.getAttribute('href')!);if(!response.ok)throw Error('Bonus image unavailable');
+   const blob=await response.blob(),data=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result as string);reader.onerror=reject;reader.readAsDataURL(blob);});image.setAttribute('href',data);
+  }));
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('width',String(Math.ceil(bounds.width)));svg.setAttribute('height',String(Math.ceil(bounds.height)));svg.setAttribute('viewBox',`${box.x} ${box.y} ${box.width} ${box.height}`);svg.appendChild(clone);
+  const source=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}));
+  try{const image=new Image();image.src=source;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;canvas.getContext('2d')!.drawImage(image,0,0);return canvas.toDataURL('image/png');}finally{URL.revokeObjectURL(source);}
+ });
+ return Buffer.from(url.split(',')[1],'base64');
+}
 async function press(target:Locator){if(await target.page().evaluate(()=>navigator.maxTouchPoints>0))await target.tap();else await target.click();}
 async function local(page:Page,g:GameState){
  const saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:g,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
@@ -50,10 +65,16 @@ for(const count of [2,3,4])test(`${count}p first completely covers smaller secon
   expect(a!.x+a!.width/2).toBeCloseTo(b!.x+b!.width/2,3);expect(a!.y+a!.height/2).toBeCloseTo(b!.y+b!.height/2,3);
  }
  await panel.evaluate(async p=>{await Promise.all([...p.querySelectorAll('image')].map(async e=>{const image=new Image();image.src=e.getAttribute('href')!;await image.decode();}));await new Promise<void>(r=>requestAnimationFrame(()=>requestAnimationFrame(()=>r())));});
- const before=await panel.screenshot({animations:'disabled'});await panel.locator('[data-bonus-rank=second]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.visibility='hidden'));
- const hidden=await panel.screenshot({animations:'disabled'});const identical=(await sharp(before).raw().toBuffer()).equals(await sharp(hidden).raw().toBuffer());
+ const before=await bonusPixels(panel);await panel.locator('[data-bonus-rank=second]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.visibility='hidden'));
+ const hidden=await bonusPixels(panel);const identical=(await sharp(before).raw().toBuffer()).equals(await sharp(hidden).raw().toBuffer());
  if(!identical){await writeFile(info.outputPath('occlusion-before.png'),before);await writeFile(info.outputPath('occlusion-second-hidden.png'),hidden);}
  expect(identical).toBe(true);
+ await panel.locator('[data-bonus-rank=second]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.visibility=''));
+ // Negative control: the same pixel check must detect an exposed second tile.
+ await panel.locator('[data-bonus-rank=first]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.opacity='.5'));const exposed=await bonusPixels(panel);
+ await panel.locator('[data-bonus-rank=second]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.visibility='hidden'));const uncovered=await bonusPixels(panel);
+ expect((await sharp(exposed).raw().toBuffer()).equals(await sharp(uncovered).raw().toBuffer())).toBe(false);
+ await panel.locator('[data-bonus-rank=first]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.opacity=''));
  await panel.locator('[data-bonus-rank=second]').evaluateAll(es=>es.forEach(e=>(e as SVGElement).style.visibility=''));
  for(const zoom of [1,1.6,2]){
   await page.evaluate(z=>{document.documentElement.style.zoom=String(z);},zoom);

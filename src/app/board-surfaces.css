@@ -1,0 +1,47 @@
+/* Local design trial: paint only. SVG geometry, input regions and tile art are unchanged. */
+:where([data-design-1="on"]) .app-shell .estate-panel,:where([data-design-1="on"]) .app-shell .vineyard-personal{
+ background-color:#f4e5bf;
+ background-image:url('/assets/textures/cartography.svg'),linear-gradient(110deg,#fff5da85,#e6cda02b),url('/assets/textures/parchment.webp');
+ background-size:100% auto,auto,256px 256px;
+ background-position:center bottom,center,center;
+ background-repeat:no-repeat,no-repeat,repeat;
+ box-shadow:inset 0 0 0 2px #c5a66c,inset 0 0 24px #79532b24,0 3px 8px #51351f28;
+ border-color:#805c38;
+}
+:where([data-design-1="on"]) .table-view .estate-panel{border-image:url('/assets/textures/wood.webp') 12 round}
+:where([data-design-1="on"]) .app-shell .estate-original-board .live-board-scroll{background:transparent}
+:where([data-design-1="on"]) .app-shell [data-terrain-surface] image{opacity:1}
+:where([data-design-1="on"]) .app-shell .hex-label{fill:#372f20;paint-order:stroke;stroke:#f5e6b8;stroke-width:2px;stroke-opacity:.8;font-weight:600}
+:where([data-design-1="on"]) .app-shell .vineyard-personal{
+ --vine-layer-1:#27664A;--vine-layer-2:#79A64C;--vine-layer-3:#C1C99A;--vine-layer-4:#E9C66C;
+}
+:where([data-design-1="on"]) .app-shell .vineyard-bonus{fill:#302e1f;font-weight:600}
+:where([data-design-1="on"]) .app-shell .vineyard-layer-edge{stroke:#645333;stroke-width:2}
+:where([data-design-1="on"]) .app-shell .vineyard-layer-side{stroke:#fff9e3}
+:where([data-design-1="on"]) .app-shell .common-board-panel{border-image:url('/assets/textures/wood.webp') 12 round}
+:where([data-design-1="on"]) .app-shell .common-board-toolbar{background-image:linear-gradient(100deg,#38291e88,#62472b88),url('/assets/textures/wood.webp')}
+:where([data-design-1="on"]) .app-shell .common-board-actions,:where([data-design-1="on"]) .app-shell .board-touch-tools,:where([data-design-1="on"]) .app-shell .board-bottom{
+ background-image:linear-gradient(#fff5dfbf,#fff5dfbf),url('/assets/textures/parchment.webp');
+}
+:where([data-design-1="on"]) .app-shell .trade-route-panel,:where([data-design-1="on"]) .app-shell .tile-encyclopedia,:where([data-design-1="on"]) .app-shell .settings-panel,:where([data-design-1="on"]) .app-shell .live-scope,:where([data-design-1="on"]) .app-shell .live-setup,
+:where([data-design-1="on"]) .app-shell .vineyard-supply.panel,:where([data-design-1="on"]) .app-shell .online-controls,:where([data-design-1="on"]) .app-shell .direct-toolbar,
+:where([data-design-1="on"]) .goods-history,:where([data-design-1="on"]) .tile-effect-tooltip{
+ background-color:#f9eed4;
+ background-image:linear-gradient(#fff6e3d9,#fff6e3d9),url('/assets/textures/parchment.webp');
+ border-color:#b39863;
+}
+:where([data-design-1="on"]) .app-shell .personal-score-pages{background-image:url('/assets/textures/parchment.webp')}
+:where([data-design-1="on"]) .app-shell :is(.outline-button,.vineyard-zoom-tools button,.live-zoom button,.common-board-toolbar button,.turn-controls button):not(:disabled){box-shadow:inset 0 1px #fff8e43b,0 1px 1px #573b2020}
+@media(forced-colors:active){:where([data-design-1="on"]) .app-shell [data-terrain-surface] image,:where([data-design-1="on"]) .app-shell [data-vine-surface] image{display:none}}
+
+/* This control stays available in both themes. */
+.design-setting{display:inline-flex;align-items:center;gap:8px;min-height:44px;position:relative;cursor:pointer;color:#584022}
+.design-setting input{position:absolute;width:100%;height:100%;inset:0;margin:0;opacity:0;cursor:pointer}
+.design-switch{display:inline-block;width:42px;height:24px;border:1px solid #92774e;border-radius:14px;background:#c9bfa8;flex:none}
+.design-switch:after{content:"";display:block;width:18px;height:18px;margin:2px;border-radius:50%;background:#fff8e7;box-shadow:0 1px 2px #3f2c1b60}
+.design-setting input:checked+.design-switch{background:#496d43}
+.design-setting input:checked+.design-switch:after{transform:translateX(18px)}
+.design-setting input:focus-visible+.design-switch{outline:3px solid #a37a37;outline-offset:3px}
+.design-setting small{min-width:24px;font-size:11px}
+.online-settings-options{display:flex;flex-direction:column;gap:6px}
+.online-settings-options .guidance-setting{min-height:44px}
