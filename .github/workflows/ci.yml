@@ -32,7 +32,7 @@ jobs:
       # Source-authoring review also uses private, deliberately uncommitted originals.
       - run: python scripts/validate-deployment-assets.py
       - run: python scripts/prepare-goods-assets.py --check
-      - run: npm run test:core && npm run test:boards && npm run lint
+      - run: npm run test:core && npm run test:boards && npm run test:android && npm run lint
       - run: npm run build && npx tsc --noEmit
       - run: npm run test:deployment
         env:

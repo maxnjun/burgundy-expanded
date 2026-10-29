@@ -1,0 +1,3 @@
+html {overscroll-behavior: none}
+body {padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.native-apk-note {padding: 4px 12px; font-size: 11px; color: #674c2d; text-align: center}

@@ -1,3 +1,19 @@
+# Android APK — 구현·실행 검증 완료 (2026-10-30)
+
+- 기존 Next UI/게임/AI/CSS/SVG/PNG를 API만 제외한 정적 export + Capacitor8로 패키징. 기존 웹 빌드와 서버/게임규칙 무변경. 앱ID com.maxnjun.burgundyexpanded, version0.1.0/code1, 최소API24/WebView111, target36. 상세 구조·변경파일·서명·업데이트: docs/ANDROID.md.
+- 설치 가능한 Debug APK: .local-data/android/apk/burgundy-expanded-0.1.0-1-debug.apk (약206MiB). JDK21/API36 도구는 .local-data/android/tools, Android 프로젝트는 android/. Release는 외부 키/비밀번호 환경변수로 서명하며 키는 생성·업로드하지 않았다.
+- Android16/API36 Pixel6 전용 에뮬레이터 2400×1080 가로/WebView133에서 실제 설치·오프라인 기동/모든정적화면·터치 주사위/일꾼/공급타일/배치/실제점수·이전행동/새턴Undo/수동종료·포도획득/180도미리보기(상태불변)/확정/새로고침/확대·디자인ON/OFF·폐기기록·JSON 공유/가져오기 검증. 백그라운드 및 온라인/오프라인 강제종료 뒤 저장/Undo sidecar/설정 복원 통과.
+- 기존 Render에 QA방1개만 생성: Android 네이티브HTTP + PC 참가/준비/시작성/주사위/상대sync/Undo/양쪽reload, WSS실시간 및 강제종료후 같은자리복원 확인. QA방은 유지. 기존 방/Redis 삭제·초기화·환경변경·배포 없음. API 버전 de1128143a0d217f5445679bf8b4558f70d1d3b9에 APK온라인버전 고정; 서버 변경시 호환성 확인 후 새APK 필요.
+- 발견·해결: Capacitor SPA fallback이 /online 새로고침을 로컬첫화면으로 처리함. 알려진 UI경로만 번들 index.html로 매핑하고 Capacitor 브리지삽입/보안응답 재사용. Android 파일내보내기는 캐시파일+공유메뉴로 연결. 로컬저장/자리토큰은 앱전용 WebView저장소이며 클라우드백업 금지.
+- 검사: core523/523, boards33/33, Android통신/설정5/5, 배포안전7/7, 타입·전체ESLint·웹production build·오프라인export·DebugAPK 빌드 통과. 기존Playwright PC13/13+모바일6/6 통과. 앱계측 :app:connectedDebugAndroidTest 2/2 통과. 루트 전체 connectedDebugAndroidTest는 미사용 Cordova 템플릿의 Kotlin중복 의존성 실패로 앱대상 태스크를 구분했다. 테스트도구는 종료후 앱을 제거하므로 전용에뮬레이터에 재설치해 검증했다.
+- APK 서명/앱ID/SDK 검증 및 public225개 바이트 일치. 기존dirty 수도원27/28 초기Gitblob 해시 일치, 문서 이전본문 바이트 보존. 같은저장의 웹/Android 공용·개인·포도밭·무역로 너비/24보상/점수일치. 실제스크롤 픽셀을 합친 screenshots/web-android-{estate,vineyard}-comparison.png 시각확인; 비교동안만 떠있는 단계안내 static 처리(제품무변경). 시스템글꼴/AA/밀도 차이는 남음.
+- 로그/스크린샷/검증JSON: .local-data/android/의 core,boards,android-tests-final,deployment-final,types-complete,lint-complete,web-production-build,browser-regression,browser-mobile,device-qa,device-gameplay,device-online-final,offline-restart,instrumentation-app,compare-visible 및 apk-verification. 최초 스크립트의 옛 접근성 이름·지원안되는 CDP터치/대화상자·캡처선택자/화면밖캡처 문제는 실제 ADB터치/네이티브확인창/올바른패널/보이는화면분할로 구분했다. 제품검증을 스크린샷 실패와 혼동하지 않았다.
+- 한계: 실제휴대폰/다른Android버전/다른와이파이·모바일데이터 미검증. 모든확장조합을 에뮬레이터에서 완주한 것은 아니며 기존 규칙523개와 관련UI로 검증. Release개인키 미생성. 브라우저저장은 JSON수동이전, 온라인자리 인증은 자동이전하지 않는다. 기존 JSON만 가져온 턴의 전체Undo제한 유지.
+- Git: 기존 main/origin 같은시작SHA·선행0/0 확인, 기존에 허용된 공개 origin에 Android 관련파일/이 문서접두사만 백업. AutoDeploy Off 사용자확인·render.yaml Off·release.yml [no-deploy] 차단 확인, 커밋제목 [skip render] [no-deploy] 사용. Render API/수동배포/재시작/설정변경 없음. 최종Commit/Push·원격SHA/APK정보는 .local-data/android/backup-result.json 및 완료보고 참조.
+- 다음: 사용자 기기에 DebugAPK 설치해 실기기터치/안전영역/파일공유 확인. 새버전은 같은앱ID/키, 증가한 versionCode와 호환서버SHA로 npm run android:debug 또는 보안서명환경의 android:release. 전체프로젝트 후순위 목표는 기존 TODO 그대로다.
+
+--- 이전 기록 보존 ---
+
 # 페이즈별 버려진 타일 기록 — 구현·검증 완료 (2026-10-30)
 
 - 성공한 advancePhase 전후의 market.removedTileIds/vineyards.removed 차이만 GameState.discardedTiles에 {phase,tileIds,vineyardTileIds}로 추가. 구매/개인영지/저장고/이전개인폐기/상품 제외, 실제 폐기되는 일반·검은·포도 공급대/상점 포함. 여관이월/방패유지·반환 규칙 그대로. E는 기존 코드가 최종정산만 하므로 공급처를 바꾸지 않고0개 기록.

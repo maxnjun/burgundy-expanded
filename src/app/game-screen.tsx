@@ -44,6 +44,7 @@ import { CommonBoard } from "./common-board";
 import { createPracticeSession,publicPhaseGoods } from "../game/practice";
 import { getSelectableBoards, VERIFIED_BOARD_DEFINITIONS } from "../game/boards/catalog";
 import { parseSavedGame, serializeSavedGame, type SavedGame } from "../game/save";
+import {downloadSave} from './save-download';
 import { chooseComputerAction } from "../game/computer";
 import { directActions, directBoardAction, boardTarget, directShieldActions, directCost, automaticAction } from "../game/direct-actions";
 import { FortressMarkers } from "./fortress-markers";
@@ -137,11 +138,10 @@ export default function GameScreen() {
     catch (error) { startTransition(() => setSaveIssue(error instanceof Error?error.message:"자동 저장 실패")); }
   }, [game, logs, history, globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, tableView, saveReady, saveBlocked]);
   useEffect(()=>{if(!notice)return;const timer=setTimeout(()=>setNotice(""),6000);return()=>clearTimeout(timer);},[notice]);
-  function exportSave() {
+  async function exportSave() {
     try {
       const text = serializeSavedGame({ format: "burgundy-local-v1", randomAlgorithm: "counter-v1", game, logs, view: { zoom: globalZoom, commonZoom, computerPlayerIds, computerPaused, focus, boardZooms, table: tableView } });
-      const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      const link = document.createElement("a"); link.href = url; link.download = "burgundy-save.json"; link.click(); URL.revokeObjectURL(url);
+      await downloadSave(text);
     } catch { setNotice("현재 상태를 저장하지 못했습니다."); }
   }
   const [selectingGoods,setSelectingGoods]=useState(false);

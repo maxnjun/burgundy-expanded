@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Burgundy Expanded</string>
+    <string name="title_activity_main">Burgundy Expanded</string>
+    <string name="package_name">com.maxnjun.burgundyexpanded</string>
+    <string name="custom_url_scheme">com.maxnjun.burgundyexpanded</string>
+</resources>

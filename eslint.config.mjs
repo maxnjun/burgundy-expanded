@@ -17,6 +17,9 @@ const eslintConfig = defineConfig([
     ".local-data/**",
     "test-results/**",
     "playwright-report/**",
+    "android/app/src/main/assets/**",
+    "android/**/build/**",
+    "android/capacitor-cordova-android-plugins/**",
   ]),
 ]);
 
