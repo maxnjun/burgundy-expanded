@@ -1,0 +1,214 @@
+{
+  "approval": "2026-10-29 revision-06 (revision-05 unchanged black/vine and compact market)",
+  "assets": {
+    "church": {
+      "file": "church.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        41,
+        80,
+        599,
+        321
+      ],
+      "sha256": "9f1f851b18d5208271ff7548099e9f1facf658c8358ef9dab7686d0885724c04",
+      "source": "revision-06/icons/church.png"
+    },
+    "market": {
+      "file": "market.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        53,
+        77,
+        587,
+        323
+      ],
+      "sha256": "1301308261d76020f38188042fd82f76395406aa5def5fc79314925e560471ea",
+      "source": "revision-06/icons/market.png"
+    },
+    "market-compact": {
+      "file": "market-compact.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        99,
+        77,
+        540,
+        323
+      ],
+      "sha256": "e55166888ede362bd538e38403582eca5153ed7e89cbb28f706762ff2509d96c",
+      "source": "revision-05/icons/market-120.png"
+    },
+    "building": {
+      "file": "building.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        54,
+        94,
+        585,
+        305
+      ],
+      "sha256": "fa33522bd6e1d39c0adf3a55c07c12c16871652d912015bd839860eb7ceb732b",
+      "source": "revision-06/icons/building-120-unfitted.png"
+    },
+    "building-compact": {
+      "file": "building-compact.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        101,
+        86,
+        539,
+        315
+      ],
+      "sha256": "a803a883161658a7c1d8b37f9fefdf91c7f977a6bfb4d7fd717f46c9189a903c",
+      "source": "revision-06/icons/building-120.png"
+    },
+    "black": {
+      "file": "black.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        53,
+        80,
+        587,
+        321
+      ],
+      "sha256": "100f87e977c2b379910cfea4567cc75c845c8b14b9946a7cfb55e4561d0395e1",
+      "source": "revision-05/icons/black-120-unfitted.png"
+    },
+    "vine": {
+      "file": "vine.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        42,
+        102,
+        597,
+        298
+      ],
+      "sha256": "2ac341fc5daed298710cc5f919655dc77e851e35f69a91b96e5903f59390f2f6",
+      "source": "revision-05/icons/vine-120-unfitted.png"
+    },
+    "placement": {
+      "file": "placement.png",
+      "canvas": [
+        640,
+        400
+      ],
+      "alphaBounds": [
+        68,
+        91,
+        572,
+        309
+      ],
+      "sha256": "8a46650b41aa4b628913550904de32785aa54fbede71260a45a6454e9ff0d2be",
+      "source": "revision-06/icons/placement.png"
+    },
+    "sale": {
+      "file": "sale.png",
+      "canvas": [
+        231,
+        304
+      ],
+      "alphaBounds": [
+        12,
+        12,
+        219,
+        292
+      ],
+      "sha256": "3459fa3422deb00091cd7ee829e418337be91c5fac2f8bf355f9e32650406152",
+      "source": "revision-06/icons/sale.png"
+    },
+    "workers4": {
+      "file": "workers4.png",
+      "canvas": [
+        246,
+        328
+      ],
+      "alphaBounds": [
+        12,
+        12,
+        234,
+        316
+      ],
+      "sha256": "a839a631d071708693c77232b1888ba5672c02a1f13c2ca0850a25dcbab6e97f",
+      "source": "revision-06/icons/workers4.png"
+    },
+    "silver2": {
+      "file": "silver2.png",
+      "canvas": [
+        416,
+        228
+      ],
+      "alphaBounds": [
+        56,
+        41,
+        359,
+        187
+      ],
+      "sha256": "21f1cb8147363da2988b7a34da15d2b405e7fee62fdcda44a00601b8ca896db4",
+      "source": "revision-06/icons/silver2.png"
+    },
+    "vp4": {
+      "file": "vp4.png",
+      "canvas": [
+        267,
+        317
+      ],
+      "alphaBounds": [
+        12,
+        12,
+        255,
+        305
+      ],
+      "sha256": "fb2cc77f88a7a9230a5e9ed3a62f63b2301ba18402cef51e95c37462add89f89",
+      "source": "revision-06/icons/vp4.png"
+    },
+    "free-action": {
+      "file": "free-action.png",
+      "canvas": [
+        327,
+        378
+      ],
+      "alphaBounds": [
+        12,
+        12,
+        315,
+        366
+      ],
+      "sha256": "3de79404de4837ef6e58119c5ae1bc102b4c80f254b455ff7cf44ec58e75ddf0",
+      "source": "revision-06/icons/free-action.png"
+    }
+  },
+  "rewardMap": {
+    "church": "church",
+    "market": "market",
+    "carpenters-workshop": "building",
+    "black-get": "black",
+    "vine-get": "vine",
+    "town-hall": "placement",
+    "warehouse": "sale",
+    "boarding-house": "workers4",
+    "bank": "silver2",
+    "watchtower": "vp4",
+    "castle": "free-action",
+    "white-castle": "free-action"
+  }
+}

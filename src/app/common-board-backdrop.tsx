@@ -30,7 +30,7 @@ export function CommonBoardBackdrop({ width: boardWidth, height }: { width: numb
     <rect x={left+10} y="12" width={width-20} height={height-24} rx="2" fill="none" stroke="#94713f" strokeOpacity=".48" strokeWidth=".7"/>
     {[[left+10,12,1,1],[right-10,12,-1,1],[left+10,height-12,1,-1],[right-10,height-12,-1,-1]].map(([x,y,sx,sy],i)=><path key={i} d={corner} transform={`translate(${x} ${y}) scale(${sx} ${sy})`} fill="none" stroke="#826035" strokeWidth="1.25" opacity=".65"/>)}
     <g fill="none" stroke="#aa8346" strokeWidth="1.1" opacity=".2">
-      <path d="M22 185C-8 126 93 131 134 151S223 177 254 143M386 143C431 183 487 129 550 142S619 161 616 185M22 550C-5 612 88 601 135 579M506 568C569 585 634 601 618 537"/>
+      <path data-board-flourish="true" transform={`scale(${boardWidth/640} ${height/640})`} vectorEffect="non-scaling-stroke" d="M22 185C-8 126 93 131 134 151S223 177 254 143M386 143C431 183 487 129 550 142S619 161 616 185M22 550C-5 612 88 601 135 579M506 568C569 585 634 601 618 537"/>
       {[left+25,right-25].map(x=><g key={x} transform={`translate(${x} 422)`}><path d="M0 19V-19M0 6C-22-5-12-20-3-7L0-20 3-7C12-20 22-5 0 6M-9 10H9M-6 15H6"/></g>)}
     </g>
   </g>;

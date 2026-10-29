@@ -1,3 +1,18 @@
+# 보상 아이콘 정식 적용·공급처 윤곽 수정 — 구현·검증 완료 (2026-10-29~30)
+
+- 승인 PNG13장을 바이트 그대로 public/assets/effects/에 등록하고 공통 RewardEffectArt로 실제 포도밭24칸/무역로에 연결했다. 타일→저장고/저장고→빈영지, 베이지실루엣1개, 판매빨간사각형·삼각형, 일꾼4(2×2)/은화2/승점4 유지. 승인 시안의 칸 사이 요구주사위12개와 중앙 아이콘을 사용한다. 판매 그림자의 간섭만 표시높이103→98(약5% 축소)로 해결했다. 무역로 카탈로그12장×3칸, 할당/상품/접기와 게임 규칙은 그대로다.
+- 점선 원인은 채워진 direct-unavailable 타일의 supply-selection을 점선으로 만드는 CSS였다. 해당 규칙만 제거하여 빈 슬롯 점선·투명 hit 영역·합법/hover/focus/선택 실선은 유지했다. 은화 옆 곡선은640×640 기준 장식 경로가950×1030 보드 중앙에 들어온 것이므로 장식만 scale했다. 공급/타일/은화 좌표·크기는 변경하지 않았다.
+- 변경28파일의 목록/규격/출처: docs/design/reward-effects.md 및 public/assets/effects/manifest.json. CI에는 새 검사를 기존 Chrome모바일/WebKit 목록에 추가하고 기존 필수 검사를 유지했다. 게임/서버/저장 코드 무변경, 기존 소스/dirty PNG69개 해시와 기존 문서본문 바이트 보존.
+- 이번 실행: core515/515, boards33/33, 배포안전검사7/7(실제 배포 아님), TypeScript/전체 ESLint/production build 통과. validate-deployment-assets.py118개PNG와 validate-tile-assets.py 통과, 새 PNG13개 승인원본 바이트 일치.
+- 브라우저: 전체PC217 실행=212통과/2실패/3조건부스킵. 실패는 실행 중 새 테스트 이름 변경에 따른 수집 오류1개와 기존 재접속검사의 동시GET 2회(18ms 차이) 타이밍1개다. 소스나 기존 검사를 완화하지 않고 최종파일+기존재접속6개 독립 재검 모두 통과. 추가된 온라인 검사까지 현재PC218항목 중 실행가능215항목을 확인했고 PC의3스킵은 원래 모바일전용이다. 재접속검사의 타이밍 민감성은 남아 있다.
+- Chrome터치/WebKit 관련10개+온라인두좌석3개, 모바일200%탐색2개, 전체무역로캡처1개 통과(재실행 중복 포함). PC스킵 모바일전용3개를 Chrome에서 모두 통과. 추가 WebKit 검사1개 통과/2개는 Chromium CDP API 미지원으로 실행불가(원래 WebKit CI대상 아님). 이2개를 게임 기능 성공으로 보고하지 않는다. 실제 Android/iPhone 기기·외부네트워크·운영Redis는 미검증.
+- 실화면: .local-data/reward-icons-apply/screenshots/의 after-vineyard.png, trade-all-five.png, common-center-before-after.png, common-empty-slot.png, *mobile-390.png, *iphone-webkit.png. PC/모바일 두디자인·100/160/200%, PNG 실제 알파픽셀과 주사위 교차0(가장자리 반픽셀/alpha32 미만 안티앨리어싱 제외), 배치·회전·보상·점수·두좌석sync·reload·Undo를 확인했다. 모바일 전체 축소보기의 복합아이콘은 기존200%확대/가로탐색으로 읽는다.
+- 로그는 .local-data/reward-icons-apply/{core-final,boards,deployment,build-final,types-complete,lint-complete,full-pc,pc-recheck,mobile-related,online-final,mobile-zoom,mobile-help}.log. 최초 샌드박스 임시파일 EPERM은 권한 있는 테스트 환경에서 코어 전체 재실행515개 통과로 분리했다. 운영방/Redis/환경변수 삭제·초기화·변경 없음.
+- Git: main/기존origin 확인, 원격 선행0/로컬선행0에서 시작. 기존에 허용된 공개 origin(maxnjun/burgundy-expanded)에 이번28파일 및 문서접두사만 반영한다. 기존 dirty 수도원27/28·입력폴더·문서 과거수정은 제외. 지정 subject `feat: apply reward icons and fix supply board outlines`, 본문 [skip render] [no-deploy]. 사용자 AutoDeploy Off 확인, render.yaml Off·release no-deploy차단 유지. Render 배포/API/수동배포/서비스재시작/설정변경 미실행. 운영health 조회는20초 응답시간초과로 운영버전 비교는 미확인이다.
+- Commit/일반Push·원격main 최종SHA 결과는 .local-data/reward-icons-apply/backup-result.json 및 완료보고 참조. 다음 재개 시 이 파일과 Git상태부터 확인한다. Render 반영은 사용자 별도 작업이다.
+
+--- 이전 기록 보존 ---
+
 # 상품 타일 소폭 확대·기울임 쌓기 — 완료 (2026-10-29)
 
 - 개인보관52→60px(+15.4%), 무역로앞면42→50px(+19.0%). 앞장정면/뒤장오른쪽·아래4px와3~4도회전, 최대펼침8px로긴묶음폭제한. 실제카드전장수 유지, 2장부터 ×N배지·1장숨김. 배지는그림/주사위와경계가겹치지않게 위여백사용. 기존74px보관슬롯/높이/좌표, 무역로101×154칸 유지·내부세로여백만5→1px조정. PNG/공용보드·판매내역·보상/도움말 크기는무변경.

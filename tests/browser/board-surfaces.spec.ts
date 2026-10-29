@@ -51,11 +51,13 @@ test('six empty terrains and four actual vineyard layers keep coordinates, dice 
  for(const slot of VINE_SLOTS){
   const s=vine.locator(`[data-vine-slot="${slot.id}"]`);await expect(s).toHaveAttribute('data-layer',String(slot.layer));
   await expect(s.locator('[data-vine-surface]')).toHaveCount(2);
+  await expect(s.locator('[data-white-die]')).toHaveCount(1);
+  await expect(s.locator('[data-white-die] rect')).toHaveAttribute('fill','#fffbea');
   for(const [i,cell] of slot.cells.entries()){
    const c=s.locator('[data-vine-cell]').nth(i);await expect(c.locator('.vineyard-cell')).toHaveAttribute('points',vinePoints(cell.q,cell.r));
    await expect(c.locator('[data-vine-surface]')).toHaveAttribute('data-vine-surface',String(slot.layer));
-   await expect(c.locator('[data-white-die] rect')).toHaveAttribute('fill','#fffbea');
-   await expect(c.locator('.vineyard-bonus')).not.toBeEmpty();
+   await expect(c.locator('[data-reward-effect]')).toHaveAttribute('data-reward-effect',cell.bonus);
+   await expect(c.locator('[data-reward-effect]')).toHaveAccessibleName(/.+/);
   }
  }
  const hit=await estate.locator('[data-terrain-surface]').first().evaluate(e=>getComputedStyle(e).pointerEvents);expect(hit).toBe('none');

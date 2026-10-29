@@ -3,6 +3,7 @@ import {createPracticeSession} from "../../src/game/practice";
 import {applyCoreAction} from "../../src/game/core";
 import {serializeSavedGame} from "../../src/game/save";
 import {VINE_SLOTS} from "../../src/game/vineyards";
+import {rewardDieOverlaps} from "./reward-geometry";
 
 // Imported mid-turn fixture has action undo, but deliberately no earlier turn-start checkpoint.
 test("white requirements, larger layered goods and trade rewards keep game state and board input",async({page},info)=>{
@@ -21,8 +22,8 @@ test("white requirements, larger layered goods and trade rewards keep game state
  const cells=estate.locator('[data-estate-cell]');
  for(const value of [1,2,3,4,5,6]){const d=cells.locator(`[data-white-die="${value}"]`).first();await expect(d).toBeAttached();await expect(d.locator("circle")).toHaveCount(value);await expect(d.locator("text")).toHaveCount(0);await expect(d).toHaveAttribute("pointer-events","none");}
  await expect(cells.filter({has:page.locator('[data-estate-tile]')}).locator('[data-white-die]')).toHaveCount(0);
- for(const slot of VINE_SLOTS){const d=vine.locator(`[data-vine-slot="${slot.id}"] [data-white-die]`);await expect(d).toHaveCount(2);for(const face of await d.all()){await expect(face).toHaveAttribute("data-white-die",String(slot.value));await expect(face.locator("circle")).toHaveCount(slot.value);}}
- const overlaps=await vine.locator("[data-vine-cell]").evaluateAll(cells=>cells.some(c=>{const a=c.querySelector("[data-white-die]")!.getBoundingClientRect(),b=c.querySelector(".vineyard-bonus")!.getBoundingClientRect();return Math.min(a.right,b.right)-Math.max(a.left,b.left)>0&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>0;}));expect(overlaps).toBe(false);
+ for(const slot of VINE_SLOTS){const d=vine.locator(`[data-vine-slot="${slot.id}"] [data-white-die]`);await expect(d).toHaveCount(1);for(const face of await d.all()){await expect(face).toHaveAttribute("data-white-die",String(slot.value));await expect(face.locator("circle")).toHaveCount(slot.value);}}
+ expect(await rewardDieOverlaps(vine)).toEqual([]);
  await expect(estate.locator('[data-goods-layer]')).toHaveCount(held.length);const goods=estate.locator('[data-goods-front]'),size=await goods.boundingBox();expect(size!.width).toBe(60);expect(size!.height).toBe(60);
  // Approved faces bake in the die; source pip counts are checked by prepare-goods-assets.py.
  await expect(goods.locator('image')).toHaveAttribute('data-goods-image',`goods_${value}.png`);
