@@ -1,4 +1,5 @@
 import {startingCastlePending,validStartingSetup} from "../starting-castles";
+import {validDiscardedTiles} from '../discarded-tiles';
 import {validVineyards} from "../vineyards";
 import {validCastleActions} from "../castle-actions";
 import {validCustomTrade} from "../custom-trade-routes";
@@ -57,6 +58,7 @@ export function validateCoreState(state: GameState): ValidationResult {
     if (state.turn.stage === "round-setup" && (state.status !== "playing" || state.turn.activePlayerId !== null ||
       state.turn.actedPlayerIds.length || state.dice.rolledForRound || state.dice.roundGoodsDistributed)) issue("Inconsistent round setup");
     if(!validVineyards(state))issue("Invalid vineyard conservation, reservations or effects");
+    if(!validDiscardedTiles(state))issue("Invalid phase discarded tile history");
     if(!validCastleActions(state))issue("Invalid deferred castle actions");
     if(!validCustomTrade(state))issue("Invalid custom trade routes or pending reward");
     if (!validInns(state)) issue("Invalid inn supply or duplicate inn in region");

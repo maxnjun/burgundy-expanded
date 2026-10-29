@@ -1,3 +1,18 @@
+# 페이즈별 버려진 타일 기록 — 구현·검증 완료 (2026-10-30)
+
+- 성공한 advancePhase 전후의 market.removedTileIds/vineyards.removed 차이만 GameState.discardedTiles에 {phase,tileIds,vineyardTileIds}로 추가. 구매/개인영지/저장고/이전개인폐기/상품 제외, 실제 폐기되는 일반·검은·포도 공급대/상점 포함. 여관이월/방패유지·반환 규칙 그대로. E는 기존 코드가 최종정산만 하므로 공급처를 바꾸지 않고0개 기록.
+- 기본접힘 공통 DiscardedTiles 패널을 로컬·온라인 행동기록 바로아래 연결. 총수·완료페이즈별 수·기존TileArt/VineTile·자동줄바꿈·320px내부스크롤·읽기전용. 온라인 기존행동기록은 기본펼침details로 내용/기능을 유지하며 독립접기를 지원. 19개 변경파일 목록/동작규격은 docs/features/discarded-tiles.md.
+- 선택형필드로 기존스키마0.2.1·저장format 유지. 과거필드누락저장은 그대로허용/이전폐기를추측하지않고 이후페이즈부터기록. 중복/미래페이즈·중복/미등록/미폐기ID 거부. 서버공개view는 기록타일정의만 추가하며 supplyPool/포도bag 비공개 유지. 전체상태저장/CAS/요청ID/스냅샷Undo 재사용. 기존턴범위에 따라 페이즈종료 자체의Undo는 여전히불가.
+- 이번실행 전체core523/523·boards33/33·배포안전7/7(실제배포아님)·TypeScript·전체ESLint·production build 통과. 에셋검사PNG118개 및 validate-tile-assets.py 통과. 신규코어7+Redis계약1=8개 추가, 최초직접관련32개도통과. 테스트기준 삭제/완화없음.
+- 실제브라우저 신규9/9=PC/터치Chrome/iPhoneWebKit 각3개. A3개/구매제외/동종다른ID·수도원번호·독립접기·A/B누적·빈기록·legacy·download/import/reload·새게임초기화·온라인두좌석/Undo 확인. 기존game/internet-online/online-controls PC회귀9/9도통과(합18개). 최초온라인 선택자를 기존 버튼명 단계진행으로 수정한 뒤 모두통과. 신규파일을 기존모바일CI에 추가.
+- Redis는 계약테스트더블에서 커밋응답유실→새RoomStore복구→동일요청재전송 시 기록1회와공개타일정의/비공개풀분리를 확인. 브라우저는 격리된 파일 저장소4319/별도HTTP 테스트서버만사용. 실제 Android/iPhone기기·외부네트워크·운영Upstash는 미검증/미접속.
+- 실제캡처: .local-data/discarded-tiles/screenshots/{desktop-1280,mobile-390,iphone-webkit}-{discarded-two-phases,online-discarded}.png. final-browser/에는100·160·200%와빈기록 캡처도있다. 이미지·슬롯·좌표·보상/점수규칙은무변경. 시작사본/337개기존에셋해시 및 기존dirty문서본문 모두보존.
+- 로그: .local-data/discarded-tiles/{core-related,core-full,boards,deployment,types-final,lint-final,build,browser-final,regression}.log. 구현파일의diff·비밀정보·기존미커밋분리검토 후이번19파일/문서접두사만백업한다. 기존수도원27/28PNG·입력폴더·문서과거수정은제외.
+- Git main/원격main b0ded29 동일에서 시작, 기존허용된 origin maxnjun/burgundy-expanded 확인. subject feat: add discarded tiles history by phase, 본문 [skip render] [no-deploy]. 사용자확인 AutoDeploy Off·render.yaml Off·release no-deploy차단 유지. Render 배포/API/재시작/환경변수변경·운영데이터초기화 미실행.
+- Commit/Push·원격SHA 최종결과는 .local-data/discarded-tiles/backup-result.json 및 완료보고 참조. 다음재개는 이파일/Git상태부터확인. Render 반영은 사용자 별도작업이다.
+
+--- 이전 기록 보존 ---
+
 # 보상 아이콘 정식 적용·공급처 윤곽 수정 — 구현·검증 완료 (2026-10-29~30)
 
 - 승인 PNG13장을 바이트 그대로 public/assets/effects/에 등록하고 공통 RewardEffectArt로 실제 포도밭24칸/무역로에 연결했다. 타일→저장고/저장고→빈영지, 베이지실루엣1개, 판매빨간사각형·삼각형, 일꾼4(2×2)/은화2/승점4 유지. 승인 시안의 칸 사이 요구주사위12개와 중앙 아이콘을 사용한다. 판매 그림자의 간섭만 표시높이103→98(약5% 축소)로 해결했다. 무역로 카탈로그12장×3칸, 할당/상품/접기와 게임 규칙은 그대로다.

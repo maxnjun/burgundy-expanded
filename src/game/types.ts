@@ -169,7 +169,15 @@ export interface ScoreBreakdown {
   readonly finalAdditionsTotal: number;
   readonly total: number;
 }
+/** References to already removed public tiles, never additional physical locations. */
+export interface PhaseDiscardedTiles {
+  readonly phase: Phase;
+  readonly tileIds: readonly TileId[];
+  readonly vineyardTileIds: readonly string[];
+}
 export interface GameState {
+  /** Legacy saves omit this field; past phases cannot be reconstructed from all removed tiles. */
+  readonly discardedTiles?: readonly PhaseDiscardedTiles[];
   readonly vineyards?: import("./vineyards").VineyardState;
   readonly tradeRoutes?: import("./custom-trade-routes").CustomTradeState;
   readonly schemaVersion: "0.2.1";

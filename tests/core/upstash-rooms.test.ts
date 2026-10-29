@@ -1,4 +1,5 @@
 import {test} from "node:test";
+import {discardBoundary} from "../fixtures/discarded-tiles";
 import assert from "node:assert/strict";
 import {mkdtemp,readdir} from "node:fs/promises";
 import {tmpdir} from "node:os";
@@ -118,4 +119,17 @@ test("two seats submitting simultaneously commit only the active player's action
  assert.equal(results[0].status,"fulfilled");assert.ok(results[1].status==="rejected"&&results[1].reason instanceof RoomError&&[400,409].includes(results[1].reason.status));
  const saved=await bStore.view(a.id,b.token);assert.equal(saved.revision,rolled.revision+1);assert.equal(saved.players[0].workers,rolled.players[0].workers+2);assert.deepEqual(saved.players[1],rolled.players[1]);
  assert.ok(!JSON.parse([...p.values.values()][0]).requests.some((r:{id:string})=>r.id==="other-seat-request-001"));
+});
+
+
+test("phase discarded history survives a lost Redis commit response and a fresh server without exposing the reserve",async()=>{
+ const p=provider(),backend=()=>new UpstashRooms("https://test.upstash.io","test-only","staging",p.request),store=new RoomStore("unused",backend());
+ const a=await store.create("A"),b=await store.joinRoom(a.id,"B"),key=[...p.values.keys()][0],raw=JSON.parse(p.values.get(key)!);
+ raw.game=discardBoundary(3,true);raw.logs=[];delete raw.history;p.values.set(key,JSON.stringify(raw));
+ const before=await store.view(a.id,a.token),action=before.actions.find(x=>x.action.type==="advance-phase")!.action;
+ p.drop();const after=await store.act(a.id,a.token,before.revision,action,"redis-phase-request-01");
+ assert.equal(after.discardedTiles!.length,1);assert.equal(after.discardedTiles![0].tileIds.length,3);assert.equal(after.discardedTiles![0].vineyardTileIds.length,4);
+ const recovered=await new RoomStore("never-created",backend()).view(a.id,b.token);assert.deepEqual(recovered.discardedTiles,after.discardedTiles);assert.deepEqual(recovered.tiles,after.tiles);
+ assert.deepEqual((await store.act(a.id,a.token,before.revision,action,"redis-phase-request-01")).discardedTiles,after.discardedTiles);
+ const stored=JSON.parse(p.values.get(key)!);assert.deepEqual(stored.game.discardedTiles,after.discardedTiles);assert.ok(stored.game.market.supplyPools.flatMap((pool:{remainingTileIds:string[]})=>pool.remainingTileIds).every((id:string)=>!recovered.tiles[id]));
 });

@@ -1,4 +1,5 @@
 import {refillVineyards,vineScore} from "../vineyards";
+import {recordPhaseDiscards} from '../discarded-tiles';
 import { supplyInn } from "../inns";
 import { startShieldPhase } from "./shield-effects";
 import { hasShield, shieldLayout, setShieldLayout, rewardShieldWorkerGain } from "../shields";
@@ -135,6 +136,7 @@ export function advancePhase(state: GameState, playerId: string): EngineResult<T
     draft.dice.rolledForRound = false; draft.dice.roundGoodsDistributed = false; draft.dice.whiteDie = null;
   }
   if(shieldLayout(draft)?.effectsActive){const layout=shieldLayout(draft)!;draft=structuredClone(setShieldLayout(draft,{...layout,rules:{...layout.rules!,phase:null}})) as Mutable<GameState>;}
+  draft=recordPhaseDiscards(state,draft) as Mutable<GameState>;
   draft.revision++;
   const result = validateCoreState(draft);
   if (!result.valid) return { ok: false, issues: result.issues };

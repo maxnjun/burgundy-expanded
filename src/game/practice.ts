@@ -201,7 +201,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     blackDepot=blackDepot.map(()=>draw("black"));
   }
   const roundGoods = phaseGoods.A;
-  const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing",
+  const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing", discardedTiles:[],
     config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,
       players: players.map(p => ({ id: p.id, name: p.name, color: p.color, seat: p.seat, boardId: p.duchy.boardId, startingCastleCellId: p.duchy.startingCastleCellId, controller: "human" })),
       startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.vineyards?[{id:"vineyards" as const,options:{}}]:[]),...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
