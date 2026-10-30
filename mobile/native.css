@@ -2,8 +2,18 @@ html {overscroll-behavior: none}
 body {padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .native-apk-note {padding: 4px 12px; font-size: 11px; color: #674c2d; text-align: center}
 
-/* Landscape phones exceed the web's 760px breakpoint but cannot fit both boards.
-   Wrap by available space instead of leaving the supply offscreen to the right. */
-.table-view .common-vineyard-row,.online-screen .online-common-board-row {flex-wrap: wrap}
-.table-view .common-vineyard-row>.common-board-panel {flex-shrink: 1; max-width: 100%}
-.online-screen .online-common-board-row>.common-board-panel {min-width: min(640px,100%)}
+/* Keep separate boards on one touch-scrollable strip, including landscape phones. */
+.table-view .common-vineyard-row,.online-screen .online-common-board-row {
+  display: flex; flex-direction: row; flex-wrap: nowrap; max-width: 100%;
+  overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+.table-view .common-vineyard-row>.common-board-panel,
+.online-screen .online-common-board-row>.common-board-panel {
+  flex: 0 0 min(950px,100%); min-width: 0; max-width: 100%;
+}
+.table-view .common-vineyard-row>.vineyard-supply {flex: 0 0 min(360px,100%); max-width: 100%}
+.online-screen .online-common-board-row>.vineyard-supply {flex: 0 0 min(300px,100%); max-width: 100%}
+/* Keep native chaining available; the strip also pans from the board header. */
+.table-view .common-board-panel .live-board-scroll,
+.table-view .common-board-panel .common-board-scroll {overscroll-behavior-x: auto}

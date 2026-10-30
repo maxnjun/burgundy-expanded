@@ -1,3 +1,15 @@
+# Android 공용보드·포도 공급처 가로 스크롤 — 구현·검증 완료 (2026-10-30)
+
+- 기준da095fb. Android 전용 nowrap/공통 overflow-x:auto/양 패널 축소0. 공용보드 min(950px,가용폭), 공급처 로컬360/온라인300 및 기존 간격 유지. 작은 폭만 가용폭 상한. 기존 웹/이미지/게임규칙/좌표/클릭 구조 무변경.
+- 내부 overscroll은 Android auto/바깥 strip contain. WebView는 확대 그림의 내부 탐색을 우선하고 끝에서 부모로 즉시 전달은 미확인이라 두 패널 이동은 상단 단계 안내 줄 사용. 실제 양방향 ADB 스와이프로 끝까지 이동 검증. 기존 BoardViewport/드래그/Zoom 재사용, 새 의존성 없음.
+- version0.1.2/code3, 같은 앱ID/Debug키/origin. APK2→3 업데이트 후 게임 전체 보존 확인. 이전 APK1/2 보존. 기존 dirty/문서 사본 before/에 보존.
+- 이번 검사 core523/boards33/Android5/배포안전7·타입/전체린트·웹production/APK빌드 통과. 최종 공급처3/3·기존 공용보드/수동턴 포함15/15 통과(재실행 포함). 실제 터치에서 오구매0·주사위/보관타일 선택 유지.
+- Android16/WebView133에서 A–E+종료/4배율/두 디자인48조합·빈칸·실제ADB 양방향스와이프/획득/배치/보상/reload 통과. 75→100→75버튼·200%드래그237px·force-stop 저장전체복원. 필수 좌우 ADB PNG와 전체 공급처 캡처 직접 확인. 기존 QA방만 재사용한 Android+PC 획득/sync/Undo/양쪽reload 통과, 새방0/기존방삭제0. 로컬2인 및 기존2~4인턴 회귀 포함.
+- 호스트 QEMU/SwiftShader 0xc0000005 종료를 GPU host로 바꿔44→48 재개완료. 초기 System UI ANR은Wait후복구, 접근성덤프null은 실제native뷰좌표로 보정. QA 저장가져오기 대기·스와이프거리 판정도 수정. 제품 오류와 구분.
+- 이번7파일/문서 접두사만 선별 백업. 상세 docs/qa/android-horizontal-supply.md, 로그/PNG/최종APK·Commit/Push/원격SHA는 .local-data/android-horizontal/와 backup-result.json/완료보고 참조. Render배포/재시작/설정변경금지·배포차단태그유지. 실물휴대폰/다른WebView와 기존후순위 개발목표는 미완료 그대로 유지.
+
+--- 이전 기록 보존 ---
+
 # Android 포도 공급처 복구 — 구현·검증 완료 (2026-10-30)
 
 - 기준414d4d0. 기존dirty 문서본문/수도원27·28/입력자료 보존; 시작사본 .local-data/android-vineyard-fix/before/. Render/Redis/방 데이터/환경변수 무변경.

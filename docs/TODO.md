@@ -1,3 +1,17 @@
+# Android 공용보드 가로 스크롤 (2026-10-30)
+
+- [x] 기존wrap/내부overscroll 조사·원래dirty/문서본문 보존
+- [x] Android전용nowrap/공통가로스크롤/각패널축소0/작은폭상한·versionCode3
+- [x] core523/boards33/Android5/배포안전7/타입/린트/웹/APK빌드·업데이트저장보존
+- [x] Android에뮬레이터48조합·ADB양방향스와이프/오선택0·선택유지·200%드래그·획득/배치/보상·강제종료저장복원
+- [x] 기존QA온라인방Android+PC sync/Undo/reload·로컬2~4인회귀·필수좌우PNG직접확인·PC무변경
+- [x] 이번7파일선별/동일앱ID·서명·versionCode3·기존APK보존/배포차단확인
+- 최종커밋기록APK/일반Push/원격SHA 결과는 .local-data/android-horizontal/backup-result.json 및 완료보고 참조.
+- [ ] 사용자 실물휴대폰/다른Android·WebView 확인 (에뮬레이터와구분)
+- 확대그림은기존내부탐색,두패널이동은상단단계안내줄사용. Render배포/재시작금지. 이전개발목표는아래그대로유지.
+
+--- 이전 기록 보존 ---
+
 # Android 포도 공급처 복구 (2026-10-30)
 
 - [x] 기존APK 누락재현/공급데이터·DOM·화면좌표 비교/기존dirty 보존

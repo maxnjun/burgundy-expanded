@@ -10,20 +10,28 @@ import {startLobbyHttp} from './starting-castles';
 
 const nativeCss=readFileSync('mobile/native.css','utf8');
 async function nativeStyle(page:Page){const style=await page.addStyleTag({content:nativeCss});await style.evaluate(e=>document.head.prepend(e));}
+async function swipe(page:Page,target:ReturnType<Page['locator']>,direction:'left'|'right'){
+ await target.evaluate(e=>{const r=e.getBoundingClientRect();scrollBy(0,r.y+r.height/2-innerHeight/2);});const b=(await target.boundingBox())!,viewport=page.viewportSize()!,x=(Math.max(25,b.x)+Math.min(viewport.width-25,b.x+b.width))/2,y=b.y+b.height/2,end=direction==='left'?25:viewport.width-25;
+ const cdp=await page.context().newCDPSession(page);
+ try{await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y,id:1}]});for(let n=1;n<=12;n++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+(end-x)*n/12,y,id:1}]});await page.waitForTimeout(25);}await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}finally{await cdp.detach();}
+}
 async function load(page:Page,g:GameState,zoom=1){
  await page.goto('/');
  const settings=page.getByRole('button',{name:'⚙ 게임 준비',exact:true});await settings.click();
  await page.getByLabel('저장 파일 불러오기',{exact:true}).setInputFiles({name:'vineyard.json',mimeType:'application/json',buffer:Buffer.from(vineyardSave(g,zoom))});
- await expect(page.locator('.vineyard-supply')).toBeVisible();
- if(await settings.getAttribute('aria-expanded')!=='true')await settings.click();
+ await expect(settings).toHaveAttribute('aria-expanded','false');await settings.click();
  await page.getByLabel('합법 행동 및 안내 문구 상단 고정',{exact:true}).uncheck();await settings.click();
  await nativeStyle(page);
  await expect(page.locator('.vineyard-supply')).toBeVisible();
 }
 async function withinRow(page:Page){
  const row=page.locator('.common-vineyard-row'),supply=row.locator('.vineyard-supply');
- const metrics=await row.evaluate(e=>{const r=e.getBoundingClientRect(),s=e.querySelector('.vineyard-supply')!.getBoundingClientRect();return{left:s.left-r.left,right:s.right-r.right,overflow:e.scrollWidth-e.clientWidth,viewport:innerWidth,supplyRight:s.right};});
- expect(metrics.left).toBeGreaterThanOrEqual(-1);expect(metrics.right).toBeLessThanOrEqual(1);expect(metrics.overflow).toBeLessThanOrEqual(1);expect(metrics.supplyRight).toBeLessThanOrEqual(metrics.viewport);
+ await row.evaluate(e=>e.scrollLeft=0);
+ const metrics=await row.evaluate(e=>{const m=e.querySelector('.common-board-panel')!.getBoundingClientRect(),s=e.querySelector('.vineyard-supply')!.getBoundingClientRect();return{gap:s.left-m.right,top:s.top-m.top,wrap:getComputedStyle(e).flexWrap,shrink:[...e.children].map(n=>getComputedStyle(n).flexShrink)};});
+ expect(metrics.gap).toBeGreaterThan(0);expect(Math.abs(metrics.top)).toBeLessThan(1);expect(metrics.wrap).toBe('nowrap');expect(metrics.shrink).toEqual(['0','0']);
+ await row.evaluate(e=>e.scrollLeft=e.scrollWidth);
+ const end=await row.evaluate(e=>{const r=e.getBoundingClientRect(),s=e.querySelector('.vineyard-supply')!.getBoundingClientRect();return{left:s.left-r.left,right:s.right-r.right,viewport:innerWidth,supplyRight:s.right,pageLeft:scrollX};});
+ expect(end.left).toBeGreaterThanOrEqual(-1);expect(end.right).toBeLessThanOrEqual(1);expect(end.supplyRight).toBeLessThanOrEqual(end.viewport);expect(end.pageLeft).toBe(0);
  await supply.locator('[data-vine-supply-kind="depot"] button').first().scrollIntoViewIfNeeded();
  expect(await supply.locator('[data-vine-supply-kind="depot"] button').first().evaluate(e=>{const b=e.getBoundingClientRect();return e.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2));})).toBe(true);
 }
@@ -56,7 +64,7 @@ test('two online seats retain Android supply, acquisition and reconnect',async({
   await expect.poll(async()=>(await state(page)).players[0].vineyardReserve?.[0]?.tileId).toBe(id);await expect(guest.locator('[data-vine-supply-kind="depot"] [data-vine-tile="empty"]')).toHaveCount(1);
   for(const peer of [page,guest]){
    expect((await state(peer)).players[0].vineyardReserve[0].tileId).toBe(id);await peer.reload();await nativeStyle(peer);await expect(peer.locator('.vineyard-supply')).toBeVisible();
-   const row=peer.locator('.online-common-board-row');expect(await row.evaluate(e=>{const r=e.getBoundingClientRect(),s=e.querySelector('.vineyard-supply')!.getBoundingClientRect();return s.left>=r.left-1&&s.right<=r.right+1;})).toBe(true);
+  const row=peer.locator('.online-common-board-row');await row.evaluate(e=>e.scrollLeft=e.scrollWidth);expect(await row.evaluate(e=>{const r=e.getBoundingClientRect(),m=e.querySelector('.common-board-panel')!.getBoundingClientRect(),s=e.querySelector('.vineyard-supply')!.getBoundingClientRect();return Math.abs(s.top-m.top)<1&&s.left>=r.left-1&&s.right<=r.right+1;})).toBe(true);
    await expect(peer.locator('[data-vine-supply-kind="depot"] [data-vine-tile="empty"]')).toHaveCount(1);
   }
  }finally{await other.close();await isolated.close();}
@@ -66,7 +74,12 @@ test('Android CSS preserves actual vineyard take, placement, rewards, Undo and r
  const initial=vineFixture();await load(page,initial);
  const take=directActions(initial,'seat-1').find(a=>a.type==='use-die'&&a.intent.kind==='vineyard'&&a.intent.command==='take')!;
  if(take.type!=='use-die'||take.intent.kind!=='vineyard')throw Error('take fixture');
- await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();await page.locator(`.vineyard-supply [data-vine-tile="${take.intent.tileId}"]`).first().click();
+ const die=page.getByRole('button',{name:/^행동 주사위 1 눈/}),row=page.locator('.common-vineyard-row');await die.click();
+ await row.evaluate(e=>e.scrollLeft=0);await swipe(page,page.locator('.common-board-actions'),'left');await expect.poll(()=>row.evaluate(e=>e.scrollLeft)).toBeGreaterThan(100);
+ const fruit=page.locator(`.vineyard-supply [data-vine-tile="${take.intent.tileId}"]`).first(),right=await row.evaluate(e=>e.scrollLeft);await swipe(page,fruit,'right');await expect.poll(()=>row.evaluate(e=>e.scrollLeft)).toBeLessThan(right-10);
+ await swipe(page,page.locator('.common-board-actions'),'right');await expect.poll(()=>row.evaluate(e=>e.scrollLeft)).toBeLessThan(5);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game)).toEqual(initial);await expect(die).toHaveAttribute('aria-pressed','true');
+ await fruit.click();
  const taken=applyCoreAction(initial,take);if(!taken.ok)throw Error('take failed');
  const game=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game);
  await expect.poll(async()=>(await game()).players[0].vineyardReserve).toEqual(taken.value.state.players[0].vineyardReserve);
