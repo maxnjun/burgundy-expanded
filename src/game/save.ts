@@ -17,7 +17,8 @@ export interface SavedGame {
   readonly randomAlgorithm: "counter-v1";
   readonly game: GameState;
   readonly logs: readonly string[];
-  readonly view: { readonly zoom: number; readonly focus: boolean; readonly table?: boolean; readonly commonZoom?: number; readonly computerPlayerIds?: readonly string[]; readonly computerPaused?: boolean; readonly boardZooms: Readonly<Record<string, number>> };
+  readonly undo?: string;
+  readonly view: { readonly zoom: number; readonly focus: boolean; readonly hotseat?: boolean; readonly table?: boolean; readonly commonZoom?: number; readonly computerPlayerIds?: readonly string[]; readonly computerPaused?: boolean; readonly boardZooms: Readonly<Record<string, number>> };
 }
 const terrains = ["castle", "ship", "mine", "livestock", "building", "monastery"];
 const buildings = ["market", "carpenters-workshop", "church", "warehouse", "boarding-house", "bank", "town-hall", "watchtower", "crane", "white-castle"];
@@ -28,10 +29,13 @@ const reject = (): never => { throw new Error("저장 파일의 형식·규칙 �
 /** Untrusted JSON is bounded and checked before being offered to the UI. No executable data. */
 export function parseSavedGame(text: string): SavedGame {
   let value: unknown;
-  try { value = parseBoundedGameJson(text); } catch { return reject(); }
+  try { value = parseBoundedGameJson(text,6_000_000); } catch { return reject(); }
   if (!object(value) || value.format !== "burgundy-local-v1" || value.randomAlgorithm !== "counter-v1" ||
     !object(value.game) || !Array.isArray(value.logs) || value.logs.length > 60 || value.logs.some(x => typeof x !== "string" || x.length > 2000) ||
     !object(value.view) || !boundedZoom(value.view.zoom) || typeof value.view.focus !== "boolean" || (value.view.table !== undefined && typeof value.view.table !== "boolean") ||
+    (value.view.hotseat !== undefined && typeof value.view.hotseat !== 'boolean') ||
+    (value.undo !== undefined && (value.view.hotseat !== true || typeof value.undo !== 'string' || value.undo.length > 4_000_000)) ||
+    (text.length > 2_000_000 && !(value.view.hotseat === true && typeof value.undo === 'string')) ||
     (value.view.computerPaused !== undefined && typeof value.view.computerPaused !== "boolean") ||
     (value.view.commonZoom !== undefined && (!boundedZoom(value.view.commonZoom) || value.view.commonZoom < .75)) ||
     !object(value.view.boardZooms) || Object.values(value.view.boardZooms).some(z => !boundedZoom(z))) return reject();
@@ -43,6 +47,7 @@ export function parseSavedGame(text: string): SavedGame {
   game=upgradeTownHallChoice(game);
   game=upgradeBonusShieldChoice(game);
   const saved={...original,game};
+  if(saved.view.hotseat && (saved.view.computerPlayerIds?.length || game.config.playerCount<2 || game.config.playerCount>4))return reject();
   if (saved.view.computerPlayerIds !== undefined && (!Array.isArray(saved.view.computerPlayerIds) || saved.view.computerPlayerIds.length > 4 || new Set(saved.view.computerPlayerIds).size !== saved.view.computerPlayerIds.length || saved.view.computerPlayerIds.some(id => typeof id !== "string" || !game.players.some(p=>p.id===id)))) return reject();
   if(game.vineyards?.version==='project-vineyards-v2'&&game.vineyards.topSlotId!=='V11')throw new Error('최상층 위치 표시가 없는 미공개 포도밭 중간 저장입니다. 원본은 보존되며 잘못 지급된 층 토큰을 임의로 재배정하지 않습니다.');
   if (!validateCoreState(game).valid || (game.extensionStates.shields && !shieldLayout(game)?.effectsActive && saved.view.computerPlayerIds?.length)) return reject();

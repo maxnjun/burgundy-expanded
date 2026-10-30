@@ -1,3 +1,16 @@
+# Android 핫시트·포도 공급처 위치 설정 — 구현·검증 완료 (2026-10-30)
+
+- 기준33b1463, 기존 dirty 문서·수도원27/28·입력 폴더 보존. 시작 사본 .local-data/android-hotseat/before/. 관련 파일/상세 검증은 docs/qa/android-hotseat.md.
+- 기존 로컬 엔진/개인보드 재사용: Android 핫시트 메뉴, 2~4인 이름·6색/중복 방지, activePlayerId 보드 자동 전환·다른 보드 열람 전용, Android 공급처 right/below 기기 저장. 수동 종료만 유지, 별도 턴 시작 확인 없음.
+- hotseat 선택 메타데이터 및 선택형 Undo 내보내기. 기존 일반2MB/핫시트+Undo6MB/sidecar4MB·구조 제한·기존 턴 검증 재사용. 과거 연습 보드는 메뉴의 기존 빈 값으로 복원. 재실행 후 준비 설정도 현재 게임에 맞춰 복원.
+- 이번 실행 전체core528/528(최종 재실행 포함), boards33/33, Android5/5, 배포방지7/7, TypeScript/ESLint/웹production/APK빌드·에셋검사 통과. 신규Playwright6/6·기존회귀12/12, 최종 AI25라운드/온라인/로컬 추가3개 통과. 실제 Android2/3/4인·16배치/배율/디자인·실제 ADB터치/획득/배치/보상·강제종료 정확복원/Undo 통과.
+- 실제 발견한 Android 키보드127px에서 sticky 안내가 준비 버튼을 가리는 문제는 준비 메뉴 중에만 고정 해제. QA의 옵션 matcher/로컬 시작 성/자동 저장 복원 대기/IME 애니메이션·좌표/보상 직접 클릭 차이는 수정 후 모두 통과. 게임 규칙을 QA 편의로 변경하지 않았다.
+- 앱ID/기존 Debug키 유지 version0.1.3/code4, APK3→4 업데이트 게임 전체 보존 검증. 최종 커밋 포함 재빌드/APK 해시·서명·설치/원격SHA는 .local-data/android-hotseat/{apk-verification,final-install,backup-result}.json와 완료보고 참조. 이전 APK1~3 보존.
+- user 확인 Render AutoDeploy Off·render.yaml off·release no-deploy 차단. 요청 subject와 [skip render][no-deploy] 유지. 배포/재시작/환경변수/운영 Redis 변경 없음. 관련 파일/문서 접두사만 백업하며 기존 dirty 제외.
+- 남은 범위: 실제 휴대폰/다른 Android·WebView/모든 확장 네이티브 완주, 실기기 공유 메뉴. 기존 후순위 전체프로젝트 목표는 유지. 다음은 사용자가 APK를 기존 앱 위에 설치해 실제 터치·안전영역 확인; Render 배포는 별도 사용자 작업.
+
+--- 이전 기록 보존 ---
+
 # Android 공용보드·포도 공급처 가로 스크롤 — 구현·검증 완료 (2026-10-30)
 
 - 기준da095fb. Android 전용 nowrap/공통 overflow-x:auto/양 패널 축소0. 공용보드 min(950px,가용폭), 공급처 로컬360/온라인300 및 기존 간격 유지. 작은 폭만 가용폭 상한. 기존 웹/이미지/게임규칙/좌표/클릭 구조 무변경.

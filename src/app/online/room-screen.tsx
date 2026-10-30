@@ -1,4 +1,5 @@
 "use client";
+import {AndroidVineyardSetting} from "../android-settings";
 import {DesignSetting} from "../design-settings";
 import {FRUIT_NAMES} from "../vineyard-art";
 import {ShieldDieChange,ShieldPairDice} from "../shield-dice";
@@ -191,7 +192,7 @@ export default function OnlineGame(){
   const shieldAction=(id:string)=>!busy?view?.actions.find(a=>a.action.type==="extension"&&a.action.command==="acquire"&&(a.action.payload as {slotId:string}).slotId===id||!selectedDie&&a.target.shield?.slotId===id&&(a.target.shield.dieId?a.target.shield.dieId===pairId:!pairId))?.action??null:null;
   const touchBrowse=(view?.status!=="setup"||!!view?.lobby&&!view.lobby.started)&&!selectedDie&&!selectedVineTileId&&!storageTile&&!selectedOnlineShield&&!pendingSupply&&!goodsSelecting&&!replacement&&!purchaseMode&&!monasteryMode&&!busy&&!view?.actions.some(a=>a.action.type==="resolve-choice")&&!view?.castleAction;
   const canPurchase=view?.actions.some(a=>a.action.type==="buy-black-tile"||a.action.type==="extension"&&a.action.extensionId==="vineyards"&&(a.action.payload as {source?:string}).source==="store");
-  return <main data-guidance-pinned={pinnedGuidance} data-tile-help-touch-browse={touchBrowse} data-game-revision={view?.revision} className="app-shell table-view online-screen"><header className="topbar"><h1>Burgundy · 2인 온라인 방</h1><Link href="/">로컬 게임으로</Link><details className="online-game-settings"><summary>⚙ 게임 설정</summary><div className="online-settings-options"><DesignSetting/><GuidanceSetting pinned={pinnedGuidance} onChange={setPinnedGuidance}/></div></details></header>
+  return <main data-guidance-pinned={pinnedGuidance} data-tile-help-touch-browse={touchBrowse} data-game-revision={view?.revision} className="app-shell table-view online-screen"><header className="topbar"><h1>Burgundy · 2인 온라인 방</h1><Link href="/">로컬 게임으로</Link><details className="online-game-settings"><summary>⚙ 게임 설정</summary><div className="online-settings-options"><AndroidVineyardSetting enabled={!!view?.vineyards}/><DesignSetting/><GuidanceSetting pinned={pinnedGuidance} onChange={setPinnedGuidance}/></div></details></header>
     <p className="live-scope">온라인 2인 · 초대 링크로 같은 방에 참가하세요. 서버가 행동과 자리를 보호하고, 연결이 끊기면 최신 상태를 다시 받아옵니다.</p>
     {detailShield!==null&&<ShieldDetails number={detailShield} onClose={()=>setDetailShield(null)}/>}
     {replacement&&<section role="alertdialog" aria-label={vineDiscard(replacement)?"온라인 포도 폐기 확인":"온라인 타일 교체 확인"} className="direct-confirm"><p>{vineDiscard(replacement)?"선택한 보관 타일이 영구 폐기됩니다. 획득을 확정하시겠습니까?":"기존 보관 타일이 영구 제거됩니다. 교체하시겠습니까?"}</p><button onClick={()=>void act(replacement)}>온라인 교체 확정</button><button onClick={()=>setReplacement(null)}>취소</button></section>}

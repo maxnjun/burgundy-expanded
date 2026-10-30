@@ -13,3 +13,8 @@ export const isPlayerColor = (value:unknown):value is PlayerColor => PLAYER_COLO
 // Older saves omit color; retain their original seat palette without rewriting them.
 export const playerColorKey = (p:{color?:PlayerColor;seat?:number}):PlayerColor => p.color??PLAYER_COLORS[(p.seat??0)%4];
 export const playerPaint = (p:{color?:PlayerColor;seat?:number}) => PLAYER_PALETTE[playerColorKey(p)];
+/** Retain selected seats, then give newly visible seats an unused color. */
+export function normalizeSeatColors(colors:readonly PlayerColor[]):PlayerColor[]{
+ const used=new Set<PlayerColor>();
+ return Array.from({length:4},(_,i)=>{const color=colors[i]&&!used.has(colors[i])?colors[i]:PLAYER_COLORS.find(c=>!used.has(c))!;used.add(color);return color;});
+}

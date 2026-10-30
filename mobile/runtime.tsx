@@ -4,6 +4,7 @@ import {Capacitor, CapacitorHttp} from '@capacitor/core';
 import {App} from '@capacitor/app';
 import {usePathname} from 'next/navigation';
 import {nativeRequest} from './transport';
+import {useVineyardLayout} from '@/app/android-settings';
 
 // Only the Android export imports this module. Next's assets stay on local fetch.
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
@@ -18,6 +19,13 @@ if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
 
 export default function NativeRuntime() {
   const path = usePathname();
+  const vineyardLayout=useVineyardLayout();
+  useEffect(()=>{
+    if(!Capacitor.isNativePlatform())return;
+    document.documentElement.dataset.nativeApp='android';
+    document.documentElement.dataset.vineyardLayout=vineyardLayout;
+    window.dispatchEvent(new Event('burgundy-native-ready'));
+  },[vineyardLayout]);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     try {if (!sessionStorage.getItem('burgundy-native-started')) {

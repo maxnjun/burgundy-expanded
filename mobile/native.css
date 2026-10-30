@@ -1,6 +1,8 @@
 html {overscroll-behavior: none}
 body {padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 .native-apk-note {padding: 4px 12px; font-size: 11px; color: #674c2d; text-align: center}
+/* The keyboard can leave less height than the sticky turn banner during setup. */
+html[data-native-app="android"] .app-shell:has(>.settings-panel)>.intro {position: static}
 
 /* Keep separate boards on one touch-scrollable strip, including landscape phones. */
 .table-view .common-vineyard-row,.online-screen .online-common-board-row {
@@ -17,3 +19,10 @@ body {padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area
 /* Keep native chaining available; the strip also pans from the board header. */
 .table-view .common-board-panel .live-board-scroll,
 .table-view .common-board-panel .common-board-scroll {overscroll-behavior-x: auto}
+
+html[data-vineyard-layout="below"] .table-view .common-vineyard-row,
+html[data-vineyard-layout="below"] .online-screen .online-common-board-row {flex-direction: column; align-items: flex-start; overflow-x: visible}
+html[data-vineyard-layout="below"] .table-view .common-vineyard-row>.common-board-panel,
+html[data-vineyard-layout="below"] .online-screen .online-common-board-row>.common-board-panel {flex: 0 0 auto; width: min(950px,100%)}
+html[data-vineyard-layout="below"] .table-view .common-vineyard-row>.vineyard-supply {flex: 0 0 auto; width: min(360px,100%)}
+html[data-vineyard-layout="below"] .online-screen .online-common-board-row>.vineyard-supply {flex: 0 0 auto; width: min(300px,100%)}

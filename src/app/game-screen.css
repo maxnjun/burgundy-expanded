@@ -198,3 +198,10 @@ button:has([data-approved-shield]):is(:hover,:active,:focus,:focus-visible,[aria
 .discarded-history h3{font-size:13px;margin:12px 0 8px;color:#654a2b}.discarded-history section:first-of-type h3{margin-top:3px}
 .discarded-empty{font-size:12px;color:#76674d;margin:8px 0}.discarded-tile-list{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
 .discarded-tile{margin:0;flex:0 0 48px;width:48px;height:55.43px;user-select:none}.discarded-tile>svg{display:block;width:100%;height:100%;pointer-events:none}.discarded-vine{flex-basis:84px;width:84px;height:48px}
+
+.hotseat-turn{display:flex;align-items:center;gap:8px;border-left:5px solid;padding:6px 10px;margin:8px 0;font-size:18px;flex-wrap:wrap}
+.hotseat-turn>span,.seat-color-preview,.log-player-color{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid #654a2b;flex:none}
+.hotseat-board-review{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;padding:8px 0}
+.hotseat-board-review select,.android-vineyard-setting select{min-height:40px;max-width:100%;padding:5px 8px;background:#fff6df;border:1px solid #bba37d;border-radius:4px;color:#54371d}
+.app-shell[data-hotseat="true"] .game-layout{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.app-shell[data-hotseat="true"] .live-estates{width:100%}
