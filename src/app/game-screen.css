@@ -91,7 +91,7 @@
 .online-common-table{margin:14px 0;background:#ecdfbe;border:2px solid #c4aa76;border-radius:4px;min-width:0}
 .online-common-board-row{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;overscroll-behavior-x:contain;padding:8px}
 .online-common-board-row>.common-board-panel{flex:1 0 640px;min-width:640px;max-width:none}
-.online-common-board-row>.vineyard-supply.panel{--vine-supply-tile-width:120px;flex:0 0 300px;width:300px;padding:12px;margin:0;border:1px solid #c4aa76;border-radius:3px;background:#fff4d8}
+.online-common-board-row .vineyard-supply.panel{--vine-supply-tile-width:120px;flex:0 0 300px;width:300px;padding:12px;margin:0;border:1px solid #c4aa76;border-radius:3px;background:#fff4d8}
 .online-common-board-row .vineyard-supply .vineyard-depots{gap:8px}
 .online-common-board-row .vineyard-supply .vineyard-depots button{min-height:120px;padding:4px;gap:4px}
 .online-common-board-row .vineyard-supply header{flex-wrap:wrap;gap:4px;margin-bottom:10px}

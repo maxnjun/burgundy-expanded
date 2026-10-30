@@ -1,3 +1,13 @@
+# Android 최종 온라인 화면 맞춤 검증 (2026-10-31)
+
+- 실제 native+PC 추가검사에서 발견한 온라인46px 넘침 수정: row padding16px를 가용폭에서 제외하고 새 wrapper 아래에도 기존 온라인300px공급처 스타일이 적용되도록 descendant 선택자만 보정. PC원래레이아웃/타일/서버/규칙 무변경.
+- 신규 온라인 fit 회귀를 추가해866/640/780폭에서 row와 공급처 내부 넘침≤1px·게임행동POST0 확인. 변경 후 타입/린트/웹build·관련브라우저6/6 재검통과.
+- 수정APK 실제 update 설치 및 기존QA방 native+PC 인증/설정/맞춤/양쪽reload·동일revision 통과. 새방0/게임행동0/운영데이터삭제0. 온라인버전352는 현재운영과 core/server/통신 변경없음 확인후 맞춘 정보이며 차단검사는 유지.
+- 전체 기능·검사 및 실물기기/즉시force-stop 한계는 docs/qa/android-board-flow.md와 아래기록에 보존. 최종커밋APK225에셋/서명/정확저장보존·원격SHA는 final-install.json/backup-final-result.json/완료보고 참조.
+- 첫기능b220657은 main백업완료. 호환정보와 온라인맞춤 후속도 관련파일만 일반Push. 모든커밋 [skip render][no-deploy], 사용자AutoDeployOff·기존release차단유지. Render배포/재시작/환경변수/Redis변경없음.
+
+--- 이전 기록 보존 ---
+
 # Android 온라인 버전 호환 정보 보정 (2026-10-31)
 
 - 최초 관련 커밋 b220657은 main Push/원격SHA 일치. 최종 APK 설치·225에셋·서명·게임/Undo/화면설정 정확보존 통과.

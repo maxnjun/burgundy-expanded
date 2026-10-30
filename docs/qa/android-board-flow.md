@@ -55,3 +55,7 @@
 ## 운영 버전 확인 후 APK 호환 정보 보정
 
 실제 네이티브 재접속에서 운영 버전352a04a와 종전APK핀414d4d0의 불일치로 입력이 안전하게 차단됐다. 두 QA자리의 GET인증은 성공했고 방/게임행동은 만들지 않았다.352→현재의 core/server/GameState타입/direct-actions/transport diff가 없는 것을 확인해 onlineVersion만352a04a로 맞췄다. 버전검사를 우회하지 않고 메타데이터 검사를 유지한다. 후속 APK 재빌드/실제 설치/두 자리 재접속 최종 결과는 로컬JSON과 완료보고 참조. Render 배포·재시작·설정·데이터변경은 실행하지 않았다.
+
+## 추가 실제 온라인 화면 맞춤 검사 결과
+
+Android 실제 온라인 화면에서 row의 좌우padding16px와 wrapper 삽입으로 누락된 기존300px공급처 스타일 때문에46px넘침을 발견했다. row content폭을 측정하고 온라인공급처 selector를 descendant로 바꿔 원래300px/타일120px/패딩12px스타일을 유지했다. 기존PC에서는 같은 공급처에 같은스타일이 적용된다. 온라인회귀는866/640/780폭의 row/공급처 넘침≤1px와 행동POST0을 추가한다. 최종타입/린트/웹build·관련브라우저6/6·실제수정APK설치·기존QA방 Android+PC설정/맞춤/재접속/양쪽reload/게임revision불변 검사가 모두 통과했다. 새방생성·게임행동·운영데이터초기화는 없었다. 최종 커밋 APK/설치/Push결과는 .local-data/android-flow/final-install.json·backup-final-result.json 참조.
