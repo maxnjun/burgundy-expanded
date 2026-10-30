@@ -1,3 +1,17 @@
+# Android 포도 공급처 복구 (2026-10-30)
+
+- [x] 기존APK 누락재현/공급데이터·DOM·화면좌표 비교/기존dirty 보존
+- [x] Android전용폭기반줄바꿈/정적CSS순서 보완/versionCode2/같은키업데이트
+- [x] core523·boards33·Android5·배포안전7·타입/린트·신규브라우저3개
+- [x] Android16에뮬레이터 전페이즈48조합·빈공급처·ADB터치·저장/강제종료복원·200%드래그·동일상태웹비교
+- [x] 실제Render Android+PC QA두좌석 포도획득/sync/Undo/reload·기존방보존
+- [x] 웹빌드·APK빌드/동일서명/225에셋·검증캡처·이번8파일선별/배포차단확인
+- GitHub main/최종커밋·원격SHA와최종APK는 .local-data/android-vineyard-fix/backup-result.json 및 완료보고 참조.
+- [ ] 사용자 실물휴대폰/다른Android·WebView/외부네트워크 검증
+- Render 배포/재시작금지. 실제사용자휴대폰연결없음, 에뮬레이터검증과구분해보고.
+
+--- 이전 기록 보존 ---
+
 # Android APK (2026-10-30)
 
 - [x] 기존 게임/저장/통신 조사·정적export·Capacitor8·Android프로젝트·기존에셋재사용

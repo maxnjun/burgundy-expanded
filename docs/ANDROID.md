@@ -54,6 +54,8 @@ Android Studio의 Generate Signed Bundle/APK에서 **자기 소유 키**를 만�
 
 ## 업데이트
 
+0.1.1/code2는 가로형 휴대폰의 공용보드 옆 포도 공급처가 화면 오른쪽으로 숨던 문제를 수정한다. Android 전용 CSS에서 실제 가용 폭이 부족하면 공급처를 공용보드 다음 줄에 놓는다. 충분히 넓으면 기존 오른쪽 배치를 유지한다. 공급 타일/상점/사탕/주사위 크기와 게임·웹 규칙은 그대로다. 보드를 200%로 확대해도 공급처 자체가 가로 밖으로 밀려나지 않으며, 보드 내부는 기존 스크롤/드래그를 사용한다.
+
 1. 웹 코드 수정 및 검증. Render 배포는 사용자가 별도로 결정한다.
 2. Android와 연결할 서버가 호환되는지 확인하고 공개 `/api/version`의 SHA를 mobile/version.json의 onlineVersion에 기록한다.
 3. 같은 파일의 versionCode를 반드시 증가시키고 versionName을 갱신한다.

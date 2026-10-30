@@ -1,3 +1,15 @@
+# Android 포도 공급처 복구 — 구현·검증 완료 (2026-10-30)
+
+- 기준414d4d0. 기존dirty 문서본문/수도원27·28/입력자료 보존; 시작사본 .local-data/android-vineyard-fix/before/. Render/Redis/방 데이터/환경변수 무변경.
+- 기존APK 가로866×364에서 공급대3+상점1의 데이터/DOM/이미지는 존재. 공급처 x862/너비360, row822/scroll1200으로 화면오른쪽에 숨음. 웹의760px breakpoint가 가로폰을 놓침. mobile/native.css에서 가용폭 기준줄바꿈/보드max-width만수정, 웹/게임/좌표/에셋무변경. 정적CSS선행로드에도 먹도록 컨테이너선택자 사용.
+- version0.1.1/code2, 같은앱ID/Debug키, 기존0.1.0 APK보존. 실제APK1→2 install-r 후 저장전체 동일확인. 서명SHA256일치/public225개 원본바이트일치·웹production/Android빌드통과. 현재운영414d4d0과게임/서버/WS변경0확인후 onlineVersion만414로맞춤.
+- core523/boards33/Android5/배포안전7/타입/린트통과. 신규브라우저3/3: A–E+종료/빈공급처·4배율·두디자인·폭390~1600, 실제획득/배치/보상/Undo/reload, 온라인두좌석획득/reconnect. 최종웹빌드2통과+온라인1개독립재검통과, 기존회귀16/16. 처음 픽스처저장race·옛텍스트보상선택자·동시결과폴더충돌/기존엄격revision도우미경합은QA수정후통과(공통도우미/제품코드무변경).
+- 실제Android16/WebView133/가로866×364에서48조합·빈공급처·ADB획득/배치/보상·reload·200%드래그241px·force-stop후저장전체복원통과. 웹과같은저장의공급처크기/타일ID/재고일치·비교PNG직접확인. 호스트QEMU0xc0000005 1회종료후 swiftshader/2048MB로재시작해완주, 게임오류와구분.
+- 실제Render에는QA방2개만추가(첫회검사경합으로중단된방도보존), Android네이티브HTTP+PC 참가/준비/시작성/포도획득/상대sync/Undo/일꾼/양쪽reload 통과. 실시간연결·서버414확인. 기존방/Redis/설정무변경. 토큰은Git제외된전용QA저장에만보존.
+- 변경8파일과문서접두사만선별. 상세 docs/qa/android-vineyard-supply.md. 로그/PNG/최종APK·Commit/Push/원격SHA는 .local-data/android-vineyard-fix/와 backup-result.json/완료보고 참조. Render배포/재시작금지·[skip render][no-deploy]·기존Off유지. 남은범위는사용자실제휴대폰/다른Android·WebView 검증이며 미완료전체프로젝트목표는기존TODO유지.
+
+--- 이전 기록 보존 ---
+
 # Android APK — 구현·실행 검증 완료 (2026-10-30)
 
 - 기존 Next UI/게임/AI/CSS/SVG/PNG를 API만 제외한 정적 export + Capacitor8로 패키징. 기존 웹 빌드와 서버/게임규칙 무변경. 앱ID com.maxnjun.burgundyexpanded, version0.1.0/code1, 최소API24/WebView111, target36. 상세 구조·변경파일·서명·업데이트: docs/ANDROID.md.
