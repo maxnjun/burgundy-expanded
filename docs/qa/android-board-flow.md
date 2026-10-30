@@ -51,3 +51,7 @@
 실물휴대폰과 다른 Android/WebView에서는 미검증이다. WebView localStorage는 JS에서는 동기지만 디스크반영이 지연되어, 저장직후 백그라운드 전환 없이 즉시 force-stop하면 최신변경이 유실되는 것을 재현했다. 정상 HOME전환+1.5초 후 종료는 정확복원됐다. 즉시강제종료까지 보장한다고 주장하지 않으며 기존 저장엔진을 이번 화면수정에서 임의 교체하지 않았다. 필요한 경우 native 영속저장 별도 설계가 필요하다.
 
 사용자가 확인한 Render AutoDeploy Off와 기존 `render.yaml` off, release workflow의 `[no-deploy]` 차단을 유지한다. 배포/재시작/API배포/환경변수/Redis삭제·초기화 명령은 실행하지 않는다. 지정 subject의 `[skip render] [no-deploy]`를 유지해 관련 파일만 일반Push하고 원격SHA를 확인한다. 최종 Git 결과는 완료보고와 `backup-result.json` 참조.
+
+## 운영 버전 확인 후 APK 호환 정보 보정
+
+실제 네이티브 재접속에서 운영 버전352a04a와 종전APK핀414d4d0의 불일치로 입력이 안전하게 차단됐다. 두 QA자리의 GET인증은 성공했고 방/게임행동은 만들지 않았다.352→현재의 core/server/GameState타입/direct-actions/transport diff가 없는 것을 확인해 onlineVersion만352a04a로 맞췄다. 버전검사를 우회하지 않고 메타데이터 검사를 유지한다. 후속 APK 재빌드/실제 설치/두 자리 재접속 최종 결과는 로컬JSON과 완료보고 참조. Render 배포·재시작·설정·데이터변경은 실행하지 않았다.

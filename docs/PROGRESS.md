@@ -1,3 +1,12 @@
+# Android 온라인 버전 호환 정보 보정 (2026-10-31)
+
+- 최초 관련 커밋 b220657은 main Push/원격SHA 일치. 최종 APK 설치·225에셋·서명·게임/Undo/화면설정 정확보존 통과.
+- 추가 실제 native+PC QA 재접속에서 운영이352a04a로 변경되어 종전414d4d0핀의 안전한 버전차단 확인. 배포를 실행한 것은 아님. 기존 QA방 GET 인증은 두 자리 모두 성공, 새 방·게임행동 없음.
+- 운영352와 이번클라이언트 사이 core/server/GameState 타입/direct-actions/transport 변경0 확인. mobile/version.json의 onlineVersion만352로 맞춤. 버전차단 자체는 유지. 메타데이터 검사·APK 재빌드/설치·동일 QA방 재접속 재검 예정; 결과는 로컬 native-online.json/완료보고 참조.
+- 운영 Render 배포/재시작/설정/Redis 변경금지 유지. 이번후속은 버전정보와 문서새접두사만 백업.
+
+--- 이전 기록 보존 ---
+
 # Android 게임 중 설정·핫시트 보드·시작 성 확인·화면 맞춤 (2026-10-31)
 
 - 기준352a04a. 기존 dirty 문서·수도원27/28·입력자료 보존; 사본 .local-data/android-flow/before/. 이번 파일 목록과 검사 근거: docs/qa/android-board-flow.md.
