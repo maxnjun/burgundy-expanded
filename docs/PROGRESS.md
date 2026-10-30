@@ -1,3 +1,17 @@
+# Android 게임 중 설정·핫시트 보드·시작 성 확인·화면 맞춤 (2026-10-31)
+
+- 기준352a04a. 기존 dirty 문서·수도원27/28·입력자료 보존; 사본 .local-data/android-flow/before/. 이번 파일 목록과 검사 근거: docs/qa/android-board-flow.md.
+- 공통 게임 설정으로 안내 따라오기/디자인1/Android 공급처 right·below 즉시 변경·기기 저장. 별도 intro의 무조건 sticky를 없애 기존 설정이 이름·안내 패널 하나를 제어. 고정 높이 native 헤더/잘못된 팝업 기준점도 실제 검사 후 수정.
+- 핫시트 전체 개인보드 수직 표시(active 먼저, 나머지 고정 seat 순서), 상대 보드 조회전용. 시작 성은 유효한 view.startingPreview만 저장, 게임 상태 불변·취소/확정·기존 run/엔진 중복 방지 재사용. 온라인 초기 배치/서버/게임규칙 무변경.
+- 공용25~200% 9단계 및 Android 공급처 독립배율·두 영역 화면폭 맞춤·ResizeObserver 재계산. 실제 레이아웃 폭/CSS zoom 사용, SVG 좌표·타일 에셋 무변경. 배율/fit은 게임과 별도 localStorage.
+- 이번 검사: 전체core532/boards33/Android5/배포방지7·타입/전체ESLint/웹production/APK빌드 통과. 직접 관련core17, 최종 PC·모바일 브라우저18통과(명시적 Android 전용10skip), 기존회귀28통과+포트 고정 QA수정 후 온라인2건통과. AI25라운드/온라인양좌석/새로고침/Undo 포함.
+- 실제Android16/WebView133 ADB터치: 2·3·4인 미리보기/취소/확정/전체보드/상대조작차단/Undo/수동종료; 25%실제타일획득, fit포도획득·배치·보상·Undo, 독립배율/200%가로스와이프, right·below, sticky·디자인 ON/OFF, 정상백그라운드 후 강제종료·정확복원 통과.
+- version0.1.4/code5, 기존 앱ID/Debug키 유지. APK4→5 업데이트 게임/Undo 보존 확인. 최종 커밋 포함 재빌드·서명/에셋/설치/원격SHA는 .local-data/android-flow/{apk-verification,final-install,backup-result}.json 및 완료보고 참조. 기존 APK1~4 보존.
+- 제한: 저장 직후(백그라운드 전환 없이) 즉시 force-stop하면 WebView localStorage 디스크 flush 전 최근 변경이 유실될 수 있음을 재현. 정상 HOME전환+1.5초 후 종료는 복원 통과. 저장 엔진을 임의 교체하지 않았으며 실물휴대폰/다른WebView/확장전체 네이티브 완주는 미검증.
+- Render AutoDeploy Off 사용자확인·render.yaml off·release [no-deploy] gate 유지. 커밋 subject에 [skip render][no-deploy]; 배포/재시작/환경변수/Redis변경 없음. 최종 Git 결과는 완료보고·backup-result.json 참조. 이전 전체프로젝트 목표는 아래 보존.
+
+--- 이전 기록 보존 ---
+
 # Android 핫시트·포도 공급처 위치 설정 — 구현·검증 완료 (2026-10-30)
 
 - 기준33b1463, 기존 dirty 문서·수도원27/28·입력 폴더 보존. 시작 사본 .local-data/android-hotseat/before/. 관련 파일/상세 검증은 docs/qa/android-hotseat.md.

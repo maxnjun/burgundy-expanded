@@ -102,8 +102,8 @@ test('real local completions reveal second, exhaust supply, persist personal art
  await press(page.getByRole('button',{name:'이전 행동으로',exact:true}));await expect.poll(()=>current(page)).toEqual(secondStart);await expect(stack.locator('[data-bonus-rank=second]')).toHaveCount(1);
 });
 
-test('online both seats share bonus art, refresh and authenticated undo restores pool',async({page,browser},info)=>{
- const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL:'http://127.0.0.1:3000'});
+test('online both seats share bonus art, refresh and authenticated undo restores pool',async({page,browser,baseURL},info)=>{
+ const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL});
  try{
   const owner=await(await fetch(server.url+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'보상A'})})).json();
   const guest=await(await fetch(`${server.url}/api/rooms/${owner.id}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'보상B'})})).json();
@@ -114,7 +114,7 @@ test('online both seats share bonus art, refresh and authenticated undo restores
   }
   await page.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),owner);await peer.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),{id:owner.id,token:guest.token});
   const other=await peer.newPage();await page.goto('/online');await other.goto('/online');await expect(page.locator('main')).toHaveAttribute('data-game-revision',String(g.revision));
-  await page.locator('.online-game-settings>summary').click();await page.getByLabel('합법 행동 및 안내 문구 상단 고정',{exact:true}).uncheck();await page.locator('.online-game-settings>summary').click();
+  await page.locator('.online-game-settings>summary').click();await page.getByLabel('상단 턴 안내 따라오기',{exact:true}).uncheck();await page.locator('.online-game-settings>summary').click();
   await claim(page,g,true);
   for(const p of [page,other]){await expect(p.locator('.earned-bonuses [data-estate-bonus-art="mine:5"]')).toHaveCount(1);await expect(p.locator('[data-bonus-stack=mine] [data-bonus-rank=first]')).toHaveCount(0);}
   await page.reload();await other.reload();for(const p of [page,other])await expect(p.locator('.earned-bonuses [data-estate-bonus-art="mine:5"]')).toHaveCount(1);

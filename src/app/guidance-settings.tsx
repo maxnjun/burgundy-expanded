@@ -7,6 +7,6 @@ export function usePinnedGuidance(){
  const change=(value:boolean)=>{setPinned(value);try{localStorage.setItem(key,value?"on":"off");}catch{}};
  return [pinned,change] as const;
 }
-export function GuidanceSetting({pinned,onChange}:{pinned:boolean;onChange:(value:boolean)=>void}){
- return <label className="guidance-setting"><input type="checkbox" checked={pinned} onChange={e=>onChange(e.target.checked)}/>합법 행동 및 안내 문구 상단 고정</label>;
+export function GuidanceSetting({pinned,onChange,label="합법 행동 및 안내 문구 상단 고정"}:{pinned:boolean;onChange:(value:boolean)=>void;label?:string}){
+ return <label className="guidance-setting"><input type="checkbox" checked={pinned} onChange={e=>onChange(e.target.checked)}/>{label}</label>;
 }

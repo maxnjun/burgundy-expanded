@@ -10,7 +10,7 @@ const key='burgundy-expanded:design-1-v1';
 const current=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game);
 test('online entry menu visibly contains Design 1 OFF and ON before joining a room',async({page},info)=>{
  await page.goto('/online');const menu=page.locator('.online-game-settings'),options=menu.locator('.online-settings-options');
- await menu.locator('summary').click();const toggle=menu.getByRole('switch',{name:'디자인 1',exact:true}),guidance=menu.getByRole('checkbox',{name:'합법 행동 및 안내 문구 상단 고정',exact:true});
+ await menu.locator('summary').click();const toggle=menu.getByRole('switch',{name:'디자인 1',exact:true}),guidance=menu.getByRole('checkbox',{name:'상단 턴 안내 따라오기',exact:true});
  await expect(toggle).toBeVisible();await expect(toggle).not.toBeChecked();await expect(guidance).toBeChecked();
  for(const enabled of [false,true]){
   await toggle.setChecked(enabled);await expect(page.locator('html')).toHaveAttribute('data-design-1',enabled?'on':'off');
@@ -74,8 +74,8 @@ test('theme switches preserve a live vineyard placement preview, real dice and u
  await page.getByRole('button',{name:'이전 행동으로',exact:true}).click();expect(await current(page)).toEqual(taken);
 });
 
-test('online peers independently switch and persist Design 1 without a room revision or state change',async({page,browser},info)=>{
- const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL:'http://127.0.0.1:3000'});
+test('online peers independently switch and persist Design 1 without a room revision or state change',async({page,browser,baseURL},info)=>{
+ const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL});
  try{
   const owner=await(await fetch(server.url+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'디자인A',vineyards:true})})).json();
   const guest=await(await fetch(`${server.url}/api/rooms/${owner.id}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'디자인B'})})).json();

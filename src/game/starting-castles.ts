@@ -1,5 +1,10 @@
 import type {GameState} from "./types";
 import {VERIFIED_BOARD_DEFINITIONS} from "./boards/catalog";
+export interface StartingCastlePreview {readonly playerId:string;readonly cellId:string}
+export function validStartingCastlePreview(s:GameState,value:unknown):value is StartingCastlePreview{
+ if(!value||typeof value!=='object')return false;const p=value as StartingCastlePreview;
+ return typeof p.playerId==='string'&&typeof p.cellId==='string'&&p.playerId===s.turn.activePlayerId&&startingCastleCells(s,p.playerId).includes(p.cellId);
+}
 export function startingCastlePending(s:GameState,playerId:string):boolean {const p=s.players.find(p=>p.id===playerId);return s.status==="setup"&&!!p&&p.storage[0]===`practice-start:${p.seat}`;}
 export function startingCastleCells(s:GameState,playerId:string):readonly string[]{
  const p=s.players.find(p=>p.id===playerId);if(!p||!startingCastlePending(s,playerId))return [];

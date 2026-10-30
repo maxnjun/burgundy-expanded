@@ -18,7 +18,7 @@ test("bad JSON, unknown format, excessive size and prototype keys reject",()=>{
 test("common board zoom persists without changing game state and older saves remain readable",()=>{
   const original=save();
   assert.equal(parseSavedGame(serializeSavedGame(original)).view.commonZoom,undefined);
-  for(const commonZoom of [.75,1,1.25,2]){
+  for(const commonZoom of [.25,.35,.5,.6,.75,1,1.25,1.6,2]){
     const saved={...original,view:{...original.view,commonZoom}};
     const restored=parseSavedGame(serializeSavedGame(saved));
     assert.equal(restored.view.commonZoom,commonZoom);
@@ -28,7 +28,7 @@ test("common board zoom persists without changing game state and older saves rem
 
 test("invalid common board zoom cannot enter a restored view",()=>{
   const original=save();
-  for(const commonZoom of [null,"1",.5,.749,2.01,-1,Infinity,NaN]){
+  for(const commonZoom of [null,"1",.249,2.01,-1,Infinity,NaN]){
     assert.throws(()=>parseSavedGame(JSON.stringify({...original,view:{...original.view,commonZoom}})));
   }
 });

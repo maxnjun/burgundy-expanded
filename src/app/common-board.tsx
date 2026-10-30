@@ -1,5 +1,6 @@
 "use client";
-import {useState} from "react";
+import {useState,type ReactNode} from "react";
+import {clampBoardZoom,nextBoardZoom} from './board-display';
 import {ScorePages} from "./score-pages";
 import {EstateBonusArt,BONUS_NAMES} from './estate-bonus-art';
 import {WhiteDie} from "./white-die";
@@ -24,6 +25,7 @@ const layout = {
  side:{left:300,right:650,upper:390,lower:690},
  tileWidth:60,tileGap:72,shieldGap:70,
 };
+export const COMMON_BOARD_ART_WIDTH=layout.width-layout.frameWidth*2;
 const playCenter={x:layout.axis,y:(layout.panels.top+layout.panels.topHeight+layout.panels.bottom)/2};
 const depotCenters = [[layout.axis,layout.top.goods],[layout.side.right,layout.side.upper],[layout.side.right,layout.side.lower],[layout.axis,layout.bottom.goods],[layout.side.left,layout.side.lower],[layout.side.left,layout.side.upper]];
 const tileWidth = layout.tileWidth, tileHeight = tileWidth * 2 / Math.sqrt(3);
@@ -62,12 +64,12 @@ type CommonBoardState = Pick<GameState,"revision"|"tiles"|"players"|"dice"|"vine
   };
 };
 
-export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,actionFor,shieldSelection,showCosts,goodsOptions,onGoods,onGoodsSelecting,shields,costFor,fit=false}: {
+export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,actionFor,shieldSelection,showCosts,goodsOptions,onGoods,onGoodsSelecting,shields,costFor,fit=false,tools}: {
   game:CommonBoardState;selectedTileId:string|null;onSelect:(id:string)=>void;titleFor:(id:string)=>string;
   zoom:number;onZoom:(zoom:number)=>void;showCosts:boolean;actionFor:(id:string)=>GameAction|null;
   goodsOptions?:(depot:number)=>readonly GoodsOption[];onGoods?:(a:GameAction)=>void;onGoodsSelecting?:()=>void;
   shields?:Pick<ShieldLayout,"slots"|"effectsActive">|null;costFor:(action:GameAction)=>number;
-  fit?:boolean;
+  fit?:boolean;tools?:ReactNode;
   shieldSelection?: {slotId:string|null;onSelect:(id:string)=>void;cost:(id:string)=>GameAction|null};
 
 }) {
@@ -86,9 +88,9 @@ export function CommonBoard({game,selectedTileId,onSelect,titleFor,zoom,onZoom,a
   const blackSlots = blackCenters(game.market.blackDepot.length);
   const trackPositions = Array.from({length: Math.max(6,...game.turn.orderTrack.map(s=>s.position))+1},(_,i)=>i);
   return <section className={`common-board-panel${shields ? " with-shields" : ""}`} aria-label="공용 공급처 보드">
-    <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.75} onClick={()=>onZoom(Math.max(.75,+(zoom-.25).toFixed(2)))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(Math.min(2,zoom+.25))}>+</button></div></div>
+    <div className="common-board-toolbar"><div><h2>공용 공급처</h2><span>{twoPlayer ? "2인 · 사진 기준 슬롯 · 사용자 지정 공급" : game.config.marketRecipeId ? "3·4인 검증 슬롯 · 연습 타일" : "연습 슬롯"}</span></div><div><button aria-label="공용 보드 축소" disabled={zoom<=.25} onClick={()=>onZoom(nextBoardZoom(zoom,-1))}>−</button><button aria-label="공용 보드 배율 복원" onClick={()=>onZoom(1)}>{Math.round(zoom*100)}%</button><button aria-label="공용 보드 확대" disabled={zoom>=2} onClick={()=>onZoom(nextBoardZoom(zoom,1))}>+</button>{tools}</div></div>
     <div className="common-board-actions"><span>{game.turn.phase}단계 · {game.turn.round}라운드</span><details className="common-board-help"><summary>조작 도움말</summary><p>주사위 선택 → 비용 확인 → 타일 터치. 검은 마름모는 검은 뒷면 타일입니다.{shields && " 방패 선택 → 강조된 성을 누르면 장착합니다."} 확대하거나 화면이 좁을 때는 스크롤 또는 드래그 이동을 사용하세요.</p></details></div>
-    <BoardViewport panControls label="공용 보드" onZoom={delta=>onZoom(Math.max(.75,Math.min(2,zoom+delta)))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:fit?`${zoom*100}%`:`${(layout.width-layout.frameWidth*2)*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
+    <BoardViewport panControls label="공용 보드" onZoom={delta=>onZoom(clampBoardZoom(zoom+delta))}><div className="common-board-scroll"><svg className="common-board-svg" viewBox={`0 0 ${layout.width} ${layout.height}`} style={{width:fit?`${zoom*100}%`:`${(layout.width-layout.frameWidth*2)*zoom}px`}} role="group" aria-label="단계 상품 공급처 순서 및 보너스">
       <CommonBoardBackdrop width={layout.width} height={layout.height}/>
       <CornerPanel name="phase-goods" x={layout.panels.left} y={layout.panels.top} height={layout.panels.topHeight}/>
       <CornerPanel name="turn-order" x={layout.panels.right} y={layout.panels.top} height={layout.panels.topHeight}/>

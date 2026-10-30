@@ -36,22 +36,21 @@ for(const count of [2,3,4])test(`Android hotseat ${count} identities, active boa
  await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');
  for(let i=0;i<count;i++){
   const id=`seat-${i+1}`;await expect(page.locator('main')).toHaveAttribute('data-active-player',id);
-  await expect(page.locator('.estate-panel')).toHaveCount(1);await expect(page.locator('.estate-panel')).toHaveAttribute('data-player-id',id);
-  await page.locator('[data-can-start="true"]').first().click();
+  await expect(page.locator('.estate-panel')).toHaveCount(count);await expect(page.locator('.estate-panel').first()).toHaveAttribute('data-player-id',id);
+  await page.locator('[data-can-start="true"]').first().click();await page.getByRole('button',{name:'확정 및 턴 종료',exact:true}).click();
  }
  await expect.poll(async()=>(await state(page)).turn.stage).toBe('player-turn');
  for(let i=0;i<count;i++){
   const before=await state(page),id=before.turn.activePlayerId!,name=before.players.find(p=>p.id===id)!.name;
-  await expect(page.getByLabel('현재 핫시트 플레이어')).toContainText(name);await expect(page.locator('.estate-panel')).toHaveAttribute('data-player-id',id);
+  await expect(page.getByLabel('현재 핫시트 플레이어')).toContainText(name);await expect(page.locator('.estate-panel').first()).toHaveAttribute('data-player-id',id);
   const color=before.players.find(p=>p.id===id)!.color!;expect(await page.locator('.hotseat-turn>span').evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(hex(PLAYER_PALETTE[color].fill));
   await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();await page.getByRole('button',{name:`${name} 일꾼 자원`,exact:true}).click();
   await expect.poll(async()=>(await state(page)).dice.players[id][0].used).toBe(true);
   await page.getByRole('button',{name:'이전 행동으로',exact:true}).click();await expect.poll(()=>state(page)).toEqual(before);
   for(const n of [1,2]){await page.getByRole('button',{name:new RegExp(`^행동 주사위 ${n} 눈`)}).click();await page.getByRole('button',{name:`${name} 일꾼 자원`,exact:true}).click();}
   await expect(page.locator('main')).toHaveAttribute('data-active-player',id);await expect(page.getByRole('button',{name:'턴 종료',exact:true})).toBeEnabled();
-  const game=await state(page);await page.getByLabel('개인보드 확인',{exact:true}).selectOption(game.players.find(p=>p.id!==id)!.id);
-  await expect(page.locator('.estate-panel')).toHaveAttribute('data-readonly','true');await expect(page.locator('.estate-panel .estate-resources button')).toBeDisabled();
-  await page.reload();await style(page);await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');await expect(page.locator('.estate-panel')).toHaveCount(1);await expect(page.locator('.estate-panel')).toHaveAttribute('data-player-id',id);
+  const game=await state(page);await expect(page.locator('.estate-panel[data-readonly="true"]')).toHaveCount(count-1);for(const control of await page.locator('.estate-panel[data-readonly="true"] .estate-resources button').all())await expect(control).toBeDisabled();
+  await page.reload();await style(page);await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');await expect(page.locator('.estate-panel')).toHaveCount(count);await expect(page.locator('.estate-panel').first()).toHaveAttribute('data-player-id',id);
   const setup=page.getByRole('button',{name:'⚙ 게임 준비',exact:true});await setup.click();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'저장 파일 내보내기',exact:true}).click();
   const file=await download,path=await file.path();expect(path).toBeTruthy();const saved=JSON.parse(readFileSync(path!,'utf8'));expect(saved.view.hotseat).toBe(true);expect(saved.undo).toBeTruthy();

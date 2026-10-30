@@ -26,3 +26,20 @@ html[data-vineyard-layout="below"] .table-view .common-vineyard-row>.common-boar
 html[data-vineyard-layout="below"] .online-screen .online-common-board-row>.common-board-panel {flex: 0 0 auto; width: min(950px,100%)}
 html[data-vineyard-layout="below"] .table-view .common-vineyard-row>.vineyard-supply {flex: 0 0 auto; width: min(360px,100%)}
 html[data-vineyard-layout="below"] .online-screen .online-common-board-row>.vineyard-supply {flex: 0 0 auto; width: min(300px,100%)}
+
+.app-shell .board-supply-layout[data-native-display="true"] {display:flex;flex-wrap:nowrap;flex-direction:row;width:100%;max-width:100%;gap:18px;align-items:flex-start;overflow-x:auto;overscroll-behavior-x:contain}
+.app-shell .board-supply-layout[data-native-display="true"]>.common-board-panel {flex:0 0 var(--common-panel-width);width:var(--common-panel-width);min-width:0;max-width:100%}
+.app-shell .board-supply-layout[data-native-display="true"]>.vineyard-supply-zoom {flex:0 0 var(--supply-panel-width);width:var(--supply-panel-width);min-width:0}
+.app-shell .board-supply-layout[data-native-display="true"][data-layout="below"] {flex-direction:column}
+.app-shell .board-supply-layout[data-native-display="true"][data-layout="below"]>.common-board-panel,
+.app-shell .board-supply-layout[data-native-display="true"][data-layout="below"]>.vineyard-supply-zoom {flex-basis:auto}
+.vineyard-scale-content>.vineyard-supply {width:100%;max-width:none;margin:0}
+.supply-zoom-tools {display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px;margin-bottom:5px}
+.supply-zoom-tools button {padding:5px;min-width:26px;background:#fff4d8;border:1px solid #b89b68;border-radius:4px;color:#543b24}
+.board-fit-button {white-space:normal;max-width:100%;line-height:1.4}
+.app-shell .common-board-toolbar {flex-wrap:wrap;gap:6px}
+.app-shell .common-board-toolbar>div:last-child {flex-wrap:wrap;max-width:100%;justify-content:flex-end}
+.app-shell .common-board-toolbar .board-fit-button {font-size:11px;flex-basis:100%}
+html[data-native-app="android"] .app-shell .topbar {height:auto;flex-wrap:wrap;gap:8px;align-items:flex-start;overflow:visible}
+html[data-native-app="android"] .app-shell .header-right {flex-wrap:wrap;gap:6px;max-width:100%}
+.in-game-settings summary {min-height:36px;padding:6px 9px;cursor:pointer}
