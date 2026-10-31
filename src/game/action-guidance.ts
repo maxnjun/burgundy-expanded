@@ -3,7 +3,8 @@ import {shieldLayout} from './shields';
 import {isCastleAction} from './castle-actions';
 
 export const canEndTurn=(actions:readonly GameAction[])=>actions.some(a=>a.type==='end-turn');
-export const canPurchaseTile=(actions:readonly GameAction[])=>actions.some(a=>a.type==='buy-black-tile'||a.type==='extension'&&a.extensionId==='vineyards'&&a.command==='buy');
+export const canSilverPurchase=(actions:readonly GameAction[])=>actions.some(a=>a.type==='buy-black-tile'||a.type==='extension'&&a.extensionId==='vineyards'&&a.command==='buy');
+export const canPurchaseTile=(actions:readonly GameAction[])=>canSilverPurchase(actions)||actions.some(a=>a.type==='use-monastery-six');
 
 function effectGuidance(game:GameState):string {
  const effect=game.turn.pendingEffects[0],choice=game.turn.pendingChoice;
@@ -25,8 +26,8 @@ export function actionGuidance(game:GameState,actions:readonly GameAction[],sele
  const player=game.players.find(p=>p.id===game.turn.activePlayerId);
  if(selection.computer)return `${player?.name??'AI'}의 차례${selection.computer==='paused'?'가 일시정지되었습니다.':'를 진행하고 있습니다.'}`;
  if(selection.replacement)return '교체할 타일 또는 방패를 확인하세요.';
- if(selection.purchase&&canPurchaseTile(actions))return '은화 2개로 구매할 타일을 선택하세요. 남은 보상은 유지됩니다.';
- if(selection.special)return actions.some(a=>a.type==='use-monastery-six')?'수도원 6으로 가져올 건물 타일을 선택하세요.':'현재 가능한 수도원 6 행동이 없습니다. 선택을 취소하세요.';
+ if(selection.purchase&&canSilverPurchase(actions))return '은화 2개로 구매할 타일을 선택하세요. 남은 보상은 유지됩니다.';
+ if(selection.special)return actions.some(a=>a.type==='use-monastery-six')?'수도원 6 · 일꾼 2개로 구매할 번호 공급처 타일을 선택하세요.':'현재 가능한 수도원 6 행동이 없습니다. 선택을 취소하세요.';
  if(selection.goodsTypes)return '가져올 상품 종류를 선택하세요.';
  if(selection.shieldNumber)return `방패 ${selection.shieldNumber}를 장착할 성을 선택하세요.`;
  if((game.turn.pendingChoice||game.turn.pendingEffects.length)&&!isCastleAction(game))return selection.tileId?'타일을 배치할 영지를 선택하세요.':effectGuidance(game);

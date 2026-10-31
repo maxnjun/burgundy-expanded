@@ -1,3 +1,4 @@
+import {purchaseUsed,numberedPurchaseTile} from '../purchases';
 import type { EngineIssue, EngineResult, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, JsonValue, TurnOrderSpace } from "../types";
 import { adjustedDie } from "../core/engine";
@@ -33,12 +34,12 @@ function actionIssue(state: TeamGameState, action: GameAction): EngineIssue | nu
   }
   if (action.type === "end-turn") return state.dice.players[player.id].every(d => d.used) ? null : issue("Resolve both personal dice first");
   if (action.type === "use-monastery-six") {
-    if (!monasteryNumbers(state, team).includes(6) || team.workers < 2 || state.turn.monasterySixUsed || state.tiles[action.tileId]?.type !== "building" || !state.market.numberedDepots.find(d => d.number === action.depot)?.slots.some(s => s.tileId === action.tileId)) return issue("Monastery6 needs two shared workers and a numbered building, once per member turn");
+    if (!monasteryNumbers(state, team).includes(6) || team.workers < 2 || purchaseUsed(state.turn) || !numberedPurchaseTile(state,action.depot,action.tileId)) return issue("Monastery6 needs two shared workers and a numbered tile, using the shared purchase for this member turn");
     const destination = destinationIssue({ storage: accessibleTeamStorage(state, player.id) }, action);
     return destination ? issue(destination) : null;
   }
   if (action.type === "buy-black-tile") {
-    if (state.turn.blackPurchaseUsed || team.silver < 2 || !state.market.blackDepot.includes(action.tileId)) return issue("Black purchase needs two shared silver and is once per member turn");
+    if (purchaseUsed(state.turn) || team.silver < 2 || !state.market.blackDepot.includes(action.tileId)) return issue("Black purchase needs two shared silver and is once per member turn");
     const destination = destinationIssue({ storage: accessibleTeamStorage(state, player.id) }, action);
     return destination ? issue(destination) : null;
   }
@@ -134,7 +135,7 @@ export function applyTeamAction(state: TeamGameState, action: GameAction): Engin
       draft = structuredClone(commitTeamRuleView(draft, bounded, player.id)) as Mutable<TeamGameState>;
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
     } else if (action.type === "use-monastery-six") {
-      team.workers -= 2; draft.turn.monasterySixUsed = true;
+      team.workers -= 2; draft.turn.monasterySixUsed = true; draft.turn.blackPurchaseUsed = true;
       const view = executeIntent(teamRuleView(draft), player.id, { kind: "take-tile", depot: action.depot, tileId: action.tileId, storageSlot: action.storageSlot, ...(action.discardTileId === undefined ? {} : { discardTileId: action.discardTileId }) });
       draft = structuredClone(commitTeamRuleView(draft, refreshPendingChoice(view), player.id)) as Mutable<TeamGameState>;
       payload = { actionType: action.type, teamId: team.id, tileId: action.tileId, storageSlot: action.storageSlot, workersDelta: -2, discardedTileId: action.discardTileId ?? null };
@@ -171,7 +172,7 @@ export function listTeamActions(state: TeamGameState, playerId: string): EngineR
   if (state.turn.pendingChoice) for (const option of state.turn.pendingChoice.options) candidates.push({ type: "resolve-choice", playerId, choiceId: state.turn.pendingChoice.id, optionId: option.id });
   const destinations = storage.map((id, storageSlot) => ({ storageSlot, ...(id !== null && !storage.includes(null) ? { discardTileId: id } : {}) }));
   for (const tileId of state.market.blackDepot) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });
-  for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId && state.tiles[slot.tileId].type === "building") for (const dest of destinations) candidates.push({ type: "use-monastery-six", playerId, depot: depot.number, tileId: slot.tileId, ...dest });
+  for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId) for (const dest of destinations) candidates.push({ type: "use-monastery-six", playerId, depot: depot.number, tileId: slot.tileId, ...dest });
   for (const die of state.dice.players[playerId]) for (let n = 1; n <= 6; n++) {
     const clockwise = (n - die.value + 6) % 6;
     const steps: (1 | -1)[] = clockwise <= 3 ? Array(clockwise).fill(1) : Array(6 - clockwise).fill(-1);

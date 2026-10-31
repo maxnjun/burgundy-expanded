@@ -83,3 +83,7 @@ Android Studio의 Generate Signed Bundle/APK에서 **자기 소유 키**를 만�
 Android 가져오기는 WebView 파일 입력·파싱(자동화 파일 주입), 내보내기는 실제 공유창 열기까지 확인했다. 특정 제조사 파일 앱에서 직접 선택·최종 저장하는 과정은 실기기에서 추가 확인해야 한다.
 
 공식 참고: [Capacitor 환경](https://capacitorjs.com/docs/getting-started/environment-setup), [네이티브 HTTP](https://capacitorjs.com/docs/apis/http), [App lifecycle](https://capacitorjs.com/docs/apis/app).
+
+## 게임 규칙 변경과 온라인 버전
+
+`mobile/version.json`의 `onlineVersion: "source"`는 APK를 빌드한 Git 커밋 SHA로 온라인 버전을 고정한다. 규칙 변경 APK를 아직 수정되지 않은 운영 서버에 연결해 이전 규칙으로 조작하지 않도록 한다. 운영 서버를 사용자가 같은 커밋으로 수동 배포하기 전에는 온라인 입력이 버전 검사로 차단될 수 있으며 로컬·핫시트는 동작한다. 규칙이 동일한 UI 수정에만 호환성을 검증한 기존 운영 SHA를 명시할 수 있다. 배포를 자동 실행하거나 버전 검사를 우회하지 않는다.

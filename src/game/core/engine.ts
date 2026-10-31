@@ -1,3 +1,4 @@
+import {purchaseUsed,numberedPurchaseTile} from '../purchases';
 import {startingCastleCells,placeStartingCastle} from "../starting-castles";
 import {vineIntents,vineTakeIssue,vineValues,executeVine,keyOccupant,discardStored} from "../vineyards";
 import {isCastleAction,suspendCastleAction} from "../castle-actions";
@@ -64,19 +65,18 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
     return null;
   }
   if (action.type === "extension") {
-    if(action.extensionId==="vineyards"){const i=action.payload as unknown as import("../vineyards").VineIntent;return action.command!=="buy"||!state.vineyards||state.turn.blackPurchaseUsed||player.silver<2||i.kind!=="vineyard"||i.command!=="take"||i.source!=="store"||vineTakeIssue(state,player,i)?failure("illegal-action","Invalid vineyard purchase"):null;}
+    if(action.extensionId==="vineyards"){const i=action.payload as unknown as import("../vineyards").VineIntent;return action.command!=="buy"||!state.vineyards||purchaseUsed(state.turn)||player.silver<2||i.kind!=="vineyard"||i.command!=="take"||i.source!=="store"||vineTakeIssue(state,player,i)?failure("illegal-action","Invalid vineyard purchase"):null;}
     if(action.extensionId!=="shields" || !state.config.extensions.some(e=>e.id==="shields"))return failure("unsupported-extension", "Extensions are outside this core subset");
     const issue=action.command==="change-die"?shieldSpecialIssue(state,action):shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
   if (action.type === "resolve-choice") return failure("illegal-action", "No pending choice");
   if (action.type === "use-monastery-six") {
-    if (!monasteryNumbers(state, player).includes(6) || player.workers < 2 || state.turn.monasterySixUsed) return failure("illegal-action", "Monastery 6 requires two workers once per turn");
-    const tile = state.tiles[action.tileId];
-    if (tile?.type !== "building" || !state.market.numberedDepots.find(d => d.number === action.depot)?.slots.some(s => s.tileId === action.tileId)) return failure("illegal-action", "Monastery 6 takes a numbered-depot building");
+    if (!monasteryNumbers(state, player).includes(6) || player.workers < 2 || purchaseUsed(state.turn)) return failure("illegal-action", "Monastery 6 requires two workers and an unused tile purchase");
+    if (!numberedPurchaseTile(state,action.depot,action.tileId)) return failure("illegal-action", "Monastery 6 purchases a numbered-depot tile");
     const issue = tileDestination(player, action); return issue ? failure("illegal-action", issue) : null;
   }
   if (action.type === "buy-black-tile") {
-    if (state.turn.blackPurchaseUsed || player.silver < 2) return failure("illegal-action", "Black purchase requires two silver and is limited to once per turn");
+    if (purchaseUsed(state.turn) || player.silver < 2) return failure("illegal-action", "Black purchase requires two silver and is limited to once per turn");
     if (!state.market.blackDepot.includes(action.tileId) && state.market.inns?.stack.at(-1)!==action.tileId) return failure("illegal-action", "Tile is not in the black depot");
     const issue = tileDestination(player, action);
     return issue ? failure("illegal-action", issue) : null;
@@ -189,7 +189,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       payload = { actionType: action.type, nextPlayerId: draft.turn.activePlayerId, round: draft.turn.round, stage: draft.turn.stage };
     } else if (action.type === "use-monastery-six") {
       draft = structuredClone(executeIntent(draft, player.id, { ...action, kind: "take-tile" })) as Draft;
-      player = draft.players.find(p => p.id === action.playerId)!; player.workers -= 2; draft.turn.monasterySixUsed = true;
+      player = draft.players.find(p => p.id === action.playerId)!; player.workers -= 2; draft.turn.monasterySixUsed = true; draft.turn.blackPurchaseUsed = true;
       draft = structuredClone(refreshPendingChoice(draft)) as Draft;
       pages = [11]; payload = { actionType: action.type, tileId: action.tileId, workersDelta: -2 };
     } else if (action.type === "buy-black-tile") {
@@ -265,7 +265,7 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   const destinations = player.storage.map((tileId, storageSlot) => ({ storageSlot,
     ...(keyOccupant(player,storageSlot) && !player.storage.some((_,i)=>!keyOccupant(player,i)) ? { discardTileId: keyOccupant(player,storageSlot)! } : {}) }));
   for (const tileId of [...state.market.blackDepot,...(state.market.inns?.stack.slice(-1)??[])]) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });
-  for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId && state.tiles[slot.tileId].type === "building") for (const dest of destinations) candidates.push({type:"use-monastery-six",playerId,depot:depot.number,tileId:slot.tileId,...dest});
+  for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId) for (const dest of destinations) candidates.push({type:"use-monastery-six",playerId,depot:depot.number,tileId:slot.tileId,...dest});
   for (const die of state.dice.players[playerId]) for (let value = 1; value <= 6; value++) {
     const clockwise = (value - die.value + 6) % 6;
     const steps: (1 | -1)[] = clockwise <= 3 ? Array(clockwise).fill(1) : Array(6 - clockwise).fill(-1);

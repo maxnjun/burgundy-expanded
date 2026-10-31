@@ -12,7 +12,7 @@ export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="end-turn")return "차례 종료";
   if(a.type==="advance-phase")return s.turn.phase==="E"?"최종 정산":"단계 수입·보충";
   if(a.type==="resolve-choice"){const o=s.turn.pendingChoice?.options.find(o=>o.id===a.optionId),p=o?.payload as unknown as {intent?:import("./types").ActionIntent;vineBlack?:{tileId:string}}|null;return p?.intent?intentLabel(s,p.intent):p?.vineBlack?`${tileName(s,p.vineBlack.tileId)} 무료 획득`:o?.label??"효과 선택";}
-  if(a.type==="buy-black-tile"||a.type==="use-monastery-six")return `${tileName(s,a.tileId)} ${a.type==="buy-black-tile"&&s.tiles[a.tileId].type==="inn"?"구매":"획득"} · ${a.type==="buy-black-tile"?"은화2":"일꾼2"} · 보관${a.storageSlot+1}${a.discardTileId?" 교체":""}`;
+  if(a.type==="buy-black-tile"||a.type==="use-monastery-six")return `${a.type==="use-monastery-six"?"수도원 6번 · 일꾼 2개":"은화 2개"}를 사용하여 ${tileName(s,a.tileId)} 타일 구매 · 보관${a.storageSlot+1}${a.discardTileId?" 교체":""}`;
   if(a.type==="extension"&&a.extensionId==="shields"){
     const payload=a.payload as Record<string,unknown>;
     if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;

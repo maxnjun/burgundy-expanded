@@ -1,3 +1,16 @@
+# 수도원6 번호 공급처 구매·공통 구매 제한 — 구현·검증 완료 (2026-10-31)
+
+- 기준2355fcc. 기존 dirty 문서/수도원27·28/입력 에셋 보존. before/ 사본·이미지해시와 staged diff로 기존 변경을 제외. 상세 파일·검사: docs/qa/monastery-six-purchase.md.
+- 원인: core/team의 building전용 validator/후보필터, 독립 monasterySixUsed. 번호슬롯 membership으로 모든 일반타일 허용, 공통 purchaseUsed=기존blackPurchaseUsed OR legacy monasterySixUsed. 새worker구매는 기존blackPurchaseUsed도 true; 저장필드/구조를 삭제하거나 초기화하지 않음.
+- 기존 executeIntent/저장고·교체/턴초기화/AI후보/Undo 재사용. 은화·일꾼·여관·포도상점 공통기회; 다른 자원교환/무료보상은 무변경. UI구매선택/비활성사유/일꾼2강조, 서버공개purchase상태, 수단별로그 연결. 타일설명/이미지/좌표 무변경.
+- 이번검사 core547/547, 최종m6강화15/15, boards33/33, Android5/5, 배포방지7/7, 타입/전체ESLint/웹production/APK빌드·225에셋/기존서명 통과. 신규PC·모바일14/14·기존브라우저20/20(AI25라운드/수동턴/포도밭/온라인Undo·재접속) 통과.
+- 실제Android16/WebView133 ADB: 6종일꾼구매/은화구매/두수단차단/교체취소·확정/두Undo/정상HOME후강제종료·정확복원/2·3·4핫시트/100·160·200% 검사통과. 기존5→6 install-r 게임/Undo보존. 실물휴대폰·다른WebView 미검증; 즉시force-stop 저장지연 위험은 기존제한 유지.
+- QA초기실패는 구문구 matcher, 샌드박스rename권한, 테스트요청ID길이, 미신뢰import에 turn-start Undo를 요구한 픽스처, 웹빌드 동시실행으로 buildID가 없던 배포검사. 제품규칙/보안검사 완화 없이 수정·재실행 통과.
+- version0.1.5/code6·앱ID/Debug키 유지, 이전APK보존. 규칙변경APK는 onlineVersion=source로 빌드커밋을 요구. 구운영SHA를 호환으로 위장하지 않으며 같은커밋 수동배포 전 온라인차단 예상. 로컬온라인 새규칙 검증은 완료, 운영게임 새규칙 적용은 미배포로 미실시.
+- Render AutoDeploy Off 사용자확인·render.yaml off·release [no-deploy] 차단 유지. 배포/재시작/환경변수/운영Redis 조작 없음. 지정subject로 관련파일/문서새구간만 커밋·일반Push. 최종APK/SHA/원격검증: .local-data/monastery-six/{apk-verification,final-install,backup-result}.json 및 완료보고 참조.
+
+--- 이전 기록 보존 ---
+
 # Android 최종 온라인 화면 맞춤 검증 (2026-10-31)
 
 - 실제 native+PC 추가검사에서 발견한 온라인46px 넘침 수정: row padding16px를 가용폭에서 제외하고 새 wrapper 아래에도 기존 온라인300px공급처 스타일이 적용되도록 descendant 선택자만 보정. PC원래레이아웃/타일/서버/규칙 무변경.

@@ -11,7 +11,7 @@ const cases = ["room-storage", "internet-online", "player-improvements", "tile-h
 cases.push("upstash-rooms");
 cases.push("online-controls", "online-identity");
 cases.push("ver2");
-cases.push("ver3", "hotseat", "android-flow");
+cases.push("ver3", "hotseat", "android-flow", "monastery-six");
 cases.push("estate-bonuses", "discarded-tiles");
 const requested=process.argv.slice(2);
 if(requested.some(name=>!cases.includes(name)))throw new Error("Unknown core test suite");

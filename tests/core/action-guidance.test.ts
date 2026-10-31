@@ -27,7 +27,7 @@ test('guidance follows legal actions, purchase availability, UI selection and co
  const g=setup();assert.equal(actionGuidance(g,directActions(g,'seat-1')),'주사위를 선택하세요.');
  const stashed=stash(g,{type:'mine',back:'matching-color'});assert.equal(actionGuidance(stashed.g,[],{tileId:stashed.id}),'타일을 배치할 영지를 선택하세요.');
  assert.equal(actionGuidance(g,[],{tileId:'supply'}),'교체할 저장고 타일을 선택하세요.');assert.match(actionGuidance(g,[],{shieldNumber:8}),/장착할 성/);assert.match(actionGuidance(g,[],{special:true}),/선택을 취소/);
- const monastery={type:'monastery' as const,number:6 as const,back:'matching-color' as const},monk=placed(g,0,monastery);assert.match(actionGuidance(monk,directActions(monk,'seat-1'),{special:true}),/가져올 건물/);
+ const monastery={type:'monastery' as const,number:6 as const,back:'matching-color' as const},monk=placed(g,0,monastery);assert.match(actionGuidance(monk,directActions(monk,'seat-1'),{special:true}),/구매할 번호 공급처 타일/);
  const two=step(step(g,work(g)),work(step(g,work(g))));const actions=directActions(two,'seat-1');assert.equal(canEndTurn(actions),true);assert.equal(canPurchaseTile(actions),true);assert.equal(actionGuidance(two,actions),'턴을 종료하시겠습니까? (구매 가능)');
  const poor={...two,players:two.players.map(p=>({...p,silver:1}))};assert.equal(actionGuidance(poor,directActions(poor,'seat-1')),'턴을 종료하시겠습니까?');
  const bought=step(two,actions.find(a=>a.type==='buy-black-tile')!);assert.equal(canPurchaseTile(directActions(bought,'seat-1')),false);assert.equal(actionGuidance(bought,directActions(bought,'seat-1')),'턴을 종료하시겠습니까?');

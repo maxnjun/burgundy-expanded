@@ -285,14 +285,15 @@ test("forged team choice options fail canonical validation and never gain access
   // Temporary actor views must never be accepted as canonical competitive states.
   assert.equal(validateCoreState(teamRuleView(state)).valid, false);
 });
-test("shared monastery6 acquires into slot four once per individual turn without spending dice", () => {
+test("shared monastery6 purchases non-buildings into slot four and shares the silver limit", () => {
   let state = monk(roll(), "A", 6);
-  const depot = state.market.numberedDepots.find(d => d.slots.some(s => s.tileId && state.tiles[s.tileId].type === "building"))!, tileId = depot.slots.find(s => s.tileId && state.tiles[s.tileId].type === "building")!.tileId!;
+  const depot = state.market.numberedDepots.find(d => d.slots.some(s => s.tileId && state.tiles[s.tileId].type !== "building"))!, tileId = depot.slots.find(s => s.tileId && state.tiles[s.tileId].type !== "building")!.tileId!;
   const command: GameAction = { type: "use-monastery-six", playerId: "A1", depot: depot.number, tileId, storageSlot: 3 };
   state = step(state, command);
   assert.equal(state.teams[0].workers, 1); assert.equal(state.teams[0].sharedStorage[1], tileId);
   assert.ok(state.dice.players.A1.every(d => !d.used));
   reject(state, command);
+  assert.equal(state.turn.blackPurchaseUsed,true);assert.equal(listTeamActions(state,"A1").ok,true);
   state = finishMember(finishMember(state));
   assert.equal(state.turn.activePlayerId, "A2"); assert.equal(state.turn.monasterySixUsed, false);
 });

@@ -138,7 +138,7 @@ test("monastery 6 takes a numbered building for two workers once, even after bot
     assert.equal(next.players[0].storage[0], "bank");
     assert.equal(next.turn.monasterySixUsed, true);
     assert.equal(applyCoreAction(next, a).ok, false);
-    assert.equal(next.turn.blackPurchaseUsed, false);
+    assert.equal(next.turn.blackPurchaseUsed, true);
 });
 test("monastery 5 takes a second adjacent depot, then advances the track only once", () => {
     const s = coreFixture();

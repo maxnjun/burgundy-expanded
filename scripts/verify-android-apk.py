@@ -1,6 +1,7 @@
 """Check an APK contains the current, byte-identical public game assets."""
 import hashlib
 import json
+import re
 import sys
 import zipfile
 from pathlib import Path
@@ -18,6 +19,10 @@ with zipfile.ZipFile(apk) as bundle:
     assert config['appId'] == 'com.maxnjun.burgundyexpanded'
     assert config['server']['androidScheme'] == 'https'
     build = json.loads(bundle.read('assets/public/android-build.json'))
+    assert re.fullmatch(r'[a-f0-9]{40}', build['onlineVersion']), 'Missing online compatibility SHA'
+    version = json.loads(Path('mobile/version.json').read_text())
+    if version.get('onlineVersion') == 'source' and version['versionCode'] == build['versionCode']:
+        assert build['onlineVersion'] == build['sourceCommit'], 'Changed rules must use this source commit online'
 print(json.dumps({'apk': str(apk.resolve()), 'bytes': apk.stat().st_size,
     'sha256': hashlib.file_digest(apk.open('rb'), 'sha256').hexdigest(),
     'public_assets_verified': len(files), 'build': build}, ensure_ascii=False, indent=2))
