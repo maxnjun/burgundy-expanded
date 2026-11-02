@@ -1,3 +1,18 @@
+# 핫시트 새 게임 초기화 — 구현·검증 완료 (2026-11-02)
+
+- 기준2615d31, 기존 dirty 문서/수도원27·28/입력자료 보존. before/ 사본·해시, 이번 문서 접두사만 백업. 상세: docs/qa/hotseat-reset.md.
+- 공용 객체 재사용 없음; 기본/복원 시드 재사용으로 공급·방패 추첨 반복, 임시 UI 미초기화 및 화면전환 뒤 effect/WebView 디스크 지연이 원인.
+- 새 핫시트 UUID 시드→기존 factory 전체생성→게임+Undo 저장확정→화면전환. 임시선택/자식페이지 초기화, 종료후 새게임/진행중·성 배치 확인/중복 방지. 엔진·온라인·GameState/저장 스키마·이미지/규칙 불변.
+- Android private SharedPreferences 단일 commit 응답, 직렬쓰기/legacy localStorage 이전·캐시·수동파일 유지. 웹 기존 저장키/로컬·AI 지정시드 유지.
+- 이번 검사 엔진550/550·직접hotseat8/8·보드33/33·Android9/9·배포7/7, 타입/전체ESLint/최종웹 production build 통과. 신규PC·모바일8/8·기존17/17(AI25라운드/온라인Undo·재접속 포함).
+- 실제Android16/WebView133: APK6→7 install-r 게임/Undo보존·오프라인 ADB 2→3/3→4/4→2 및 네번째생성·전체factory일치·새게임후HOME없이즉시force-stop 복원·실제시작성2개/주사위/공급획득/재실행/Undo 통과.
+- QA실패는 자동roll시점 fixture, IME지연으로 키보드에 들어간 ADB좌표, .next EPERM, 시스템Java8 서명도구로 구분·보정 후 재검통과. 제품규칙 완화 없음.
+- APK0.1.6/code7, 기존앱ID/Debug키·이전APK보존. 최종커밋APK225에셋/서명/설치/원격SHA는 로컬 apk-verification-final.json/final-install.json/backup-result.json과 완료보고 참조.
+- Render Off 사용자확인·yaml Off·release no-deploy/skip render 공식차단문구 유지, 지정subject로 관련파일만 일반Push. Render 배포/재시작/환경변수/운영Redis 조작 없음.
+- 남은 한계: 실물휴대폰/다른WebView 미검증; 일반행동의 저장확정전 즉시강제종료는 마지막미확정행동 유실가능(새게임 진입은 확정대기). 새APK온라인은 같은커밋 별도수동배포 전 버전차단 가능. 기존전체프로젝트 미완료목표는 아래 보존.
+
+--- 이전 기록 보존 ---
+
 # 수도원6 번호 공급처 구매·공통 구매 제한 — 구현·검증 완료 (2026-10-31)
 
 - 기준2355fcc. 기존 dirty 문서/수도원27·28/입력 에셋 보존. before/ 사본·이미지해시와 staged diff로 기존 변경을 제외. 상세 파일·검사: docs/qa/monastery-six-purchase.md.

@@ -9,9 +9,23 @@ import {serializeTurnHistory,restoreTurnHistory} from '../../src/game/turn-histo
 import {PLAYER_COLORS,normalizeSeatColors} from '../../src/game/player-colors';
 import {createActionLog,readActionLog} from '../../src/game/action-log';
 import type {GameState,GameAction} from '../../src/game/types';
+import {finishedHotseat,resetOptions} from '../fixtures/hotseat-reset';
+import {validateCoreState} from '../../src/game/core/state';
+import {shieldLayout} from '../../src/game/shields';
 
 function step(g:GameState,a:GameAction){const r=applyCoreAction(g,a);assert.ok(r.ok,r.ok?'':JSON.stringify(r.issues));return r.value.state;}
 function save(game:GameState,logs:readonly string[]=[],undo?:string):SavedGame{return {format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs,...(undo?{undo}:{}),view:{zoom:1,focus:false,hotseat:true,computerPlayerIds:[],boardZooms:{}}};}
+for(const [oldCount,count] of [[2,3],[3,4],[4,2]] as const)test(`finished ${oldCount} seats to fresh ${count}: all shared/expansion state is independent`,()=>{
+ const {game:old,events}=finishedHotseat(oldCount);assert.ok(Object.values(events).every(Boolean));assert.equal(validateCoreState(old).valid,true);
+ const snapshot=structuredClone(old),oldFile=serializeSavedGame(save(old,['old record']));
+ const options={...resetOptions,names:Array.from({length:count},(_,i)=>`새${i+1}`),seed:`new-${oldCount}-${count}`,chooseStartingCastles:true,boardIds:Array(count).fill('se:base:2')};
+ const fresh=createPracticeSession(options);assert.equal(fresh.status,'setup');assert.equal(fresh.turn.phase,'A');assert.equal(fresh.turn.round,1);assert.deepEqual(fresh.discardedTiles,[]);assert.equal(fresh.finalScores,null);assert.equal(fresh.turn.pendingChoice,null);assert.deepEqual(fresh.turn.pendingEffects,[]);
+ assert.deepEqual(shieldLayout(fresh)!.mounted,[]);assert.deepEqual(shieldLayout(fresh)!.removed,[]);assert.deepEqual(fresh.market.inns?.suppliedPhases,['A']);assert.deepEqual(fresh.market.inns?.stack,['project:inn:A']);
+ assert.ok(Object.values(fresh.tradeRoutes!.routes).every(r=>!r.sales.length));assert.ok(Object.values(fresh.vineyards!.players).every(p=>!p.placed.length));
+ const logs=['new record'],h=beginHistory(fresh,logs);assert.equal(h.past.length,0);assert.equal(canUndoTurn(restoreTurnHistory(serializeTurnHistory(old,['old record'],beginHistory(old,[])),fresh,logs),fresh,'action'),false);
+ const file=parseSavedGame(serializeSavedGame(save(fresh,logs,serializeTurnHistory(fresh,logs,h))));assert.deepEqual(file.game,fresh);assert.deepEqual(parseSavedGame(oldFile).game,old);assert.deepEqual(old,snapshot);assert.deepEqual(createPracticeSession(options),fresh);
+ for(const p of fresh.players){assert.equal(p.victoryPoints,0);assert.equal(p.silver,1);assert.equal(p.soldGoods.length,0);assert.equal(p.bonuses.length,0);assert.equal(p.duchy.cells.some(c=>c.tileId!==null),false);}
+});
 for(const count of [2,3,4])test(`hotseat ${count} seats retain identity, independent state, manual turns and file Undo`,()=>{
  let g=createPracticeSession({names:Array.from({length:count},(_,i)=>`플레이어 ${i+1}`),colors:PLAYER_COLORS.slice(0,count),seed:`hotseat-${count}`,officialSlots:true,fullEffects:true,vineyards:true,shieldRules:true,tradeRoutes:true,inns:true,geese:true,whiteCastles:true,boardIds:Array(count).fill('se:base:2')});
  g=step(g,{type:'roll-round',playerId:orderedPlayers(g)[0]});

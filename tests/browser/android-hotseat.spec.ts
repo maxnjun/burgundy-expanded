@@ -90,5 +90,5 @@ test('Android keyboard height leaves the hotseat start button reachable',async({
  await page.getByRole('button',{name:'핫시트 — 한 기기에서 2~4인',exact:true}).click();await page.setViewportSize({width:866,height:127});
  await expect(page.locator('.intro')).toHaveCSS('position','static');const start=page.getByRole('button',{name:'핫시트 게임 시작',exact:true});
  await start.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));expect(await start.evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
- await start.click();await expect(page.getByRole('button',{name:'⚙ 게임 준비',exact:true})).toHaveAttribute('aria-expanded','false');await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');await expect.poll(async()=>(await state(page)).status).toBe('setup');
+ page.once('dialog',d=>d.accept());await start.click();await expect(page.getByRole('button',{name:'⚙ 게임 준비',exact:true})).toHaveAttribute('aria-expanded','false');await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');await expect.poll(async()=>(await state(page)).status).toBe('setup');
 });

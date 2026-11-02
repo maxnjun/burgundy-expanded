@@ -1,6 +1,7 @@
 "use client";
 import {useEffect} from 'react';
-import {Capacitor, CapacitorHttp} from '@capacitor/core';
+import {Capacitor, CapacitorHttp, registerPlugin} from '@capacitor/core';
+import {configureNativeSave,type LocalSave} from '@/app/local-save';
 import {App} from '@capacitor/app';
 import {usePathname} from 'next/navigation';
 import {nativeRequest} from './transport';
@@ -8,6 +9,7 @@ import {useVineyardLayout} from '@/app/android-settings';
 
 // Only the Android export imports this module. Next's assets stay on local fetch.
 if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
+  configureNativeSave(registerPlugin<{read:()=>Promise<LocalSave>;write:(options:LocalSave)=>Promise<void>}>('LocalGameStore'));
   const webFetch = window.fetch.bind(window);
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), location.origin);

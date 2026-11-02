@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo;
 
 public class MainActivity extends BridgeActivity {
     @Override public void onCreate(Bundle state) {
+        registerPlugin(LocalGameStorePlugin.class);
         super.onCreate(state);
         bridge.setWebViewClient(new OfflineWebViewClient(bridge));
         WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
