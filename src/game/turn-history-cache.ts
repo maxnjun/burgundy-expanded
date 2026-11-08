@@ -2,6 +2,7 @@ import type {GameState} from './types';
 import {beginHistory,turnKey,type TurnHistory,type TurnSnapshot} from './turn-history';
 import {parseSavedGame} from './save';
 import {isCastleAction} from './castle-actions';
+import {upgradeTradeCastleChoice} from './core/effects';
 
 export function serializeTurnHistory(game:GameState,logs:readonly string[],history:TurnHistory):string {
  const text=JSON.stringify({game,logs,history});
@@ -14,6 +15,7 @@ export function restoreTurnHistory(text:string|null,game:GameState,logs:readonly
  try{
   if(!text||text.length>4_000_000)return fallback;
   const cached=JSON.parse(text),h=cached?.history as TurnHistory;
+  cached.game=upgradeTradeCastleChoice(cached.game);
   if(JSON.stringify(cached.game)!==JSON.stringify(game)||JSON.stringify(cached.logs)!==JSON.stringify(logs)||!h||h.key!==turnKey(game)||!Array.isArray(h.past)||h.past.length>128)return fallback;
   function checked(value:TurnSnapshot):TurnSnapshot {
    const s=parseSavedGame(JSON.stringify({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:value.game,logs:value.logs,view:{zoom:1,focus:false,table:true,boardZooms:{}}}));

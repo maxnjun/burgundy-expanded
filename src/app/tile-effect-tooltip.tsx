@@ -23,7 +23,22 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   const width=window.innerWidth,height=window.innerHeight;
   box.style.maxWidth=`${Math.max(1,Math.min(390,width-16))}px`;
   box.style.maxHeight=`${Math.max(1,p.mode==="touch"?Math.min(440,height-16):height-16)}px`;
-  const rect=a.source.getBoundingClientRect(),w=box.offsetWidth,h=box.offsetHeight;
+  const rect=a.source.getBoundingClientRect();
+  if(p.mode==='touch'&&a.source.closest('[data-quick-purchase]')){
+   // Leave the tapped tile uncovered so its second tap still reaches the board.
+   const right=width-rect.right-16,left=rect.left-16;
+   if(Math.max(right,left)>=220){
+    box.style.maxWidth=`${Math.min(390,Math.max(right,left))}px`;
+    box.style.left=`${right>=left?rect.right+8:rect.left-box.offsetWidth-8}px`;
+    box.style.top=`${Math.max(8,Math.min(rect.top,height-box.offsetHeight-8))}px`;
+   }else{
+    const above=rect.top-16,below=height-rect.bottom-16;box.style.maxHeight=`${Math.max(1,Math.max(above,below))}px`;
+    box.style.left=`${Math.max(8,Math.min(a.x-box.offsetWidth/2,width-box.offsetWidth-8))}px`;
+    box.style.top=`${above>=below?rect.top-box.offsetHeight-8:rect.bottom+8}px`;
+   }
+   return;
+  }
+  const w=box.offsetWidth,h=box.offsetHeight;
   let left=p.mode==="touch"?a.x-w/2:Math.max(a.x+16,rect.right+8);
   let top=p.mode==="touch"?rect.bottom+14:a.y+16;
   if(left+w>width-8)left=p.mode==="touch"?width-w-8:Math.min(a.x-w-16,rect.left-w-8);
@@ -37,7 +52,7 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   return()=>observer.disconnect();
  },[popup,position,ref]);
  useEffect(()=>{
-  const touches=new Set<number>();let lastPointer="mouse";
+  const touches=new Set<number>();let lastPointer="mouse",quickHelp:{source:Element;x:number;y:number}|null=null;
   const inside=(target:EventTarget|null)=>target instanceof Node&&!!ref.current?.contains(target);
   const browsing=(source:Element)=>source.closest("[data-tile-help-touch-browse]")?.getAttribute("data-tile-help-touch-browse")!=="false";
   const show=(source:Element,x:number,y:number,mode:Popup["mode"])=>{
@@ -53,6 +68,7 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   const out=(e:PointerEvent)=>{if(e.pointerType==="mouse"&&current.current?.mode==="mouse"&&sourceFor(e.relatedTarget)?.getAttribute("data-tile-help")!==current.current.help.id)close();};
   const down=(e:PointerEvent)=>{
    lastPointer=e.pointerType;
+   quickHelp=null;
    suppressed.current=null;
    if(e.pointerType==="touch"||e.pointerType==="pen")touches.add(e.pointerId);
    if(touches.size>1)cancelTap();
@@ -71,16 +87,20 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
    if(!pending||pending.pointer!==e.pointerId||pending.down.defaultPrevented||!pending.source.isConnected||!browsing(pending.source))return;
    // The down event retains cancellation by the viewport's bubbling pan handler.
    const source=sourceFor(document.elementFromPoint(e.clientX,e.clientY));if(source!==pending.source)return;
+   // WebView retargets its synthetic click if a popup covers the finger on pointerup.
+   if(source.closest('[data-quick-purchase]')){quickHelp={source,x:e.clientX,y:e.clientY};return;}
    suppressed.current={owner:source.closest('button,[role="button"]')??source,expires:Date.now()+800};
    show(source,e.clientX,e.clientY,"touch");
   };
-  const cancel=(e:PointerEvent)=>{touches.delete(e.pointerId);cancelTap();};
+  const cancel=(e:PointerEvent)=>{quickHelp=null;touches.delete(e.pointerId);cancelTap();};
   const click=(e:MouseEvent)=>{
+   const help=quickHelp;quickHelp=null;if(help&&e.target instanceof Node&&help.source.contains(e.target))show(help.source,help.x,help.y,'touch');
    const blocked=suppressed.current;
    if(blocked&&Date.now()<=blocked.expires&&e.target instanceof Node&&blocked.owner.contains(e.target)){e.preventDefault();e.stopImmediatePropagation();suppressed.current=null;}
   };
   const context=(e:MouseEvent)=>{if(sourceFor(e.target)&&(lastPointer==="touch"||lastPointer==="pen"||matchMedia("(pointer:coarse)").matches))e.preventDefault();};
   const scroll=(e:Event)=>{
+   quickHelp=null;
    if(inside(e.target))return;
    cancelTap();const a=anchor.current;
    if(current.current?.mode==="mouse"&&a){const source=sourceFor(document.elementFromPoint(a.x,a.y));if(source)show(source,a.x,a.y,"mouse");else close();}

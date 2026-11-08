@@ -108,6 +108,14 @@ export function validImmediateChoice(state: GameState): boolean {
     }
 }
 export const validPendingChoice = (state: GameState): boolean => validVineChoice(state) || validShipChoice(state) || validImmediateChoice(state) || validShieldChoice(state);
+/** Only the exact old trade menu migrates; physical white castles keep their white-die rule. */
+export function upgradeTradeCastleChoice(state:GameState):GameState {
+ const effect=state.turn.pendingEffects[0],choice=state.turn.pendingChoice,payload=effect?.payload as {kind?:string;tradeSlotId?:string}|null;
+ if(!choice||payload?.kind!=='white-castle'||!payload.tradeSlotId||pendingTradeReward(state,effect.playerId,payload.tradeSlotId)!=='castle')return state;
+ const player=state.players.find(p=>p.id===effect.playerId);if(!player||JSON.stringify(choice.options)!==JSON.stringify(immediateOptions(state,player,'white-castle',true)))return state;
+ const source={...effect.source,section:'커스텀 무역로 보상 · 추가 주사위 행동'};
+ return {...state,turn:{...state.turn,pendingEffects:[{...effect,source,payload:{...payload,kind:'castle'}},...state.turn.pendingEffects.slice(1)],pendingChoice:{...choice,source,options:immediateOptions(state,player,'castle',true)}}};
+}
 /** Upgrade only the exact pre-v2 town-hall list; malformed choices still fail validation. */
 export function upgradeTownHallChoice(state:GameState):GameState {
     const choice=state.turn.pendingChoice,effect=state.turn.pendingEffects[0];

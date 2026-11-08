@@ -19,9 +19,9 @@ test('mismatches show goods back, card transition and final route stay visible w
  while(g.tradeRoutes!.routes['seat-1'].sales.length<15)advance();await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),save(g));await page.reload();await expect(panel.getByText(/전체 완료/)).toBeVisible();await expect(panel.locator('[data-trade-next=true]')).toHaveCount(0);await expect(panel.locator('[data-goods-back]')).toHaveCount(3);await panel.screenshot({path:'.local-data/qa/custom-trade-complete.png'});
  expect(CUSTOM_TRADE_CATALOG.length).toBe(12);
 });
-test('white reward uses existing mandatory choice UI and reload preserves pending selection',async({page})=>{
- const g=tradeStep(tradeFixture('white-castle'),directSale(tradeFixture('white-castle')));await load(page,g);await expect(page.getByRole('region',{name:'타일 효과 선택',exact:true})).toBeVisible();await page.reload();
- const choices=page.getByRole('region',{name:'타일 효과 선택',exact:true});await page.getByLabel('일꾼 자원',{exact:true}).click();await expect(choices).toHaveCount(0);await expect(page.locator('[data-trade-status=resolved]')).toHaveCount(1);expect((await state(page)).tradeRoutes!.routes['seat-1'].sales.length).toBe(1);
+test('extra action reward uses direct board controls and reload preserves pending selection',async({page})=>{
+ const g=tradeStep(tradeFixture('castle'),directSale(tradeFixture('castle')));await load(page,g);await expect.poll(async()=>(await state(page)).turn.pendingChoice?.id).toBe(g.turn.pendingChoice!.id);await page.reload();
+ await page.getByLabel('일꾼 자원',{exact:true}).click();await expect(page.locator('[data-trade-status=resolved]')).toHaveCount(1);const after=await state(page);expect(after.tradeRoutes!.routes['seat-1'].sales.length).toBe(1);expect(after.turn.pendingChoice).toBeNull();expect(after.dice).toEqual(g.dice);
 });
 test('local setup2/3/4 starts custom route option and disables without changing legacy games',async({page})=>{
  await page.goto('/');for(const count of [2,3,4]){await page.getByRole('button',{name:/게임 준비/}).click();await page.getByLabel('플레이어 수',{exact:true}).selectOption(String(count));await page.getByLabel('무역로 확장',{exact:true}).check();await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();await expect.poll(async()=>Object.values((await state(page)).tradeRoutes?.routes??{}).map(r=>r.tileIds.length)).toEqual(Array(count).fill(count===2?5:count===3?4:3));}

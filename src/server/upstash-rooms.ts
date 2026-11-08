@@ -18,12 +18,13 @@ export class UpstashRooms {
   }
   private key(id:string){if(!/^[a-f0-9]{24}$/.test(id))throw new RoomError(404,"방을 찾을 수 없습니다.");return `burgundy:${this.namespace}:room:${id}`;}
   private async command(args:(string|number)[]):Promise<unknown>{
+    const started=Date.now();
     try{
       const response=await this.request(this.url,{method:"POST",headers:{Authorization:`Bearer ${this.token}`,"Content-Type":"application/json"},body:JSON.stringify(args),cache:"no-store",redirect:"error",signal:AbortSignal.timeout(10_000)});
       if(!response.ok)throw Error();
       const data=await response.json();if(!data||typeof data!=="object"||"error" in data||!("result" in data))throw Error();
       return data.result;
-    }catch{throw unavailable();} // Never expose provider errors, credentials or full room data.
+    }catch{console.warn('Room storage request failed',{command:args[0],elapsedMs:Date.now()-started});throw unavailable();} // Never log provider errors, credentials or full room data.
   }
   async read(id:string){const raw=await this.command(["GET",this.key(id)]);if(raw!==null&&typeof raw!=="string")throw unavailable();return raw as string|null;}
   async write(id:string,raw:string,revision:number|null){

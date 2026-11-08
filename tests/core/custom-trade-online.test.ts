@@ -13,7 +13,7 @@ test("server custom trade validates option, assigns cards, sells once, resolves 
   await assert.rejects(()=>store.create('A',false,false,null,false,'true'),e=>e instanceof RoomError&&e.status===400);
   const res=await roomHandlers(store).create(new Request('http://localhost/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'A',tradeRoutes:true})}));assert.equal(res.status,200);
   const owner=await res.json(),guest=await store.joinRoom(owner.id,'B'),path=join(directory,`${owner.id}.json`),initial=await store.view(owner.id,owner.token);assert.ok(initial.tradeRoutes);assert.equal(initial.tradeRoutes.routes['seat-1'].tileIds.length,5);
-  const room=JSON.parse(await readFile(path,'utf8'));room.game=tradeFixture('white-castle');await writeFile(path,JSON.stringify(room));
+  const room=JSON.parse(await readFile(path,'utf8'));room.game=tradeFixture('castle');await writeFile(path,JSON.stringify(room));
   const before=await store.view(owner.id,owner.token),action=directSale(room.game);
   await assert.rejects(()=>store.act(owner.id,guest.token,before.revision,action),e=>e instanceof RoomError&&e.status===403);
   const next=await store.act(owner.id,owner.token,before.revision,action);assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,1);assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,'pending');

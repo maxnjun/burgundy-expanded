@@ -8,7 +8,7 @@ import { validateBoardDefinition } from "./boards/validation";
 import { deriveRegions } from "./boards/regions";
 import { VERIFIED_BOARD_DEFINITIONS } from "./boards/catalog";
 import { practiceBoard } from "./practice";
-import { validPendingChoice,upgradeTownHallChoice,upgradeBonusShieldChoice } from "./core/effects";
+import { validPendingChoice,upgradeTownHallChoice,upgradeBonusShieldChoice,upgradeTradeCastleChoice } from "./core/effects";
 import { officialMarketRecipe } from "./market-recipes";
 import { parseBoundedGameJson } from "./bounded-json";
 import {validStartingCastlePreview,type StartingCastlePreview} from './starting-castles';
@@ -45,6 +45,7 @@ export function parseSavedGame(text: string): SavedGame {
   if(game.vineyards?.version==='project-vineyards-v2'&&game.vineyards.topSlotId===undefined){const v=game.vineyards,compatible=Object.values(v.players).every(p=>p.layers.every(l=>VINE_SLOTS.filter(s=>s.layer===l).every(s=>p.placed.some(x=>x.slotId===s.id&&x.used.length===2))));if(compatible)game={...game,vineyards:{...v,topSlotId:'V11'}};}
   game=upgradeShieldPhaseChoice(game);
   game=upgradeShieldFiveChoice(game);
+  game=upgradeTradeCastleChoice(game);
   game=upgradeTownHallChoice(game);
   game=upgradeBonusShieldChoice(game);
   const saved={...original,game};

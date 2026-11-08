@@ -1,3 +1,16 @@
+# 긴급 버그7 — 로컬 구현·검증 완료, 운영 원인 미확정 (2026-11-08)
+
+- 기준730cdc2. 기존 dirty 문서 본문·수도원27/28·입력에셋 보존, 이번 접두사만 Git 백업. 상세 docs/qa/emergency-seven.md.
+- 1~5·7 로컬완료: 무역로 castle 1회추가행동/실제흰성유지·정확legacy/Undo 이전, 은화창기본펼침, 상단실제승점, 더블구매/수단선택/교체, 안내축소, 공통방패유지·제거. 이미지/좌표/가격·유지비·온라인인증/저장구조 무변경.
+- 6 부분완료: create/join 최대2회동일ID·토큰/15초제한·한국어오류·12초WS fallback·버전조회중첩차단·Upstash 안전시간로그. 초기운영3GET25초timeout→마지막200(health481ms/version229ms/online235ms), 운영SHA730cdc2. 인증로그 없어 원인/운영수정 미확정.
+- 이번 전체 core554/boards33/Android9/배포7·tsc/전체ESLint/웹production 통과. 관련PC·터치46통과/2의도skip(터치전용·시간측정중복), 실제31초타임아웃·2인생성응답유실/복귀/점수/Undo·수도원6회귀 포함.
+- Android16/WebView133 실제ADB: APK7→8 게임/Undo 보존, 단일·더블탭/수단/2~4인방패유지·제거반환/무역추가행동·점수/Undo/강제종료복원/디자인 ON·OFF 통과. 상단132.24px,225에셋·기존앱ID/서명 유지. APK0.1.7 code8, 이전APK 보존.
+- QA발견실패: 잘못된 픽스처 Undo범위/구패널 존재검사 수정. 실제 WebView pointerup 팝업이 click을 가로채던 원인과 팝업레이어/타일겹침 수정. 교체시 선택한 일반주사위가 수도원6으로 바뀌지 않도록 보존. 최종재검 통과.
+- 사용자 AutoDeployOff·yamlOff·공식 skip render/release no-deploy 차단 유지. 기존공개 origin/main은 이전허용범위; 관련파일만 지정subject 일반백업. 최종commit APK·원본저장/설정복원·원격SHA는 .local-data/emergency-seven/{apk-verification,final-install,backup-result}.json/완료보고 참조.
+- Render 배포/재시작/설정/운영Redis·방 변경 없음. 새APK온라인은 동일커밋 수동배포 필요. 실물기기·다른WebView/외부망·운영로그 미확인; 일반행동 저장확정전 즉시종료 위험은 기존 별도미해결항목. 다른 Phase1~8 목표는 아래 보존.
+
+--- 이전 기록 보존 ---
+
 # 핫시트 새 게임 초기화 — 구현·검증 완료 (2026-11-02)
 
 - 기준2615d31, 기존 dirty 문서/수도원27·28/입력자료 보존. before/ 사본·해시, 이번 문서 접두사만 백업. 상세: docs/qa/hotseat-reset.md.

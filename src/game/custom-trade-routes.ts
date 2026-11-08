@@ -1,21 +1,21 @@
 import type {BuildingType,DieValue,GameState} from "./types";
 import {prepareTradeRoutes,type TradeRouteTile} from "./trade-routes";
 
-export type TradeReward=Exclude<BuildingType,"crane">;
-export const TRADE_REWARD_NAMES:Record<TradeReward,string>={warehouse:"창고","carpenters-workshop":"목수 작업장",church:"교회",market:"시장","boarding-house":"하숙집",bank:"은행","town-hall":"시청",watchtower:"망루","white-castle":"흰 성"};
+export type TradeReward=Exclude<BuildingType,"crane"|"white-castle">|"castle";
+export const TRADE_REWARD_NAMES:Record<TradeReward,string>={warehouse:"창고","carpenters-workshop":"목수 작업장",church:"교회",market:"시장","boarding-house":"하숙집",bank:"은행","town-hall":"시청",watchtower:"망루",castle:"추가 주사위 행동"};
 /** User-designed catalog. NOT the publisher's twelve trade-route fronts. */
 const rows:readonly (readonly [DieValue,TradeReward])[]=[
  [1,"warehouse"],[4,"carpenters-workshop"],[2,"church"],
  [5,"market"],[3,"boarding-house"],[6,"bank"],
- [2,"town-hall"],[1,"watchtower"],[4,"white-castle"],
+ [2,"town-hall"],[1,"watchtower"],[4,"castle"],
  [6,"carpenters-workshop"],[3,"church"],[5,"market"],
  [1,"boarding-house"],[5,"bank"],[2,"town-hall"],
- [4,"watchtower"],[6,"white-castle"],[3,"warehouse"],
+ [4,"watchtower"],[6,"castle"],[3,"warehouse"],
  [3,"church"],[2,"market"],[1,"boarding-house"],
  [5,"bank"],[4,"town-hall"],[6,"watchtower"],
- [2,"white-castle"],[3,"warehouse"],[5,"carpenters-workshop"],
+ [2,"castle"],[3,"warehouse"],[5,"carpenters-workshop"],
  [4,"market"],[1,"boarding-house"],[6,"bank"],
- [6,"town-hall"],[5,"watchtower"],[3,"white-castle"],
+ [6,"town-hall"],[5,"watchtower"],[3,"castle"],
  [1,"warehouse"],[2,"carpenters-workshop"],[4,"church"],
 ];
 export const CUSTOM_TRADE_CATALOG:readonly TradeRouteTile[]=Object.freeze(Array.from({length:12},(_,i)=>Object.freeze({id:String(i+1),spaces:Object.freeze(rows.slice(i*3,i*3+3).map(([goodsType,bonusId])=>Object.freeze({goodsType,bonusId}))) as unknown as TradeRouteTile["spaces"]})));

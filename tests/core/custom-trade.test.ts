@@ -41,9 +41,9 @@ for(const kind of Object.keys(TRADE_REWARD_NAMES) as TradeReward[])test(`custom 
   assert.equal(route.sales[0].status,"resolved");assert.equal(game.players[0].silver-player.silver,normal.silver+(kind==="bank"?2:0));assert.equal(game.players[0].workers-player.workers,kind==="boarding-house"?4:0);assert.equal(game.players[0].victoryPoints-player.victoryPoints,normal.points+(kind==="watchtower"?4:0));
  }else{
   assert.equal(route.sales[0].status,"pending");assert.ok(game.turn.pendingChoice);assert.equal(validateCoreAction(game,{type:"end-turn",playerId:"seat-1"}).valid,false);
-  const choice=game.turn.pendingChoice!,option=choice.options.find(o=>o.id!=="skip"&&((kind!=="white-castle")||(o.payload as {intent?:{kind?:string}})?.intent?.kind==="take-workers"));assert.ok(option,kind);
+  const choice=game.turn.pendingChoice!,option=choice.options.find(o=>o.id!=="skip"&&((kind!=="castle")||(o.payload as {intent?:{kind?:string}})?.intent?.kind==="take-workers"));assert.ok(option,kind);
   const action={type:"resolve-choice" as const,playerId:"seat-1",choiceId:choice.id,optionId:option.id};const next=tradeStep(game,action);assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,kind==="warehouse"?2:1);assert.equal(next.tradeRoutes!.routes['seat-1'].sales[0].status,"resolved");assert.equal(validateCoreAction(next,action).valid,false);assert.deepEqual(roundtrip(next),next);
-  if(kind==="white-castle"){assert.equal(next.players[0].workers-game.players[0].workers,2);assert.deepEqual(next.dice,game.dice);}
+  if(kind==="castle"){assert.equal(next.players[0].workers-game.players[0].workers,2);assert.deepEqual(next.dice,game.dice);}
   if(kind==="warehouse")assert.equal(next.players[0].goods.length,0);
  }
  assert.equal(validateCoreAction(game,directSale(before)).valid,false);
@@ -54,7 +54,7 @@ test("mismatch advances one slot without rewards; all completed routes still all
  assert.throws(()=>roundtrip({...next,tradeRoutes:{...next.tradeRoutes!,routes:{...next.tradeRoutes!.routes,'seat-1':{...next.tradeRoutes!.routes['seat-1'],tileIds:['99',...next.tradeRoutes!.routes['seat-1'].tileIds.slice(1)]}}}}));
 });
 test("white reward sale advances the next trade slot once without consuming a player die",()=>{
- const before=tradeFixture('white-castle'),g=tradeStep(before,directSale(before)),choice=g.turn.pendingChoice!,option=choice.options.find(o=>(o.payload as {intent?:{kind?:string}})?.intent?.kind==='sell-goods');assert.ok(option);
+ const before=tradeFixture('castle'),g=tradeStep(before,directSale(before)),choice=g.turn.pendingChoice!,option=choice.options.find(o=>(o.payload as {intent?:{kind?:string}})?.intent?.kind==='sell-goods');assert.ok(option);
  const next=tradeStep(g,{type:'resolve-choice',playerId:'seat-1',choiceId:choice.id,optionId:option.id});assert.equal(next.tradeRoutes!.routes['seat-1'].sales.length,2);assert.equal(next.players[0].goods.length,0);assert.deepEqual(next.dice,g.dice);assert.deepEqual(roundtrip(next),next);assert.equal(validateCoreAction(next,{type:'resolve-choice',playerId:'seat-1',choiceId:choice.id,optionId:option.id}).valid,false);
 });
 test("full route stops at capacity and still sells normally, without duplicate or skipped slots",()=>{
