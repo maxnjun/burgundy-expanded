@@ -9,6 +9,8 @@
 - 사용자 AutoDeployOff·yamlOff·공식 skip render/release no-deploy 차단 유지. 기존공개 origin/main은 이전허용범위; 관련파일만 지정subject 일반백업. 최종commit APK·원본저장/설정복원·원격SHA는 .local-data/emergency-seven/{apk-verification,final-install,backup-result}.json/완료보고 참조.
 - Render 배포/재시작/설정/운영Redis·방 변경 없음. 새APK온라인은 동일커밋 수동배포 필요. 실물기기·다른WebView/외부망·운영로그 미확인; 일반행동 저장확정전 즉시종료 위험은 기존 별도미해결항목. 다른 Phase1~8 목표는 아래 보존.
 
+- 2026-11-09 최종 보정: 모바일 배치 직후 가상 hover 차단과 기존 구매·확대 검사 갱신. 추가 PC·모바일 47통과/5의도 제외, 터치 집중 재검/타입/린트/빌드 통과.
+
 --- 이전 기록 보존 ---
 
 # 핫시트 새 게임 초기화 — 구현·검증 완료 (2026-11-02)

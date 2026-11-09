@@ -96,7 +96,7 @@ test("mobile mandatory castle action wins without selected dice; optional purcha
  }
  const initial=fixture(),g={...initial,dice:{...initial.dice,players:{...initial.dice.players,[initial.players[0].id]:[{...initial.dice.players[initial.players[0].id][0],used:true},{...initial.dice.players[initial.players[0].id][1],used:true}] as const}}};await load(page,2,false,g);
  const id=g.market.blackDepot.find(Boolean)!,black=page.locator(`[data-tile-id="${id}"]`);await black.tap();await expect(page.getByRole("dialog",{name:"타일 효과 설명",exact:true})).toBeVisible();expect(await state(page)).toEqual(g);await page.getByRole("button",{name:"타일 설명 닫기",exact:true}).tap();
- await page.getByLabel("추가 행동",{exact:true}).tap();await page.getByRole("checkbox",{name:"보드에서 은화 구매 선택",exact:true}).check();await black.tap();await expect(page.locator("#tile-effect-tooltip")).toHaveCount(0);await expect.poll(async()=>(await state(page)).revision).toBe(g.revision+1);const bought=await state(page);expect(bought.players[0].storage).toContain(id);expect(bought.players[0].silver).toBe(g.players[0].silver-2);
+ if(await page.locator(".direct-special").getAttribute("open")===null)await page.getByLabel("추가 행동",{exact:true}).tap();await page.getByRole("checkbox",{name:"보드에서 은화 구매 선택",exact:true}).check();await black.tap();await expect(page.locator("#tile-effect-tooltip")).toHaveCount(0);await expect.poll(async()=>(await state(page)).revision).toBe(g.revision+1);const bought=await state(page);expect(bought.players[0].storage).toContain(id);expect(bought.players[0].silver).toBe(g.players[0].silver-2);
 });
 
 test("online reference and tile effects are UI-only with no action requests or revision changes",async({page},info)=>{

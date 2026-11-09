@@ -18,7 +18,7 @@ for(const count of [2,3,4])test(`turn controls ${count}p red order, snapshots, c
  await expect(page.getByRole('button',{name:'저장 파일 내보내기',exact:true})).toHaveCount(0);await expect(page.getByText('장착한 방패 없음',{exact:true})).toHaveCount(0);await expect(page.getByText('방패 확장 · 능력 적용 중',{exact:true})).toHaveCount(0);
  await workers(page);await expect(step).toBeEnabled();await expect(undo).toBeEnabled();const one=(await saved(page)).game;
  await expect(undo).toHaveCSS('background-color','rgb(168, 50, 50)');await undo.hover();await expect(undo).toHaveCSS('background-color','rgb(191, 67, 67)');
- await page.locator('[data-black-depot] .supply-art-tile[aria-disabled=false]').first().click();await expect.poll(async()=>(await saved(page)).game.players[0].silver).toBe(28);
+ await page.locator('[data-black-depot] .supply-art-tile[aria-disabled=false]').first().dblclick();await expect.poll(async()=>(await saved(page)).game.players[0].silver).toBe(28);
  await step.click();await expect.poll(async()=>(await saved(page)).game).toEqual(one);await step.click();await expect.poll(async()=>(await saved(page)).game).toEqual(baseline);
  await workers(page);await undo.click();await expect.poll(async()=>(await saved(page)).game).toEqual(baseline);
  await workers(page);await step.click();await page.getByRole('button',{name:/^행동 주사위 2 눈/}).click();await page.getByRole('button',{name:'일꾼 자원',exact:true}).click();await expect.poll(async()=>(await saved(page)).game.dice.players['seat-1'][1].used).toBe(true);await step.click();await expect.poll(async()=>(await saved(page)).game).toEqual(baseline);

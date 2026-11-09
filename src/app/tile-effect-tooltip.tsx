@@ -64,7 +64,7 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
    if(current.current?.help.id!==help.id||current.current.mode!==mode||current.current.terrain!==terrain){current.current={help,mode,terrain};setPopup(current.current);}
    position();
   };
-  const over=(e:PointerEvent)=>{if(e.pointerType!=="mouse"||e.buttons)return;const source=sourceFor(e.target);if(source)show(source,e.clientX,e.clientY,"mouse");else if(current.current?.mode==="mouse")close();};
+  const over=(e:PointerEvent)=>{if(e.pointerType!=="mouse"||e.buttons||lastPointer==='touch'||lastPointer==='pen')return;const source=sourceFor(e.target);if(source)show(source,e.clientX,e.clientY,"mouse");else if(current.current?.mode==="mouse")close();};
   const out=(e:PointerEvent)=>{if(e.pointerType==="mouse"&&current.current?.mode==="mouse"&&sourceFor(e.relatedTarget)?.getAttribute("data-tile-help")!==current.current.help.id)close();};
   const down=(e:PointerEvent)=>{
    lastPointer=e.pointerType;
@@ -80,7 +80,7 @@ export function useTileEffectTooltip(ref:RefObject<HTMLDivElement|null>){
   };
   const move=(e:PointerEvent)=>{
    if(tap.current&&Math.hypot(e.clientX-tap.current.x,e.clientY-tap.current.y)>10)cancelTap();
-   if(e.pointerType==="mouse"&&!e.buttons){const source=sourceFor(e.target);if(source)show(source,e.clientX,e.clientY,"mouse");else if(current.current?.mode==="mouse")close();}
+   if(e.pointerType==="mouse"&&!e.buttons){lastPointer='mouse';const source=sourceFor(e.target);if(source)show(source,e.clientX,e.clientY,"mouse");else if(current.current?.mode==="mouse")close();}
   };
   const up=(e:PointerEvent)=>{
    const pending=tap.current;touches.delete(e.pointerId);cancelTap();

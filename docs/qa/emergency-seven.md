@@ -59,3 +59,10 @@
 - [Render 공식 skip 문구](https://render.com/docs/deploys#skipping-an-auto-deploy)도 다시 확인했다. 사용자 확인 Auto-Deploy Off, render.yaml off, 지정 커밋의 `[skip render] [no-deploy]`, release의 no-deploy 차단을 유지한다. 실제 Dashboard 설정을 API로 다시 조회할 인증은 없다. Render 요청/설정 변경/재시작/배포 명령은 실행하지 않는다.
 
 실물 휴대폰·다른 WebView·실제 다른 네트워크는 미검증이다. 일반 행동의 저장 확정 이전 강제 종료 위험은 기존 별도 항목이며 새 기능의 완료로 해소됐다고 주장하지 않는다. Phase1~8 및 다른 미완료 과제는 기존 TODO를 보존한다.
+
+## 2026-11-09 최종 터치 회귀
+
+- 터치로 배치한 뒤 레이아웃이 움직이면서 들어온 가상 마우스 hover가 설명창을 띄웠다. 터치 직후 pointerover를 건너뛰고 실제 마우스 이동에서 hover를 재개한다.
+- 기존 테스트가 기대하던 한 번 클릭 구매, 닫힌 구매창, 수도원6 옛 문구와 고정 확대 횟수를 현재 조작에 맞췄다. 타일·자원·공급 제한·Undo·배율 검증은 유지한다.
+- 수정된 호출부 PC·모바일 47통과, 환경에 따른 5건 제외. 앞서 실행한 직접 관련46건과 별개다. 터치 집중 재검과 타입·ESLint·웹 빌드도 통과했다.
+- 추가 검증 파일은 common-layout, fifteen-fixes, online-board, tile-help, turn-controls의 브라우저 테스트다. 게임 코드는 tile-effect-tooltip의 터치 hover 보정만 추가했다.

@@ -71,7 +71,7 @@ for (const [count,shields] of [[2,false],[3,false],[4,false],[2,true],[3,true],[
   expect(edges).toBe(5);
  }
  const blackGeometry=await board.locator('[data-black-space]').evaluateAll(els=>els.map(e=>e.getAttribute('points')));
- const black=board.locator('[data-black-depot] .supply-art-tile').first();await expect(black).toHaveAttribute('aria-disabled','false');await black.click();
+ const black=board.locator('[data-black-depot] .supply-art-tile').first();await expect(black).toHaveAttribute('aria-disabled','false');await black.dblclick();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.players[0].silver)).toBe(2);
  await page.reload();await expect(board.locator('[data-black-depot] .supply-art-tile')).toHaveCount(game.market.blackDepot.filter(Boolean).length-1);
  expect(await board.locator('[data-black-space]').evaluateAll(els=>els.map(e=>e.getAttribute('points')))).toEqual(blackGeometry);
