@@ -51,7 +51,10 @@ test('four estate designs preserve the same game, coordinates and public board',
  const snapshot=()=>estate.evaluate(board=>Array.from(board.querySelectorAll('[data-estate-fill],[data-estate-grid],[data-estate-tile]'),cell=>{
   const rect=cell.getBoundingClientRect();
   const parent=board.getBoundingClientRect();
-  return [cell.getAttribute('points'),cell.getAttribute('d'),cell.getAttribute('fill'),cell.getAttribute('data-estate-tile'),rect.x-parent.x,rect.y-parent.y,rect.width,rect.height];
+  return {
+   shape:[cell.getAttribute('points'),cell.getAttribute('d'),cell.getAttribute('fill'),cell.getAttribute('data-estate-tile')],
+   pixels:[rect.x-parent.x,rect.y-parent.y,rect.width,rect.height],
+  };
  }));
  const common=()=>page.locator('.common-board-panel').evaluate(board=>{
   const style=getComputedStyle(board);
@@ -62,30 +65,71 @@ test('four estate designs preserve the same game, coordinates and public board',
  await page.getByLabel('합법 행동 및 안내 문구 상단 고정',{exact:true}).uncheck();
  await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
  await selection.click();
- const geometry=await snapshot(),publicStyle=await common(),backgrounds=new Set<string>();
+ const publicStyle=await common(),backgrounds=new Set<string>();
+ const setZoom=async(percent:number)=>{
+  await page.getByRole('slider',{name:'전체 배율'}).evaluate((input,value)=>{
+   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,String(value));
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+  },percent);
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).view.zoom)).toBe(percent/100);
+ };
+ const vineyardLayout=()=>estate.evaluate(board=>{
+  const rect=board.querySelector('.estate-original-board')!.getBoundingClientRect();
+  const vineyard=board.querySelector('.vineyard-personal')!.getBoundingClientRect();
+  return [rect.width,rect.height,vineyard.width,vineyard.height,vineyard.left-rect.right,vineyard.top-rect.top];
+ });
+ const expectPixels=(actual:number[],baseline:number[])=>actual.forEach((value,index)=>expect(value).toBeCloseTo(baseline[index],2));
+ const expectSameGrid=(actual:Awaited<ReturnType<typeof snapshot>>,baseline:Awaited<ReturnType<typeof snapshot>>)=>{
+  expect(actual.map(cell=>cell.shape)).toEqual(baseline.map(cell=>cell.shape));
+  actual.forEach((cell,index)=>expectPixels(cell.pixels,baseline[index].pixels));
+ };
+ const layouts=new Map<number,{grid:Awaited<ReturnType<typeof snapshot>>;boards:number[]}>();
+ const geometry=await snapshot();
  for(const number of [1,2,3,4]){
   await selectEstate(page,number);
-  expect(await snapshot()).toEqual(geometry);
   expect(await common()).toEqual(publicStyle);
   expect(await current(page)).toEqual(game);
   await expect(selection).toHaveAttribute('aria-pressed','true');
   await expect(estate.locator('.vineyard-personal')).toBeVisible();
   await expect(estate.locator('.trade-route-panel')).toBeVisible();
   backgrounds.add(await estate.evaluate(board=>getComputedStyle(board).backgroundImage));
-  const assets=await estate.locator('.estate-heading,.estate-original-board .live-board-scroll').evaluateAll(nodes=>
-   nodes.flatMap(node=>Array.from(getComputedStyle(node).backgroundImage.matchAll(/url\("([^"]+)"\)/g),match=>match[1]))
-  );
-  for(const url of new Set(assets))expect((await page.request.get(url)).ok()).toBe(true);
-  await estate.screenshot({path:info.outputPath(`estate-design-${number}.png`)});
+  const decoration=estate.locator('[data-estate-decoration]');
+  await expect(decoration).toHaveCount(number===1?0:1);
+  if(number!==1){
+   await expect(estate.locator('.estate-original-board .live-board-scroll')).toHaveCSS('background-image','none');
+   await expect(estate.locator('.estate-heading')).not.toHaveCSS('background-image',/url\(/);
+   await expect(decoration).toHaveCSS('pointer-events','none');
+   await decoration.locator('image').evaluateAll(async images=>Promise.all(images.map(async source=>{
+    const image=new Image();
+    image.src=source.getAttribute('href')!;
+    await image.decode();
+   })));
+  }
+  for(const zoom of [100,75,150]){
+   await setZoom(zoom);
+   const state={grid:await snapshot(),boards:await vineyardLayout()};
+   expect(state.boards[4]).toBeGreaterThan(0);
+   if(number===1)layouts.set(zoom,state);
+   else {
+    const baseline=layouts.get(zoom)!;
+    expectSameGrid(state.grid,baseline.grid);
+    expectPixels(state.boards,baseline.boards);
+   }
+   expect(await decoration.evaluateAll(groups=>groups.every(group=>{
+    const svg=group.closest('svg')!;
+    const bounds=svg.getBoundingClientRect();
+    const cells=Array.from(svg.querySelectorAll('[data-estate-fill]'),cell=>cell.getBoundingClientRect());
+    return Array.from(group.querySelectorAll('[data-estate-ornament]')).every(ornament=>{
+     const box=ornament.getBoundingClientRect();
+     return box.width>0&&box.height>0&&box.left>bounds.left&&box.right<bounds.right&&box.top>bounds.top&&box.bottom<bounds.bottom
+       &&cells.every(cell=>box.right<=cell.left||box.left>=cell.right||box.bottom<=cell.top||box.top>=cell.bottom);
+    });
+   }))).toBe(true);
+   if(zoom===100||number===4)await estate.screenshot({path:info.outputPath(`estate-design-${number}-${zoom}.png`)});
+  }
+  await setZoom(100);
  }
  expect(backgrounds.size).toBe(4);
- if(info.project.name==='desktop-1280'){
-  for(const zoom of [1.6,2]){
-   await page.evaluate(zoom=>{document.documentElement.style.zoom=String(zoom);},zoom);
-   await estate.screenshot({path:info.outputPath(`estate-design-4-zoom-${zoom}.png`)});
-  }
-  await page.evaluate(()=>{document.documentElement.style.zoom='';});
- }
  await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
  await expect(page.locator('.estate-theme-preview')).toHaveCount(4);
  await page.locator('.estate-theme-setting').screenshot({path:info.outputPath('estate-design-settings.png')});
@@ -99,7 +143,7 @@ test('four estate designs preserve the same game, coordinates and public board',
  expect(await current(page)).toEqual(game);
  await selectEstate(page,1);
  await expect(page.locator('html')).toHaveAttribute('data-design-1','on');
- expect(await snapshot()).toEqual(geometry);
+ expectSameGrid(await snapshot(),geometry);
 });
 const appearance=(page:Page)=>page.evaluate(()=>{
  const estate=document.querySelector('.estate-panel')!,vine=estate.querySelector('.vineyard-personal')!,die=estate.querySelector('[data-estate-cell] [data-white-die]')!,common=document.querySelector('.common-board-panel')!;
@@ -159,6 +203,9 @@ test('online peers independently switch and persist estate designs without a roo
   await page.reload();await other.reload();
   await expect(page.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-2');
   await expect(other.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-4');
+  await expect(page.locator('.estate-panel [data-estate-ornament="crest"]').first()).toBeVisible();
+  await expect(other.locator('.estate-panel [data-estate-ornament="compass"]').first()).toBeVisible();
+  for(const p of [page,other])await expect(p.locator('.common-board-panel [data-estate-decoration]')).toHaveCount(0);
   for(const p of [page,other])await expect(p.locator('[data-game-revision]')).toHaveAttribute('data-game-revision',String(game.revision));
   expect(JSON.parse(await readFile(file,'utf8')).game).toEqual(game);
   await other.locator('.online-game-settings summary').click();await other.locator('.online-settings-options').screenshot({path:info.outputPath('online-design-setting.png')});
