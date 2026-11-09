@@ -7,6 +7,8 @@ import {beginHistory} from '../../src/game/turn-history';
 import {isolatedRooms} from './isolated-rooms';
 
 const key='burgundy-expanded:design-1-v1';
+const themeKey='burgundy-expanded:estate-theme-v1';
+const themeName=(number:number)=>new RegExp(`^디자인 ${number} —`);
 const current=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game);
 test('online entry menu visibly contains Design 1 OFF and ON before joining a room',async({page},info)=>{
  await page.goto('/online');const menu=page.locator('.online-game-settings'),options=menu.locator('.online-settings-options');
@@ -22,8 +24,8 @@ test('online entry menu visibly contains Design 1 OFF and ON before joining a ro
  await guidance.uncheck();await page.reload();await menu.locator('summary').click();await expect(toggle).toBeVisible();await expect(toggle).toBeChecked();await expect(guidance).not.toBeChecked();
  expect(await page.evaluate(k=>localStorage.getItem(k),key)).toBe('on');
 });
-async function install(page:Page){
- const game=vineFixture(),saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
+async function install(page:Page,game=vineFixture()){
+ const saved=serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}});
  await page.addInitScript(s=>{if(!sessionStorage.getItem('design-installed')){localStorage.setItem('burgundy-expanded:local-v1',s);sessionStorage.setItem('design-installed','1');}},saved);
  await page.goto('/');await expect(page.locator('[data-game-revision]')).toHaveAttribute('data-game-revision',String(game.revision));return game;
 }
@@ -34,6 +36,71 @@ async function select(page:Page,on:boolean,online=false){
  if(online)await page.locator('.online-game-settings summary').click();else await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
  await expect(page.locator('html')).toHaveAttribute('data-design-1',on?'on':'off');
 }
+async function selectEstate(page:Page,number:number,online=false){
+ const menu=online?page.locator('.online-game-settings summary'):page.getByRole('button',{name:'⚙ 게임 준비',exact:true});
+ await menu.click();
+ await page.getByRole('radio',{name:themeName(number)}).check();
+ await menu.click();
+ await expect(page.locator('html')).toHaveAttribute('data-estate-theme',`estate-theme-${number}`);
+}
+
+test('four estate designs preserve the same game, coordinates and public board',async({page},info)=>{
+ const game=await install(page,vineFixture(true));
+ const estate=page.locator('.estate-panel').first();
+ const selection=page.getByRole('button',{name:/^행동 주사위 1 눈/});
+ const snapshot=()=>estate.evaluate(board=>Array.from(board.querySelectorAll('[data-estate-fill],[data-estate-grid],[data-estate-tile]'),cell=>{
+  const rect=cell.getBoundingClientRect();
+  const parent=board.getBoundingClientRect();
+  return [cell.getAttribute('points'),cell.getAttribute('d'),cell.getAttribute('fill'),cell.getAttribute('data-estate-tile'),rect.x-parent.x,rect.y-parent.y,rect.width,rect.height];
+ }));
+ const common=()=>page.locator('.common-board-panel').evaluate(board=>{
+  const style=getComputedStyle(board);
+  return [style.background,style.borderImage,board.getBoundingClientRect().width];
+ });
+ await select(page,true);
+ await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
+ await page.getByLabel('합법 행동 및 안내 문구 상단 고정',{exact:true}).uncheck();
+ await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
+ await selection.click();
+ const geometry=await snapshot(),publicStyle=await common(),backgrounds=new Set<string>();
+ for(const number of [1,2,3,4]){
+  await selectEstate(page,number);
+  expect(await snapshot()).toEqual(geometry);
+  expect(await common()).toEqual(publicStyle);
+  expect(await current(page)).toEqual(game);
+  await expect(selection).toHaveAttribute('aria-pressed','true');
+  await expect(estate.locator('.vineyard-personal')).toBeVisible();
+  await expect(estate.locator('.trade-route-panel')).toBeVisible();
+  backgrounds.add(await estate.evaluate(board=>getComputedStyle(board).backgroundImage));
+  const assets=await estate.locator('.estate-heading,.estate-original-board .live-board-scroll').evaluateAll(nodes=>
+   nodes.flatMap(node=>Array.from(getComputedStyle(node).backgroundImage.matchAll(/url\("([^"]+)"\)/g),match=>match[1]))
+  );
+  for(const url of new Set(assets))expect((await page.request.get(url)).ok()).toBe(true);
+  await estate.screenshot({path:info.outputPath(`estate-design-${number}.png`)});
+ }
+ expect(backgrounds.size).toBe(4);
+ if(info.project.name==='desktop-1280'){
+  for(const zoom of [1.6,2]){
+   await page.evaluate(zoom=>{document.documentElement.style.zoom=String(zoom);},zoom);
+   await estate.screenshot({path:info.outputPath(`estate-design-4-zoom-${zoom}.png`)});
+  }
+  await page.evaluate(()=>{document.documentElement.style.zoom='';});
+ }
+ await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
+ await expect(page.locator('.estate-theme-preview')).toHaveCount(4);
+ await page.locator('.estate-theme-setting').screenshot({path:info.outputPath('estate-design-settings.png')});
+ await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
+ await estate.getByRole('button',{name:'포도1 일꾼 자원',exact:true}).click();
+ await expect.poll(async()=>(await current(page)).players[0].workers).toBe(game.players[0].workers+2);
+ await page.getByRole('button',{name:'이전 행동으로',exact:true}).click();
+ await page.reload();
+ await expect(page.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-4');
+ expect(await page.evaluate(k=>localStorage.getItem(k),themeKey)).toBe('estate-theme-4');
+ expect(await current(page)).toEqual(game);
+ await selectEstate(page,1);
+ await expect(page.locator('html')).toHaveAttribute('data-design-1','on');
+ expect(await snapshot()).toEqual(geometry);
+});
 const appearance=(page:Page)=>page.evaluate(()=>{
  const estate=document.querySelector('.estate-panel')!,vine=estate.querySelector('.vineyard-personal')!,die=estate.querySelector('[data-estate-cell] [data-white-die]')!,common=document.querySelector('.common-board-panel')!;
  return {terrains:document.querySelectorAll('[data-terrain-surface]').length,vines:document.querySelectorAll('[data-vine-surface]').length,
@@ -67,14 +134,15 @@ test('theme switches preserve a live vineyard placement preview, real dice and u
  const taken=await current(page),id=taken.players[0].vineyardReserve[0].tileId;
  await page.getByRole('button',{name:/^행동 주사위 2 눈/}).click();const board=page.locator('.vineyard-personal').first(),slot=board.locator('[data-vine-slot=V01]');
  await board.getByRole('button',{name:`보관 포도 ${id}`,exact:true}).click();await slot.click();await expect(slot).toHaveAttribute('data-vine-preview','true');expect(await current(page)).toEqual(taken);
- await select(page,false);await expect(slot).toHaveAttribute('data-vine-preview','true');await expect(slot.locator('[data-connected-vine=true]')).toHaveCount(1);expect(await current(page)).toEqual(taken);
- await select(page,true);await expect(slot).toHaveAttribute('data-vine-preview','true');await board.getByRole('button',{name:'돌려서 배치',exact:true}).click();await board.getByRole('button',{name:'포도 배치 확정',exact:true}).click();
+ await selectEstate(page,2);await expect(slot).toHaveAttribute('data-vine-preview','true');await expect(slot.locator('[data-connected-vine=true]')).toHaveCount(1);expect(await current(page)).toEqual(taken);
+ await selectEstate(page,3);await expect(slot).toHaveAttribute('data-vine-preview','true');await board.getByRole('button',{name:'돌려서 배치',exact:true}).click();await board.getByRole('button',{name:'포도 배치 확정',exact:true}).click();
  await expect(slot).toHaveAttribute('data-occupied','true');const placed=await current(page);expect(placed.vineyards.players['seat-1'].placed[0]).toMatchObject({tileId:id,slotId:'V01',flipped:true});expect(placed.dice.players['seat-1'].every((d:{used:boolean})=>d.used)).toBe(true);
  await page.reload();await expect(slot).toHaveAttribute('data-occupied','true');await expect(page.locator('html')).toHaveAttribute('data-design-1','on');
+ await expect(page.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-3');
  await page.getByRole('button',{name:'이전 행동으로',exact:true}).click();expect(await current(page)).toEqual(taken);
 });
 
-test('online peers independently switch and persist Design 1 without a room revision or state change',async({page,browser,baseURL},info)=>{
+test('online peers independently switch and persist estate designs without a room revision or state change',async({page,browser,baseURL},info)=>{
  const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL});
  try{
   const owner=await(await fetch(server.url+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'디자인A',vineyards:true})})).json();
@@ -87,6 +155,10 @@ test('online peers independently switch and persist Design 1 without a room revi
   await select(page,true,true);await expect(page.locator('[data-terrain-surface]').first()).toBeVisible();await expect(other.locator('[data-terrain-surface]')).toHaveCount(0);
   await page.reload();await other.reload();await expect(page.locator('html')).toHaveAttribute('data-design-1','on');await expect(other.locator('html')).toHaveAttribute('data-design-1','off');
   await select(other,true,true);await select(page,false,true);await expect(page.locator('[data-terrain-surface]')).toHaveCount(0);await expect(other.locator('[data-terrain-surface]').first()).toBeVisible();
+  await selectEstate(page,2,true);await selectEstate(other,4,true);
+  await page.reload();await other.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-2');
+  await expect(other.locator('html')).toHaveAttribute('data-estate-theme','estate-theme-4');
   for(const p of [page,other])await expect(p.locator('[data-game-revision]')).toHaveAttribute('data-game-revision',String(game.revision));
   expect(JSON.parse(await readFile(file,'utf8')).game).toEqual(game);
   await other.locator('.online-game-settings summary').click();await other.locator('.online-settings-options').screenshot({path:info.outputPath('online-design-setting.png')});

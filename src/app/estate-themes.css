@@ -1,0 +1,136 @@
+/* Shared palette for the live estate and its settings preview. */
+:is([data-estate-theme="estate-theme-2"],[data-theme-preview="estate-theme-2"]) {
+  --estate-rail:#681b32;
+  --estate-edge:#a7742c;
+  --estate-highlight:#f4d082;
+  --estate-paper:#fff0d5;
+  --estate-shade:#edc7a1;
+  --estate-title:#4f1b2a;
+  --estate-landscape:url('/assets/textures/estate-themes/royal-landscape.webp');
+  --estate-emblem:url('/assets/textures/estate-themes/royal-crest.webp');
+  --estate-frame:linear-gradient(125deg,#a86732,#62162c 22%,#3c111f 54%,#8c233a 80%,#bf7d37);
+  --estate-grain:linear-gradient(135deg,#681b32d6,#2f0c18ee),url('/assets/textures/parchment.webp');
+  --estate-embellishment:none;
+  --estate-grid:#655237;
+}
+
+:is([data-estate-theme="estate-theme-3"],[data-theme-preview="estate-theme-3"]) {
+  --estate-rail:#234a6e;
+  --estate-edge:#8d8a79;
+  --estate-highlight:#fff4d6;
+  --estate-paper:#f9f7ec;
+  --estate-shade:#d4e1e7;
+  --estate-title:#1d3850;
+  --estate-landscape:url('/assets/textures/estate-themes/alpine-landscape.webp');
+  --estate-emblem:url('/assets/textures/estate-themes/alpine-glass.webp');
+  --estate-frame:linear-gradient(130deg,#e2ded1,#8a96a2 29%,#365c81 49%,#70869a 64%,#e4dfcf);
+  --estate-grain:linear-gradient(145deg,#e0e7eb6b,#647c92c2),url('/assets/textures/terrain-mine.webp');
+  --estate-embellishment:none;
+  --estate-grid:#455761;
+}
+
+:is([data-estate-theme="estate-theme-4"],[data-theme-preview="estate-theme-4"]) {
+  --estate-rail:#164a49;
+  --estate-edge:#72492f;
+  --estate-highlight:#e8b876;
+  --estate-paper:#f8eaca;
+  --estate-shade:#d9b889;
+  --estate-title:#224240;
+  --estate-landscape:url('/assets/textures/estate-themes/map-landscape.webp');
+  --estate-emblem:url('/assets/textures/estate-themes/map-compass.webp');
+  --estate-frame:url('/assets/textures/wood.webp');
+  --estate-grain:linear-gradient(145deg,#49271774,#1d100bc7),url('/assets/textures/wood.webp');
+  --estate-embellishment:url('/assets/textures/cartography.svg');
+  --estate-grid:#594a39;
+}
+
+.estate-theme-setting { min-inline-size:0; margin:0; padding:0; border:0 }
+.estate-theme-setting legend { margin-block-end:6px; font-weight:700 }
+.estate-theme-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px }
+.estate-theme-options label {
+  position:relative;
+  display:grid;
+  align-content:start;
+  gap:4px;
+  padding:4px;
+  border:1px solid #bca475;
+  border-radius:4px;
+  background:#fff7e2;
+  font-size:12px;
+  line-height:1.3;
+  cursor:pointer;
+}
+.estate-theme-options input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer }
+.estate-theme-options label:has(input:checked) { background:#f0dbaf; border-color:#835c2d; box-shadow:inset 0 0 0 1px #835c2d }
+.estate-theme-options label:has(input:focus-visible) { outline:2px solid #694728; outline-offset:1px }
+.estate-theme-preview {
+  display:block;
+  height:34px;
+  border:2px solid var(--estate-rail,#b79a68);
+  border-radius:3px;
+  background:
+    linear-gradient(90deg,var(--estate-paper,#f8edcf),transparent 76%),
+    var(--estate-landscape,url('/assets/textures/terrain-castle.webp')) right 37% / 65% auto no-repeat,
+    var(--estate-shade,#d7c091);
+}
+[data-theme-preview="estate-theme-1"] .estate-theme-preview {
+  background:linear-gradient(110deg,#9aaa57 30%,#477e92 30% 52%,#c2a35e 52% 77%,#d5c257 77%);
+}
+[data-design-1="on"] [data-theme-preview="estate-theme-1"] .estate-theme-preview {
+  background:linear-gradient(90deg,#f4e5bf,transparent 70%),url('/assets/textures/terrain-castle.webp') center / cover;
+}
+
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel {
+  border-color:var(--estate-edge);
+  border-image:var(--estate-frame) 8 stretch;
+  background:linear-gradient(125deg,var(--estate-paper),color-mix(in srgb,var(--estate-shade) 42%,transparent)),url('/assets/textures/parchment.webp') center / 256px;
+  box-shadow:inset 0 0 0 2px var(--estate-rail),inset 0 0 0 4px var(--estate-highlight),0 3px 8px #51351f32;
+}
+
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel .estate-heading {
+  background:
+    linear-gradient(90deg,var(--estate-paper) 38%,color-mix(in srgb,var(--estate-paper) 88%,transparent) 77%,transparent),
+    var(--estate-landscape) right 34% / clamp(150px,34%,260px) auto no-repeat,
+    var(--estate-grain);
+  border-bottom-color:var(--estate-edge);
+  box-shadow:inset 0 -2px var(--estate-rail),inset 0 -3px var(--estate-highlight);
+}
+
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel .estate-original-board .live-board-scroll {
+  background:
+    var(--estate-embellishment) center bottom / 100% auto no-repeat,
+    linear-gradient(90deg,var(--estate-paper) 2%,color-mix(in srgb,var(--estate-paper) 88%,transparent) 23% 78%,color-mix(in srgb,var(--estate-paper) 30%,transparent)),
+    var(--estate-emblem) right 10px top 12px / auto clamp(56px,13vw,110px) no-repeat,
+    var(--estate-landscape) right bottom / auto 72% no-repeat,
+    var(--estate-paper);
+}
+
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel :is(
+  .estate-inventory,.estate-keyspaces,.board-bottom,.personal-score-pages,.vineyard-personal,.trade-route-panel,.shield-controls
+) {
+  background:linear-gradient(135deg,var(--estate-paper),color-mix(in srgb,var(--estate-shade) 61%,transparent)),url('/assets/textures/parchment.webp') center / 256px;
+  border-color:var(--estate-edge);
+  box-shadow:inset 0 0 0 1px var(--estate-highlight),inset 0 0 0 2px color-mix(in srgb,var(--estate-rail) 40%,transparent);
+  color:var(--estate-title);
+}
+
+:where([data-estate-theme="estate-theme-4"]) .app-shell .estate-panel .estate-heading {
+  background-image:linear-gradient(90deg,var(--estate-paper) 38%,color-mix(in srgb,var(--estate-paper) 90%,transparent) 77%,transparent),
+    url('/assets/textures/estate-themes/map-seal.webp'),var(--estate-landscape),var(--estate-grain);
+  background-position:center,right 8px center,right 34%,center;
+  background-size:auto,36px auto,clamp(150px,34%,260px) auto,auto;
+  background-repeat:no-repeat;
+}
+
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel :is(.goods-storage-slot,.sold-goods-trigger,.keyspace:not(:has(svg))) {
+  background-color:var(--estate-paper);
+  border-color:var(--estate-edge);
+  color:var(--estate-title);
+}
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel [data-terrain-surface] image { opacity:.78 }
+:where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel [data-estate-grid] { stroke:var(--estate-grid) }
+
+@media (forced-colors:active) {
+  .estate-theme-options label:has(input:checked) { border-color:Highlight }
+  :where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel [data-terrain-surface] image { display:none }
+}

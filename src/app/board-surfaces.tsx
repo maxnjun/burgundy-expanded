@@ -2,7 +2,7 @@ import {useId} from 'react';
 import type {TileType} from '../game/types';
 import {estateCenter,estatePoints,ESTATE_RADIUS,ESTATE_HALF_WIDTH} from './estate-geometry';
 import {WhiteDie} from './white-die';
-import {useDesign1} from './design-settings';
+import {useDesign1,useEstateTheme} from './design-settings';
 
 const terrainDice:Record<string,{face:string;pips:string}>={
  livestock:{face:'#dbebaa',pips:'#344b27'},castle:{face:'#25644f',pips:'#fff6dc'},
@@ -11,13 +11,13 @@ const terrainDice:Record<string,{face:string;pips:string}>={
 };
 export function EmptyEstateCell({coord,terrain,value}:{coord:{q:number;r:number};terrain:TileType;value:number}){
  const id=`terrain-${useId().replace(/[^a-zA-Z0-9_-]/g,'')}`,{x,y}=estateCenter(coord),die=terrainDice[terrain]??terrainDice.building;
- const enabled=useDesign1();
- if(!enabled)return <WhiteDie x={x} y={y} value={value} size={36}/>;
+ const enabled=useDesign1(),legacy=useEstateTheme()==='estate-theme-1';
+ if(legacy&&!enabled)return <WhiteDie x={x} y={y} value={value} size={36}/>;
  return <g data-terrain-surface={terrain} pointerEvents="none" aria-hidden="true">
   <defs><clipPath id={id}><polygon points={estatePoints(coord)}/></clipPath></defs>
   <image href={`/assets/textures/terrain-${terrain in terrainDice?terrain:'building'}.webp`} x={x-ESTATE_HALF_WIDTH} y={y-ESTATE_RADIUS} width={2*ESTATE_HALF_WIDTH} height={2*ESTATE_RADIUS} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${id})`}/>
-  <polygon points={estatePoints(coord,1.5)} fill="none" stroke="#fff1b8" strokeOpacity=".3" strokeWidth=".7"/>
-  <WhiteDie x={x} y={y} value={value} size={36} color={die.face} pipColor={die.pips} raised/>
+  {legacy&&<polygon points={estatePoints(coord,1.5)} fill="none" stroke="#fff1b8" strokeOpacity=".3" strokeWidth=".7"/>}
+  <WhiteDie x={x} y={y} value={value} size={36} color={legacy?die.face:undefined} pipColor={legacy?die.pips:undefined} raised/>
  </g>;
 }
 
