@@ -18,6 +18,11 @@ function tileLabel(state:GameState,id:string):string {
 const source={document:"special-edition-rulebook" as const,pages:[17,18],section:"Shield abilities"};
 type Window={kind:"shield-five";tileId:string}|{kind:"shield-storage"}|{kind:"shield-phase"};
 const json=(v:unknown)=>v as JsonValue;
+const phaseTileSources=new Map<number,'numbered'|'black'>([[14,'numbered'],[15,'black']]);
+export function shieldPhaseTileSource(state:GameState,shieldNumber:number){
+ return windowOf(state)?.kind==='shield-phase'&&shieldLayout(state)?.rules?.phase?.stage==='free'
+  ?phaseTileSources.get(shieldNumber):undefined;
+}
 function windowOf(state:GameState):Window|null {
   const effect=state.turn.pendingEffects[0];
   if(!effect||effect.kind!=="extension"||effect.source.section!==source.section)return null;
@@ -34,8 +39,8 @@ function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingCh
       (m.sourceDepot?[m.sourceDepot]:[1,2,3,4,5,6]).map(depot=>({id:m.sourceDepot?`remove:${m.shieldNumber}`:`remove:${m.shieldNumber}:return:${depot}`,label:`방패 ${m.shieldNumber} 제거 · ${depot}번 공급처 반환`,payload:json({shieldNumber:m.shieldNumber,pay:"remove",returnDepot:depot})}))),
   ]);
   if(flow.stage!=="free")return [];
-  return owned.filter(m=>(m.shieldNumber===14||m.shieldNumber===15)&&!flow.freeDone.includes(m.shieldNumber)).flatMap(m=>{
-    const tileIds=m.shieldNumber===14?state.market.numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[])):state.market.blackDepot.filter((id):id is string=>id!==null);
+  return owned.filter(m=>phaseTileSources.has(m.shieldNumber)&&!flow.freeDone.includes(m.shieldNumber)).flatMap(m=>{
+    const tileIds=phaseTileSources.get(m.shieldNumber)==='numbered'?state.market.numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[])):state.market.blackDepot.filter((id):id is string=>id!==null);
     const options:PendingChoice["options"][number][]=[];
     for(const tileId of tileIds)for(const cell of player.duchy.cells){
       if(!placementIssue(state,{...player,storage:[...player.storage,tileId]},tileId,cell.id,cell.number))options.push({id:`free:${m.shieldNumber}:${tileId}:${cell.id}`,label:`방패${m.shieldNumber} · ${tileLabel(state,tileId)} → ${cell.id} 직접 배치`,payload:json({shieldNumber:m.shieldNumber,tileId,cellId:cell.id})});
@@ -96,7 +101,7 @@ export function settleShieldState(input:GameState):GameState {
   const layout=shieldLayout(state)!,flow=layout.rules?.phase;
   if(state.turn.stage!=="phase-end"||!flow)return state;
   if(flow.stage==="free"){
-    const owner=orderedPlayers(state).find(id=>layout.mounted.some(m=>m.playerId===id&&(m.shieldNumber===14||m.shieldNumber===15)&&!flow.freeDone.includes(m.shieldNumber)));
+    const owner=orderedPlayers(state).find(id=>layout.mounted.some(m=>m.playerId===id&&phaseTileSources.has(m.shieldNumber)&&!flow.freeDone.includes(m.shieldNumber)));
     if(owner)return prepare(state,owner,{kind:"shield-phase"});
     state=setShieldLayout(state,{...layout,rules:{...layout.rules!,phase:{...flow,stage:"tribute"}}});
   }

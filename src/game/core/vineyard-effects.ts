@@ -83,6 +83,8 @@ export function refreshVineChoice(s:GameState):GameState {
 export function automaticVineReward(s:GameState,actions:readonly GameAction[]):Extract<GameAction,{type:"resolve-choice"}>|null {
  // A purchase can create another target; never auto-consume that decision window.
  const choice=s.turn.pendingChoice;
+ const take=choice?.options[0]?.payload as {intent?:VineIntent}|null|undefined;
+ if(take?.intent?.discardIds?.length)return null;
  if(choice?.source.document==='project-user-rule'&&choice.source.section===source.section&&choice.options.length===1&&((actions.length===1&&s.vineyards?.stack.length)||(choice.options[0].id!=='skip'&&validVineChoice(s))))return {type:'resolve-choice',playerId:choice.playerId,choiceId:choice.id,optionId:choice.options[0].id};
  const payload=s.turn.pendingEffects[0]?.payload as {vineChoice?:string;slotId?:string}|null;
  if(!choice||payload?.vineChoice!=='order'||!validVineChoice(s))return null;

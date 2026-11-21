@@ -70,8 +70,11 @@ export function vineTakeIssue(s:GameState,p:PlayerState,intent:VineIntent):strin
  if(intent.source==='depot'?!v.depots.some(d=>d.tileId===intent.tileId):intent.source==='store'?!v.store.includes(intent.tileId):true)return 'Tile not in vineyard supply';
  const ids=intent.discardIds??[],owned=[...p.storage.filter((id):id is string=>id!==null),...(p.vineyardReserve??[]).map(r=>r.tileId)];
  if(new Set(ids).size!==ids.length||ids.some(id=>!owned.includes(id)))return 'Invalid vineyard discard';
- const after=discardStored(s,p.id,ids).players.find(x=>x.id===p.id)!;
- return hasShield(s,p.id,4)||after.storage.filter((_,i)=>!keyOccupant(after,i)).length>=2?null:'포도 타일은 빈 보관 2칸이 필요합니다.';
+ const required=hasShield(s,p.id,4)?0:Math.max(0,2-p.storage.length+storedWeight(p));
+ const freed=ids.map(id=>p.storage.includes(id)?1:2);
+ const count=freed.reduce((sum,n)=>sum+n,0);
+ if(count<required)return '포도 타일은 빈 보관 2칸이 필요합니다.';
+ return freed.some(n=>count-n>=required)?'Invalid excess vineyard discard':null;
 }
 export function executeVine(s:GameState,pid:string,intent:VineIntent):GameState {
  let n=discardStored(s,pid,intent.discardIds??[]);const p=n.players.find(x=>x.id===pid)!,v=n.vineyards!;

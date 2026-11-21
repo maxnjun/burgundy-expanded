@@ -1,8 +1,17 @@
 import type {Page} from '@playwright/test';
 import type {GameState,PendingChoice,ActionIntent} from '../../src/game/types';
+import {boardTarget,type PhaseTileTarget} from '../../src/game/direct-actions';
+
+export async function clickPhaseTile(page:Page,playerId:string,{tileId,cellId}:PhaseTileTarget){
+ await page.locator(`.common-board-panel [data-tile-id="${tileId}"]`).click();
+ await page.locator(`.estate-panel[data-player-id="${playerId}"] [data-estate-cell="${cellId}"]`).click();
+}
 
 /** Drive the real board controls for the engine option; abstract effects retain their existing UI. */
 export async function clickChoice(page:Page,g:GameState,o:PendingChoice['options'][number]){
+ const choice=g.turn.pendingChoice!;
+ const {phaseTile}=boardTarget(g,{type:'resolve-choice',playerId:choice.playerId,choiceId:choice.id,optionId:o.id});
+ if(phaseTile){await clickPhaseTile(page,choice.playerId,phaseTile);return;}
  const p=o.payload as {intent?:ActionIntent;depot?:number;goodsIds?:string[];shield?:{slotId:string;castleCellId:string};pay?:string;shieldNumber?:number;returnDepot?:number;vineBlack?:{tileId:string;storageSlot:number;discardTileId?:string}}|null;
  if(p?.pay&&p.shieldNumber){const item=page.locator('.shield-upkeep-item').filter({has:page.getByText(`방패 ${p.shieldNumber}`,{exact:true})});await item.getByRole('button',{name:p.pay==='remove'?'방패 제거':'방패 유지',exact:true}).click();const count=g.turn.pendingChoice!.options.filter(x=>x.id.startsWith(`pay:${p.shieldNumber}:`)).length;if(p.pay!=='remove'&&count>1)await item.getByRole('button',{name:p.pay==='worker'?'일꾼 1개 (방패3)':'은화 1개',exact:true}).click();if(p.pay==='remove'&&o.id.includes(':return:'))await item.getByRole('button',{name:`${p.returnDepot}번 공급처로 반환`,exact:true}).click();return;}
  const player=g.players.find(x=>x.id===g.turn.activePlayerId)!;

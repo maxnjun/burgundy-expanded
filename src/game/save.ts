@@ -12,6 +12,7 @@ import { validPendingChoice,upgradeTownHallChoice,upgradeBonusShieldChoice,upgra
 import { officialMarketRecipe } from "./market-recipes";
 import { parseBoundedGameJson } from "./bounded-json";
 import {validStartingCastlePreview,type StartingCastlePreview} from './starting-castles';
+import {validBoardChoice,type BoardChoiceDraft} from './board-choice';
 
 export interface SavedGame {
   readonly format: "burgundy-local-v1";
@@ -19,7 +20,7 @@ export interface SavedGame {
   readonly game: GameState;
   readonly logs: readonly string[];
   readonly undo?: string;
-  readonly view: { readonly zoom: number; readonly focus: boolean; readonly hotseat?: boolean;readonly startingPreview?:StartingCastlePreview; readonly table?: boolean; readonly commonZoom?: number; readonly computerPlayerIds?: readonly string[]; readonly computerPaused?: boolean; readonly boardZooms: Readonly<Record<string, number>> };
+  readonly view: { readonly zoom: number; readonly focus: boolean; readonly hotseat?: boolean;readonly startingPreview?:StartingCastlePreview;readonly boardChoice?:BoardChoiceDraft; readonly table?: boolean; readonly commonZoom?: number; readonly computerPlayerIds?: readonly string[]; readonly computerPaused?: boolean; readonly boardZooms: Readonly<Record<string, number>> };
 }
 const terrains = ["castle", "ship", "mine", "livestock", "building", "monastery"];
 const buildings = ["market", "carpenters-workshop", "church", "warehouse", "boarding-house", "bank", "town-hall", "watchtower", "crane", "white-castle"];
@@ -35,6 +36,7 @@ export function parseSavedGame(text: string): SavedGame {
     !object(value.game) || !Array.isArray(value.logs) || value.logs.length > 60 || value.logs.some(x => typeof x !== "string" || x.length > 2000) ||
     !object(value.view) || !boundedZoom(value.view.zoom) || typeof value.view.focus !== "boolean" || (value.view.table !== undefined && typeof value.view.table !== "boolean") ||
     (value.view.hotseat !== undefined && typeof value.view.hotseat !== 'boolean') ||
+    (value.view.boardChoice !== undefined && !validBoardChoice(value.view.boardChoice)) ||
     (value.undo !== undefined && (value.view.hotseat !== true || typeof value.undo !== 'string' || value.undo.length > 4_000_000)) ||
     (text.length > 2_000_000 && !(value.view.hotseat === true && typeof value.undo === 'string')) ||
     (value.view.computerPaused !== undefined && typeof value.view.computerPaused !== "boolean") ||

@@ -4,15 +4,19 @@ import { shieldLayout, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAc
 import type { ActionIntent, GameAction, GameState } from "./types";
 import {isCastleAction} from './castle-actions';
 import {automaticVineReward} from './core/vineyard-effects';
-import type {BonusShieldTarget} from './core/shield-effects';
+import {shieldPhaseTileSource,type BonusShieldTarget} from './core/shield-effects';
+import type {VineIntent} from './vineyards';
 
-export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:BonusShieldTarget}
+export interface PhaseTileTarget {source:'numbered'|'black';tileId:string;cellId:string}
+export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:BonusShieldTarget;phaseTile?:PhaseTileTarget}
 /** Public click targets are projections of canonical engine options, never executable UI payloads. */
 export function boardTarget(game:GameState,action:GameAction):BoardTarget {
  if(action.type==='use-die')return {intent:action.intent};
+ if(action.type==='extension'&&action.extensionId==='vineyards')return {intent:action.payload as unknown as VineIntent};
  if(action.type!=='resolve-choice')return {};
- const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {vineBlack?:BoardTarget['blackTile'];intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield']}|null;
- return {blackTile:p?.vineBlack,intent:p?.intent,shield:p?.shield,...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
+ const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {vineBlack?:BoardTarget['blackTile'];intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield'];shieldNumber?:number;tileId?:string;cellId?:string}|null;
+ const source=p?.shieldNumber===undefined?undefined:shieldPhaseTileSource(game,p.shieldNumber);
+ return {blackTile:p?.vineBlack,intent:p?.intent,shield:p?.shield,...(source&&p?.tileId&&p.cellId?{phaseTile:{source,tileId:p.tileId,cellId:p.cellId}}:{}),...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
 }
 export function directBoardAction(game:GameState,actions:readonly GameAction[],dieId:string|undefined,match:(intent:ActionIntent)=>boolean):GameAction|null {
  if(dieId&&(!game.turn.pendingChoice||isCastleAction(game)))return cheapestDieAction(actions,dieId,match);
