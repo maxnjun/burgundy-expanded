@@ -3,6 +3,7 @@ import {VINE_SLOTS,vineLayers,vineSlots,VINE_BONUS_NAMES,GRAPES,GRAPE_NAMES,vine
 import {immediateOptions} from './effects';
 import {destinationIssue} from './intents';
 import {rewardShieldWorkerGain} from '../shields';
+import {mayTakeSupply} from './custom-actions';
 const source={document:'project-user-rule' as const,pages:[],section:'포도밭 · 프로젝트 복원판 v0.1'};
 const wrap=(s:GameState,id:string,pid:string,payload:JsonValue,options:PendingChoice['options']):GameState=>({...s,turn:{...s.turn,pendingEffects:[{id,playerId:pid,kind:'extension',source,payload}],pendingChoice:{id,playerId:pid,source,options}}});
 export function vineStoreIntents(s:GameState,p:PlayerState):VineIntent[]{
@@ -11,7 +12,7 @@ export function vineStoreIntents(s:GameState,p:PlayerState):VineIntent[]{
 }
 function blackOptions(s:GameState,p:PlayerState):PendingChoice['options']{
  const options:PendingChoice['options'][number][]=[];
- for(const tileId of s.market.blackDepot)if(tileId&&["castle","ship","mine","livestock","building","monastery"].includes(s.tiles[tileId]?.type))for(let storageSlot=0;storageSlot<p.storage.length;storageSlot++){
+ for(const tileId of s.market.blackDepot)if(tileId&&mayTakeSupply(s,p.id,tileId)&&["castle","ship","mine","livestock","building","monastery"].includes(s.tiles[tileId]?.type))for(let storageSlot=0;storageSlot<p.storage.length;storageSlot++){
   const occupant=keyOccupant(p,storageSlot),a={tileId,storageSlot,...(occupant?{discardTileId:occupant}:{})};
   if(!destinationIssue(p,a))options.push({id:JSON.stringify(a),label:`검은 타일 ${tileId} · 보관${storageSlot+1}`,payload:{vineBlack:a}});
  }

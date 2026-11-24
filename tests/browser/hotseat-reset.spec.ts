@@ -23,7 +23,7 @@ test('finished 2→3→4→2 and consecutive new games recreate every shared/exp
   await page.getByRole('button',{name:'핫시트 게임 시작',exact:true}).evaluate((b:HTMLButtonElement)=>{b.click();b.click();b.click();});
   await expect.poll(async()=>(await saved(page)).game.status).toBe('setup');expect(confirmations).toBe(0);page.removeAllListeners('dialog');
   const fresh=await saved(page);expect(seeds.has(fresh.game.config.seed)).toBe(false);seeds.add(fresh.game.config.seed);expect(fresh.game.config.seed).not.toBe(old.config.seed);
-  const expected=createPracticeSession({...resetOptions,chooseStartingCastles:true,names:Array.from({length:count},(_,i)=>`새 게임${i+1}`),boardIds:Array(count).fill('se:base:2'),seed:fresh.game.config.seed,colors:fresh.game.players.map(p=>p.color!)});
+  const expected=createPracticeSession({...resetOptions,customRules:true,chooseStartingCastles:true,names:Array.from({length:count},(_,i)=>`새 게임${i+1}`),boardIds:Array(count).fill('se:base:2'),seed:fresh.game.config.seed,colors:fresh.game.players.map(p=>p.color!)});
   expect(fresh.game).toEqual(expected);expect(fresh.logs).toHaveLength(1);expect(fresh.view.startingPreview).toBeUndefined();const h=JSON.parse(await page.evaluate(k=>localStorage.getItem(k)!,historyKey));expect(h.game).toEqual(expected);expect(h.history.past).toEqual([]);
   await expect(page.locator('.estate-panel')).toHaveCount(count);await expect(page.getByRole('button',{name:'되돌리기',exact:true})).toHaveCount(0);
   await page.reload();await expect.poll(()=>saved(page)).toEqual(fresh);if(count===2)await page.screenshot({path:info.outputPath('fresh-hotseat-all-expansions.png')});
@@ -38,7 +38,7 @@ test('in-progress cancel preserves disk/game; confirmed fresh game clears select
  await expect.poll(async()=>(await saved(page)).game.turn.stage).toBe('player-turn');
  await page.getByRole('button',{name:/^행동 주사위 1 눈/}).click();await expect(page.getByRole('button',{name:/^행동 주사위 1 눈/})).toHaveAttribute('aria-pressed','true');
  const before=await saved(page),setup=page.getByRole('button',{name:'⚙ 게임 준비',exact:true});await setup.click();
- await page.getByLabel('포도밭 확장',{exact:true}).uncheck();await page.getByLabel('무역로 확장',{exact:true}).uncheck();await page.getByLabel('여관 확장',{exact:true}).uncheck();await page.getByLabel('하프물범 확장',{exact:true}).uncheck();await page.getByLabel('방패 확장 · 18종 능력·유지비·종료 점수 (로컬)',{exact:false}).uncheck();
+ await page.getByLabel('포도밭 확장',{exact:true}).uncheck();await page.getByLabel('무역로 확장',{exact:true}).uncheck();await page.getByLabel('여관 확장',{exact:true}).uncheck();await page.getByLabel('하프물범 확장',{exact:true}).uncheck();await page.getByLabel('방패 확장 · 24종 능력·유지비·종료 점수 (로컬)',{exact:false}).uncheck();
  page.once('dialog',d=>d.dismiss());await page.getByRole('button',{name:'핫시트 게임 시작',exact:true}).click();expect(await saved(page)).toEqual(before);
  page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'핫시트 게임 시작',exact:true}).click();await expect.poll(async()=>(await saved(page)).game.status).toBe('setup');
  const fresh=await saved(page);expect(fresh.game.vineyards).toBeUndefined();expect(fresh.game.tradeRoutes).toBeUndefined();expect(fresh.game.market.inns).toBeUndefined();expect(fresh.game.extensionStates).toEqual({});await expect(page.locator('.vineyard-supply')).toHaveCount(0);await expect(page.getByRole('button',{name:'선택 취소',exact:true})).toHaveCount(0);

@@ -1,6 +1,7 @@
 import type {AxialCoord,DieValue,GameState,Phase,PlayerState} from './types';
 import {drawDie} from './core/random';
-import {hasShield} from './shields';
+import {hasShield,rewardShieldWorkerGain} from './shields';
+import {monasteryNumbers} from './core/state';
 
 export const GRAPES=['B','K','G','O','R','Y'] as const;
 export type Grape=typeof GRAPES[number];
@@ -37,10 +38,16 @@ export const vineNeighbors=(a:AxialCoord,b:AxialCoord)=>Math.max(Math.abs(a.q-b.
 export const reservedKey=(p:PlayerState,i:number)=>p.vineyardReserve?.find(r=>r.keys.includes(i))?.tileId??null;
 export const keyOccupant=(p:PlayerState,i:number)=>p.storage[i]??reservedKey(p,i);
 export const storedWeight=(p:PlayerState)=>p.storage.filter(Boolean).length+(p.vineyardReserve?.length??0)*2;
-export function compactVineStorage(p:PlayerState):PlayerState{const ids=p.storage.filter((id):id is string=>id!==null);let at=ids.length;const reserve=p.vineyardReserve?.map(r=>({...r,keys:[at++,at++] as const}));return {...p,storage:[...ids,...Array(3-ids.length).fill(null)],...(reserve?{vineyardReserve:reserve}:{})};}
+export function compactVineStorage(p:PlayerState,capacity=3):PlayerState{const ids=p.storage.filter((id):id is string=>id!==null);let at=ids.length;const reserve=p.vineyardReserve?.map(r=>({...r,keys:[at++,at++] as const}));return {...p,storage:[...ids,...Array(capacity-ids.length).fill(null)],...(reserve?{vineyardReserve:reserve}:{})};}
 export function discardStored(state:GameState,playerId:string,ids:readonly string[]):GameState {
  const p=state.players.find(p=>p.id===playerId)!,reserve=p.vineyardReserve??[],v=state.vineyards;
- return {...state,players:state.players.map(x=>x.id===playerId?{...x,storage:x.storage.map(id=>id&&ids.includes(id)?null:id),...(x.vineyardReserve?{vineyardReserve:reserve.filter(r=>!ids.includes(r.tileId))}:{})}:x),market:{...state.market,removedTileIds:[...state.market.removedTileIds,...ids.filter(id=>p.storage.includes(id))]},...(v?{vineyards:{...v,removed:[...v.removed,...ids.filter(id=>reserve.some(r=>r.tileId===id))]}}:{})};
+ const removed=[...new Set(ids)].filter(id=>p.storage.includes(id)||reserve.some(r=>r.tileId===id));
+ if(!removed.length)return state;
+ const workers=monasteryNumbers(state,p).includes(30)?removed.length*2:0;
+ const next={...state,players:state.players.map(x=>x.id===playerId?{...x,workers:x.workers+workers,silver:x.silver+(hasShield(state,playerId,19)?removed.length:0),
+  storage:x.storage.map(id=>id&&removed.includes(id)?null:id),...(x.vineyardReserve?{vineyardReserve:reserve.filter(r=>!removed.includes(r.tileId))}:{})}:x),
+  market:{...state.market,removedTileIds:[...state.market.removedTileIds,...removed.filter(id=>p.storage.includes(id))]},...(v?{vineyards:{...v,removed:[...v.removed,...removed.filter(id=>reserve.some(r=>r.tileId===id))]}}:{})};
+ return rewardShieldWorkerGain(next,playerId,workers);
 }
 function shuffle<T>(items:readonly T[],random:GameState['random']):{items:T[];random:GameState['random']} {
  const result=[...items];for(let i=result.length-1;i>0;i--){let n:number;const limit=6**4-(6**4%(i+1));do{n=0;for(let j=0;j<4;j++){const d=drawDie(random);random=d.random;n=n*6+d.value-1;}}while(n>=limit);const k=n%(i+1);[result[i],result[k]]=[result[k],result[i]];}return {items:result,random};

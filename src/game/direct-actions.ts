@@ -1,22 +1,30 @@
 import { listCoreActionOptions, validateCoreAction } from "./core/engine";
 import { orderedPlayers } from "./core/state";
 import { shieldLayout, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAction } from "./shields";
-import type { ActionIntent, GameAction, GameState } from "./types";
+import type { ActionIntent, GameAction, GameState,TileType } from "./types";
 import {isCastleAction} from './castle-actions';
 import {automaticVineReward} from './core/vineyard-effects';
 import {shieldPhaseTileSource,type BonusShieldTarget} from './core/shield-effects';
 import type {VineIntent} from './vineyards';
+import {previewRecolor,type RecolorTarget} from './core/territory';
 
 export interface PhaseTileTarget {source:'numbered'|'black';tileId:string;cellId:string}
-export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:BonusShieldTarget;phaseTile?:PhaseTileTarget}
+export interface RecolorPreview extends RecolorTarget {from:TileType;previousSizes:readonly number[];size:number;reopenedSizes:readonly number[];refund:number;sourceSize:number;sourceAfter:readonly number[]}
+export interface BoardTarget {blackTile?:{tileId:string;storageSlot:number;discardTileId?:string};intent?:ActionIntent;goods?:{depot:number;goodsIds:readonly string[]};shield?:BonusShieldTarget;phaseTile?:PhaseTileTarget;recolor?:RecolorPreview;goodsDiscardType?:number;storageDiscardId?:string}
 /** Public click targets are projections of canonical engine options, never executable UI payloads. */
 export function boardTarget(game:GameState,action:GameAction):BoardTarget {
  if(action.type==='use-die')return {intent:action.intent};
  if(action.type==='extension'&&action.extensionId==='vineyards')return {intent:action.payload as unknown as VineIntent};
+ if(action.type==='extension'&&action.extensionId==='additional-hexes'&&action.command==='recolor'){
+  const p=game.players.find(p=>p.id===action.playerId)!,target=action.payload as RecolorTarget;
+  const result=previewRecolor(game,p,target);
+  return {recolor:{...target,from:result.old.terrain,previousSizes:result.previousSizes,size:result.connected.length,reopenedSizes:result.reopenedSizes,refund:result.points,sourceSize:result.sourceSize,sourceAfter:result.sourceAfter}};
+ }
  if(action.type!=='resolve-choice')return {};
- const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {vineBlack?:BoardTarget['blackTile'];intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield'];shieldNumber?:number;tileId?:string;cellId?:string}|null;
+ const p=game.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as {vineBlack?:BoardTarget['blackTile'];intent?:ActionIntent;depot?:number;goodsIds?:readonly string[];shield?:BoardTarget['shield'];shieldNumber?:number;tileId?:string;cellId?:string;goodsDiscardType?:number}|null;
  const source=p?.shieldNumber===undefined?undefined:shieldPhaseTileSource(game,p.shieldNumber);
- return {blackTile:p?.vineBlack,intent:p?.intent,shield:p?.shield,...(source&&p?.tileId&&p.cellId?{phaseTile:{source,tileId:p.tileId,cellId:p.cellId}}:{}),...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
+ const storageDiscardId=game.turn.pendingChoice?.id.includes(':shield-storage:')?p?.tileId:undefined;
+ return {blackTile:p?.vineBlack,intent:p?.intent,shield:p?.shield,...(p?.goodsDiscardType?{goodsDiscardType:p.goodsDiscardType}:{}),...(storageDiscardId?{storageDiscardId}:{}),...(source&&p?.tileId&&p.cellId?{phaseTile:{source,tileId:p.tileId,cellId:p.cellId}}:{}),...(p?.depot!==undefined&&p.goodsIds?{goods:{depot:p.depot,goodsIds:p.goodsIds}}:{})};
 }
 export function directBoardAction(game:GameState,actions:readonly GameAction[],dieId:string|undefined,match:(intent:ActionIntent)=>boolean):GameAction|null {
  if(dieId&&(!game.turn.pendingChoice||isCastleAction(game)))return cheapestDieAction(actions,dieId,match);
@@ -32,10 +40,10 @@ export function cheapestDieAction(actions:readonly GameAction[],dieId:string|und
  return actions.filter((a):a is DieAction=>a.type==="use-die"&&a.dieId===dieId&&match(a.intent)).sort((a,b)=>a.adjustment.workersSpent-b.adjustment.workersSpent||a.adjustment.steps.length-b.adjustment.steps.length)[0]??null;
 }
 export function directShieldActions(game:GameState,playerId:string,slotId:string):readonly ShieldAcquireAction[]{
- if(game.status!=="playing"||game.turn.stage!=="player-turn"||game.turn.activePlayerId!==playerId||game.turn.pendingChoice||game.turn.pendingEffects.length||game.dice.players[playerId]?.some(d=>d.used))return [];
+ if(game.status!=="playing"||game.turn.stage!=="player-turn"||game.turn.activePlayerId!==playerId||game.turn.pendingChoice||game.turn.pendingEffects.length||game.dice.players[playerId]?.filter(d=>!d.used).length<2)return [];
  const layout=shieldLayout(game),slot=layout?.slots.find(s=>s.id===slotId&&s.shieldNumber!==null),p=game.players.find(p=>p.id===playerId);if(!slot||!p)return [];
- const steps=game.dice.players[playerId].map(d=>shieldWorkerSteps(d.value,slot.depot)) as [readonly (1|-1)[],readonly (1|-1)[]];
- return p.duchy.cells.filter(c=>c.tileId&&game.tiles[c.tileId].type==="castle").map(c=>({type:"extension" as const,extensionId:"shields" as const,command:layout!.effectsActive?"acquire":"acquire-preview",playerId,payload:{slotId,castleCellId:c.id,steps,replaceShieldNumber:layout!.mounted.find(m=>m.playerId===playerId&&m.cellId===c.id)?.shieldNumber??null}})).filter(a=>validateCoreAction(game,a).valid);
+ const dice=game.dice.players[playerId],pairs=dice.flatMap((first,i)=>dice.slice(i+1).filter(second=>!first.used&&!second.used).map(second=>[first,second] as const));
+ return p.duchy.cells.filter(c=>c.tileId&&game.tiles[c.tileId].type==="castle").flatMap(c=>pairs.map(([first,second]):ShieldAcquireAction=>({type:"extension",extensionId:"shields",command:layout!.effectsActive?"acquire":"acquire-preview",playerId,payload:{slotId,castleCellId:c.id,steps:[shieldWorkerSteps(first.value,slot.depot),shieldWorkerSteps(second.value,slot.depot)],...(dice.length===3?{dieIds:[first.id,second.id]}:{}),replaceShieldNumber:layout!.mounted.find(m=>m.playerId===playerId&&m.cellId===c.id)?.shieldNumber??null}}))).filter(a=>validateCoreAction(game,a).valid);
 }
 export function directCost(game:GameState,action:GameAction):number{
  if(action.type==="use-die")return action.adjustment.workersSpent;

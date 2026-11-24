@@ -2,6 +2,7 @@ import type {ScoreBreakdown,ScoreEntry} from "./types";
 export interface ScoreRow {id:string;label:string;points:number;}
 const labels:Record<string,string>={livestock:"가축 점수",building:"건물 효과","region-size":"지역 크기","phase-bonus":"지역 완성 단계 보너스","color-bonus":"색상 전체 완성","goods-sale":"상품 판매","remaining-goods":"남은 상품","remaining-silver":"남은 은화","remaining-workers":"남은 일꾼",monastery:"수도원",extension:"기타 확장"};
 function label(e:ScoreEntry){
+ if(e.category==='region-refund')return '수도원 31번 · 지역 완성 점수 반납';
  const monk=e.id.match(/monastery-(\d+)$/),shield=e.id.match(/shield-(\d+)$/);
  if(monk)return `수도원${monk[1]}${monk[1]==="29"?" 흰 성":""}`;
  if(shield)return `방패 ${shield[1]}`;

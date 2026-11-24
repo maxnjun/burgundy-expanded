@@ -116,6 +116,8 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
     {illustration && <image data-tile-art-png={framedSource??illustration} data-approved-building={bakedFrame?beige?.buildingType:undefined} data-approved-monastery={monastery?.number} data-approved-animal={animal?`${animal.species}-${animal.count}`:undefined} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
     {tile.type === "livestock" && <g><circle cx="50" cy="16" r="7" fill="#f2e6b5" stroke="#687348"/><text x="50" y="20" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && !(monastery&&illustration) && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
+    {!illustration&&tile.type==="monastery"&&tile.number===30&&<ResourceGlyph type="worker" x={46} y={61} size={17}/>}
+    {!illustration&&tile.type==="monastery"&&(tile.number===31||tile.number===32)&&<text x="49" y="75" textAnchor="middle" fontSize="15" fill="#4e3923">{tile.number===31?"↔":"+1"}</text>}
     {!illustration&&tile.type==="monastery"&&tile.number===14&&<TileResourceEffect resource="worker" from={2} to={4}/>}
     </g>
     </g>{!bakedFrame&&<TileFrame palette={palette} layer="rim"/>}

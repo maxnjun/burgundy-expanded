@@ -2,13 +2,14 @@ import { prepareShieldFive } from "./shield-effects";
 import { prioritizeMonastery27 } from "./monasteries";
 import { monasteryNumbers } from "./state";
 import type { GameState, PendingChoice, PlayerState } from "../types";
+import {goodsCapacity} from '../shields';
 
 /** Enumerate goods-type choices, always taking all goods that fit the selected types. PDF p.7. */
 export function shipGoodsOptions(state: GameState, player: PlayerState): PendingChoice["options"] {
   return state.market.numberedDepots.flatMap(depot => {
     const held = player.goods.map(g => g.type);
     const fresh = [...new Set(depot.goods.map(g => g.type))].filter(t => !held.includes(t)).sort();
-    const takeCount = Math.min(3 - held.length, fresh.length);
+    const takeCount = Math.min(Math.max(0,goodsCapacity(state,player.id)-held.length), fresh.length);
     const selections: number[][] = [];
     const choose = (start: number, selected: number[]) => {
       if (selected.length === takeCount) { selections.push(selected); return; }

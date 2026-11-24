@@ -1,11 +1,12 @@
 import { LIVESTOCK_NAMES } from "../tile-help";
 import {keyOccupant,storedWeight,compactVineStorage,discardStored,VINE_TILES} from "../vineyards";
 import type { GameState, JsonValue, PendingChoice, PlayerState, DieValue } from "../types";
-import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, shieldWorkerSteps, shieldWorkerCost, type ShieldAcquireAction } from "../shields";
+import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, shieldWorkerSteps, shieldWorkerCost,goodsCapacity, type ShieldAcquireAction } from "../shields";
 import { placementIssue } from "./placement";
 import { executeIntent } from "./intents";
 import { prepareTileEffect, refreshPendingChoice } from "./effects";
-import { orderedPlayers } from "./state";
+import { orderedPlayers,storageCapacity } from "./state";
+import {mayTakeSupply,settleTileReservations} from './custom-actions';
 
 function tileLabel(state:GameState,id:string):string {
   if(VINE_TILES[id])return `포도 ${id} (2칸)`;
@@ -16,7 +17,7 @@ function tileLabel(state:GameState,id:string):string {
   return t.type==="monastery"?`수도원 ${t.number}`:({castle:"성",ship:"선박",mine:"광산"})[t.type];
 }
 const source={document:"special-edition-rulebook" as const,pages:[17,18],section:"Shield abilities"};
-type Window={kind:"shield-five";tileId:string}|{kind:"shield-storage"}|{kind:"shield-phase"};
+type Window={kind:"shield-five";tileId:string}|{kind:"shield-storage"|"shield-goods"|"shield-phase"};
 const json=(v:unknown)=>v as JsonValue;
 const phaseTileSources=new Map<number,'numbered'|'black'>([[14,'numbered'],[15,'black']]);
 export function shieldPhaseTileSource(state:GameState,shieldNumber:number){
@@ -27,7 +28,7 @@ function windowOf(state:GameState):Window|null {
   const effect=state.turn.pendingEffects[0];
   if(!effect||effect.kind!=="extension"||effect.source.section!==source.section)return null;
   const p=effect.payload as Window|null;
-  return p&&["shield-five","shield-storage","shield-phase"].includes(p.kind)?p:null;
+  return p&&["shield-five","shield-storage","shield-goods","shield-phase"].includes(p.kind)?p:null;
 }
 function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingChoice["options"] {
   const layout=shieldLayout(state)!,flow=layout.rules!.phase!;
@@ -42,7 +43,7 @@ function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingCh
   return owned.filter(m=>phaseTileSources.has(m.shieldNumber)&&!flow.freeDone.includes(m.shieldNumber)).flatMap(m=>{
     const tileIds=phaseTileSources.get(m.shieldNumber)==='numbered'?state.market.numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[])):state.market.blackDepot.filter((id):id is string=>id!==null);
     const options:PendingChoice["options"][number][]=[];
-    for(const tileId of tileIds)for(const cell of player.duchy.cells){
+    for(const tileId of tileIds.filter(id=>mayTakeSupply(state,player.id,id)))for(const cell of player.duchy.cells){
       if(!placementIssue(state,{...player,storage:[...player.storage,tileId]},tileId,cell.id,cell.number))options.push({id:`free:${m.shieldNumber}:${tileId}:${cell.id}`,label:`방패${m.shieldNumber} · ${tileLabel(state,tileId)} → ${cell.id} 직접 배치`,payload:json({shieldNumber:m.shieldNumber,tileId,cellId:cell.id})});
     }
     return options.length?options:[{id:`free:${m.shieldNumber}:none`,label:`방패${m.shieldNumber} · 합법 배치 없음`,payload:json({shieldNumber:m.shieldNumber})}];
@@ -51,7 +52,8 @@ function phaseOptions(state:GameState,player:PlayerState,legacy=false):PendingCh
 function optionsFor(state:GameState,player:PlayerState,window:Window,legacy=false):PendingChoice["options"] {
   if(window.kind==="shield-phase")return phaseOptions(state,player);
   if(window.kind==="shield-storage")return [...player.storage.flatMap((id,i)=>id?[{id:`discard:${i}:${id}`,label:`초과 보관 타일 ${i+1} 폐기 · ${tileLabel(state,id)}`,payload:json({tileId:id,index:i})}]:[]),...(player.vineyardReserve??[]).map(r=>({id:`discard:vine:${r.tileId}`,label:`초과 포도 ${r.tileId} 폐기 (2칸)`,payload:json({tileId:r.tileId})}))];
-  const types=([1,2,3,4,5,6] as const).filter(type=>(legacy||state.market.numberedDepots.some(d=>d.goods.some(g=>g.type===type)))&&(player.goods.length<3||player.goods.some(g=>g.type===type)));
+  if(window.kind==="shield-goods")return player.goods.map(({type,tiles})=>({id:`discard-goods:${type}`,label:`${type}번 상품 ${tiles.length}개 폐기`,payload:{goodsDiscardType:type}}));
+  const types=([1,2,3,4,5,6] as const).filter(type=>(legacy||state.market.numberedDepots.some(d=>d.goods.some(g=>g.type===type)))&&(player.goods.length<goodsCapacity(state,player.id)||player.goods.some(g=>g.type===type)));
   return [{id:"shield5:skip",label:legacy||types.length?"방패5 추가 상품 가져오지 않기":"가져올 수 있는 상품 없음 · 건너뛰기",payload:null},...types.map(type=>({id:`shield5:${type}`,label:`방패5 · ${type}번 상품 전 공급처에서 수령`,payload:json({goodsType:type})}))];
 }
 function prepare(state:GameState,playerId:string,window:Window):GameState {
@@ -75,7 +77,8 @@ export function validShieldChoice(state:GameState):boolean {
     const w=windowOf(state),choice=state.turn.pendingChoice,e=state.turn.pendingEffects[0],p=state.players.find(p=>p.id===state.turn.activePlayerId);
     if(!w||!choice||!p||!shieldLayout(state)?.effectsActive||state.turn.pendingEffects.length!==1||e.id!==choice.id||e.playerId!==p.id||choice.playerId!==p.id||choice.source.section!==source.section)return false;
     if(w.kind==="shield-five"&&(!hasShield(state,p.id,5)||!p.duchy.cells.some(c=>c.tileId===w.tileId&&state.tiles[w.tileId]?.type==="ship")))return false;
-    if(w.kind==="shield-storage"&&(hasShield(state,p.id,4)||storedWeight(p)<=3))return false;
+    if(w.kind==="shield-storage"&&(hasShield(state,p.id,4)||storedWeight(p)<=storageCapacity(state,p)))return false;
+    if(w.kind==="shield-goods"&&p.goods.length<=goodsCapacity(state,p.id))return false;
     if(w.kind==="shield-phase"&&(state.turn.stage!=="phase-end"||!shieldLayout(state)?.rules?.phase||!phaseOptions(state,p).length))return false;
     return JSON.stringify(choice.options)===JSON.stringify(optionsFor(state,p,w));
   }catch{return false;}
@@ -85,20 +88,23 @@ export function prepareShieldFive(state:GameState,playerId:string,tileId:string)
 }
 /** Canonical continuation: finish child tile effects before the next free placement/tribute. */
 export function settleShieldState(input:GameState):GameState {
-  if(!shieldLayout(input)?.effectsActive)return input;
-  let state=input;
+  if(!shieldLayout(input)?.effectsActive&&!input.config.customRules)return input;
+  let state=settleTileReservations(input);
   const players=state.players.map(p=>{
-    if(hasShield(state,p.id,4))return p.storage.some((_,i)=>!keyOccupant(p,i))?p:{...p,storage:[...p.storage,null]};
-    if(p.storage.length>3&&storedWeight(p)<=3)return compactVineStorage(p);
+    const limit=storageCapacity(state,p);
+    if(hasShield(state,p.id,4))return p.storage.length<limit||!p.storage.some((_,i)=>!keyOccupant(p,i))?{...p,storage:[...p.storage,null]}:p;
+    if(p.storage.length!==limit&&storedWeight(p)<=limit)return compactVineStorage(p,limit);
     return p;
   });state={...state,players};
   if(state.turn.pendingChoice){
     const w=windowOf(state),player=state.players.find(p=>p.id===state.turn.pendingChoice!.playerId);
     return w&&player?{...state,turn:{...state.turn,pendingChoice:{...state.turn.pendingChoice,options:optionsFor(state,player,w)}}}:refreshPendingChoice(state);
   }
-  const overflow=state.players.find(p=>!hasShield(state,p.id,4)&&storedWeight(p)>3);
+  const overflow=state.players.find(p=>!hasShield(state,p.id,4)&&storedWeight(p)>storageCapacity(state,p));
   if(overflow)return prepare(state,overflow.id,{kind:"shield-storage"});
-  const layout=shieldLayout(state)!,flow=layout.rules?.phase;
+  const excessGoods=state.players.find(p=>p.goods.length>goodsCapacity(state,p.id));
+  if(excessGoods)return prepare(state,excessGoods.id,{kind:'shield-goods'});
+  const layout=shieldLayout(state)!,flow=layout?.rules?.phase;
   if(state.turn.stage!=="phase-end"||!flow)return state;
   if(flow.stage==="free"){
     const owner=orderedPlayers(state).find(id=>layout.mounted.some(m=>m.playerId===id&&phaseTileSources.has(m.shieldNumber)&&!flow.freeDone.includes(m.shieldNumber)));
@@ -127,6 +133,8 @@ export function resolveShieldChoice(state:GameState,optionId:string):GameState {
   if(w.kind==="shield-storage"){
     const id=payload!.tileId as string;
     next=discardStored(next,playerId,[id]);
+  }else if(w.kind==="shield-goods"){
+    next={...next,players:next.players.map(p=>p.id===playerId?{...p,goods:p.goods.filter(g=>g.type!==payload?.goodsDiscardType)}:p)};
   }else if(w.kind==="shield-five"){
     if(payload){const type=payload.goodsType as 1|2|3|4|5|6;const taken=next.market.numberedDepots.flatMap(d=>d.goods.filter(g=>g.type===type));
       next={...next,market:{...next.market,numberedDepots:next.market.numberedDepots.map(d=>({...d,goods:d.goods.filter(g=>g.type!==type)}))},players:next.players.map(p=>p.id===playerId?{...p,goods:taken.length?[...p.goods.filter(g=>g.type!==type),{type,tiles:[...(p.goods.find(g=>g.type===type)?.tiles??[]),...taken]}]:p.goods}:p)};
@@ -146,7 +154,8 @@ export function resolveShieldChoice(state:GameState,optionId:string):GameState {
       const pay=payload!.pay;
       let slots=layout.slots;
       if(pay==='remove'){
-        const depot=payload!.returnDepot as DieValue,empty=slots.find(s=>s.depot===depot&&s.shieldNumber===null);
+        const exact=layout.mounted.find(m=>m.shieldNumber===n)?.sourceSlotId;
+        const depot=payload!.returnDepot as DieValue,empty=slots.find(s=>s.shieldNumber===null&&(exact?s.id===exact:s.depot===depot));
         if(empty)slots=slots.map(s=>s.id===empty.id?{...s,shieldNumber:n}:s);
         else {let index=shieldSlotCount(state.config.playerCount,depot);while(slots.some(s=>s.depot===depot&&s.index===index))index++;slots=[...slots,{id:`shield:depot:${depot}:${index}`,depot,index,shieldNumber:n}];}
       }

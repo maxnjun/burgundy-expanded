@@ -9,7 +9,7 @@ export type DieValue = 1 | 2 | 3 | 4 | 5 | 6;
 export type RoundNumber = 1 | 2 | 3 | 4 | 5;
 export type TileType = "castle" | "ship" | "mine" | "livestock" | "building" | "monastery";
 export type BuildingType = "market" | "carpenters-workshop" | "church" | "warehouse" | "boarding-house" | "bank" | "town-hall" | "watchtower" | "crane" | "white-castle";
-export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29;
+export type MonasteryNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32;
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 export type ExtensionId = "inns" | "white-castles" | "additional-hexes" | "geese" | "border-posts" | "shields" | "trade-routes" | "vineyards" | "team-game" | "solo-game" | "chateauma";
 export interface RuleSource { readonly document: "special-edition-rulebook" | "project-user-rule"; readonly pages: readonly number[]; readonly section: string }
@@ -34,6 +34,7 @@ export interface HexCell {
   readonly tileId: TileId | null;
 }
 export interface DuchyBoard {
+  readonly recoloredCell?: {readonly cellId:CellId;readonly terrain:TileType};
   readonly boardId: string;
   readonly cells: readonly HexCell[];
   readonly startingCastleCellId: CellId;
@@ -78,7 +79,7 @@ export interface MarketState {
 }
 export interface PlayerDie { readonly id: DieId; readonly value: DieValue; readonly used: boolean }
 export interface DiceState {
-  readonly players: Readonly<Record<PlayerId, readonly [PlayerDie, PlayerDie]>>;
+  readonly players: Readonly<Record<PlayerId, readonly [PlayerDie, PlayerDie] | readonly [PlayerDie, PlayerDie, PlayerDie]>>;
   readonly whiteDie: DieValue | null;
   readonly rolledForRound: boolean;
   readonly roundGoodsDistributed: boolean;
@@ -138,6 +139,7 @@ export interface TurnState {
 export interface PlayerConfig { readonly id: PlayerId; readonly name: string; readonly color?: PlayerColor; readonly seat: number; readonly boardId: string; readonly startingCastleCellId: CellId; readonly controller: "human" | "chateauma" }
 export interface ExtensionConfig { readonly id: ExtensionId; readonly options: Readonly<Record<string, JsonValue>> }
 export interface GameConfig {
+  readonly customRules?: true;
   readonly ruleset: "special-edition-base";
   readonly mode: "competitive" | "team" | "solo" | "chateauma";
   /** Base competitive mode is 2-4; future solo adapters must validate their own counts. */
@@ -150,8 +152,9 @@ export interface GameConfig {
   readonly marketRecipeId?: "se:main:2" | "se:main:3-4";
   readonly extensions: readonly ExtensionConfig[];
 }
-export type ScoreCategory = "livestock" | "building" | "region-size" | "phase-bonus" | "color-bonus" | "goods-sale" | "remaining-goods" | "remaining-silver" | "remaining-workers" | "monastery" | "extension";
+export type ScoreCategory = "livestock" | "building" | "region-size" | "phase-bonus" | "region-refund" | "color-bonus" | "goods-sale" | "remaining-goods" | "remaining-silver" | "remaining-workers" | "monastery" | "extension";
 export interface ScoreEntry {
+  readonly reversalOf?: string;
   readonly id: string;
   readonly category: ScoreCategory;
   readonly points: number;
@@ -176,6 +179,7 @@ export interface PhaseDiscardedTiles {
   readonly vineyardTileIds: readonly string[];
 }
 export interface GameState {
+  readonly tileReservations?: Readonly<Record<PlayerId,{readonly phase:Phase;readonly tileId:TileId|null}>>;
   /** Legacy saves omit this field; past phases cannot be reconstructed from all removed tiles. */
   readonly discardedTiles?: readonly PhaseDiscardedTiles[];
   readonly vineyards?: import("./vineyards").VineyardState;

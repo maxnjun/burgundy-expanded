@@ -13,6 +13,7 @@ cases.push("online-controls", "online-identity");
 cases.push("ver2");
 cases.push("ver3", "hotseat", "android-flow", "monastery-six");
 cases.push("estate-bonuses", "discarded-tiles", "emergency-seven", "board-choices");
+cases.push("custom-rules");
 const requested=process.argv.slice(2);
 if(requested.some(name=>!cases.includes(name)))throw new Error("Unknown core test suite");
 const selected=requested.length?requested:cases;

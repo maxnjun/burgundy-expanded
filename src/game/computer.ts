@@ -9,6 +9,7 @@ import { goodsSaleReward } from "./core/intents";
 import { shieldChoiceValue, shieldExtensionValue } from "./computer-shields";
 import {customTradeSpaces} from "./custom-trade-routes";
 import { resolvePlacement } from "./core/placement";
+import {previewRecolor,type RecolorTarget} from './core/territory';
 
 /** A project heuristic opponent, NOT the official Chateauma or solo rules.
  * Reads public board/market/player information only: no future pool, seed or RNG cursor.
@@ -26,7 +27,19 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if (action.type === "roll-round" || action.type === "advance-phase") return 10000;
     if (action.type === "end-turn") return -100;
     if (action.type === "buy-workers") return player.workers<2?10:-190;
-    if(action.type==="extension"&&action.extensionId==="shields")return shieldExtensionValue(state,player,action);
+    if(action.type==="extension"&&action.extensionId==="shields"){
+      const p=action.payload as {tileId:string;discardTileId?:string}|null;
+      if(action.command==='discard-storage'||action.command==='cancel-reservation')return -210;
+      if(action.command==='reserve-tile')return acquisitionValue(state,player,state.tiles[p!.tileId])-20;
+      if(action.command==='buy-rival-tile')return p!.discardTileId?-180:acquisitionValue(state,player,state.tiles[p!.tileId])-9;
+      return shieldExtensionValue(state,player,action);
+    }
+    if(action.type==='extension'&&action.extensionId==='additional-hexes'&&action.command==='recolor'){
+      const t=action.payload as RecolorTarget,preview=previewRecolor(state,player,t);
+      const usable=player.storage.some(id=>id&&state.tiles[id]?.type===t.terrain)&&
+        state.dice.players[player.id].some(d=>!d.used)&&player.duchy.cells.some(c=>c.tileId&&areAxialNeighbors(c.coord,preview.old.coord));
+      return usable?8+preview.connected.filter(c=>!!c.tileId).length*3-preview.points:-190;
+    }
     if(action.type==="extension"&&action.extensionId==="vineyards")return (action.payload as unknown as VineIntent).discardIds?.length?-180:16;
     if (action.type === "resolve-choice") {
       if(action.optionId.startsWith("vine-token:")&&state.vineyards){const v=state.vineyards,g=action.optionId.slice(11) as typeof GRAPES[number],own=v.players[player.id];return 10+vineScore({...v,players:{...v.players,[player.id]:{...own,tokens:[...own.tokens,g]}}},player.id)-vineScore(v,player.id)+own.placed.reduce((n,p)=>n+VINE_TILES[p.tileId].filter(x=>x===g).length,0)*.1;}

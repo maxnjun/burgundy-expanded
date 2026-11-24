@@ -13,6 +13,7 @@ import { officialMarketRecipe } from "./market-recipes";
 import { parseBoundedGameJson } from "./bounded-json";
 import {validStartingCastlePreview,type StartingCastlePreview} from './starting-castles';
 import {validBoardChoice,type BoardChoiceDraft} from './board-choice';
+import {recoloredRegions,validEarnedEntries} from './core/territory';
 
 export interface SavedGame {
   readonly format: "burgundy-local-v1";
@@ -75,7 +76,7 @@ export function parseSavedGame(text: string): SavedGame {
     if (!(tile.type==="inn" || terrains.includes(tile.type)) || !["black", "matching-color"].includes(tile.back) ||
       (tile.type === "building" && !buildings.includes(tile.building)) ||
       (tile.type === "livestock" && (!["cattle", "sheep", "pigs", "chickens", "geese"].includes(tile.species) || ![2,3,4].includes(tile.count))) ||
-      (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29))) return reject();
+      (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > (game.config.customRules?32:29)))) return reject();
   }
   const colors = game.players.map(p=>p.color).filter(c=>c!==undefined);
   if (new Set(colors).size !== colors.length || colors.some(c=>!isPlayerColor(c))) return reject();
@@ -83,12 +84,17 @@ export function parseSavedGame(text: string): SavedGame {
     if (typeof player.name !== "string" || !player.name.trim() || player.name.length > 30) return reject();
     const board = VERIFIED_BOARD_DEFINITIONS.find(b => b.id === player.duchy.boardId) ?? [practiceBoard(0), practiceBoard(1)].find(b => b.id === player.duchy.boardId);
     if (!board || player.duchy.cells.length !== board.cells.length || !board.startingCastle.allowedCellIds.includes(player.duchy.startingCastleCellId)) return reject();
+    const change=player.duchy.recoloredCell;
+    const originalCell=change&&board.cells.find(c=>c.id===change.cellId);
+    if(change&&(!originalCell||originalCell.terrain===change.terrain||change.cellId===player.duchy.startingCastleCellId))return reject();
+    const expected=change?recoloredRegions(board.cells,change):board.cells;
     for (const cell of player.duchy.cells) {
-      const original = board.cells.find(c => c.id === cell.id);
+      const original = expected.find(c => c.id === cell.id);
       if (!original || original.coord.q !== cell.coord.q || original.coord.r !== cell.coord.r || original.number !== cell.number || original.terrain !== cell.terrain || original.regionId !== cell.regionId ||
         (cell.tileId !== null && game.tiles[cell.tileId]?.type !== "inn" && game.tiles[cell.tileId]?.type !== cell.terrain)) return reject();
     }
-    if (!validateBoardDefinition({ ...board, cells: player.duchy.cells, regions: deriveRegions(player.duchy.cells) }).valid) return reject();
+    const startingCastle=change?{...board.startingCastle,policy:"any-castle" as const,allowedCellIds:expected.filter(c=>c.terrain==='castle').map(c=>c.id),recommendedCellId:player.duchy.startingCastleCellId}:board.startingCastle;
+    if (!validateBoardDefinition({ ...board, startingCastle,cells: player.duchy.cells, regions: deriveRegions(player.duchy.cells) }).valid) return reject();
     const config = game.config.players.find(p => p.id === player.id);
     if (config?.boardId !== player.duchy.boardId || config.startingCastleCellId !== player.duchy.startingCastleCellId || config.seat !== player.seat || config.color !== player.color) return reject();
   }
@@ -101,7 +107,7 @@ export function parseSavedGame(text: string): SavedGame {
     for (const p of game.players) {
       const s = game.finalScores.find(s => s.playerId === p.id);
       if (!s || s.total !== p.victoryPoints || !Array.isArray(s.earned) || !Array.isArray(s.finalAdditions) ||
-        [...s.earned, ...s.finalAdditions].some(e => !Number.isSafeInteger(e.points) || e.points < 0) ||
+        !validEarnedEntries(s.earned,!!p.duchy.recoloredCell)||s.finalAdditions.some(e => !Number.isSafeInteger(e.points) || e.points < 0||e.reversalOf!==undefined) ||
         s.earnedTotal !== s.earned.reduce((n,e) => n+e.points,0) || s.finalAdditionsTotal !== s.finalAdditions.reduce((n,e) => n+e.points,0) || s.total !== s.earnedTotal+s.finalAdditionsTotal) return reject();
     }
   } else if (game.turn.stage === "finished" || game.finalScores !== null) return reject();

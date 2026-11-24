@@ -5,9 +5,11 @@ import {validCastleActions} from "../castle-actions";
 import {validCustomTrade} from "../custom-trade-routes";
 import { validInns } from "../inns";
 import { validFortressScores } from "./fortress-lines";
-import { validShieldLayout, hasShield, shieldLayout } from "../shields";
+import { validShieldLayout, hasShield, shieldLayout,goodsCapacity } from "../shields";
 import type { EngineIssue, ValidationResult } from "../interfaces";
 import type { GameState, PlayerState } from "../types";
+import {TERRAIN_NAMES,validEarnedEntries} from './territory';
+import {validTileReservations} from './custom-actions';
 
 export const isCount = (n: number): boolean => Number.isSafeInteger(n) && n >= 0;
 export const isDie = (n: number): boolean => Number.isInteger(n) && n >= 1 && n <= 6;
@@ -17,6 +19,7 @@ export function monasteryNumbers(state: Pick<GameState,"tiles"> & {readonly play
   const target=hasShield(state,player.id,6)?state.players?.find(p=>!!p&&typeof p==="object"&&"id" in p&&p.id===(state.extensionStates?shieldLayout({extensionStates:state.extensionStates})?.rules?.monasteryTarget:null)):undefined;
   return target&&typeof target==="object"&&"duchy" in target?[...new Set([...own,...physical(target as Pick<PlayerState,"duchy">).filter(n=>n!==27)])]:own;
 }
+export const storageCapacity=(state:GameState,player:PlayerState)=>monasteryNumbers(state,player).includes(32)?4:3;
 
 /** Larger positions lead; each stack is top-to-bottom, independent of seat order. PDF pp.5-7. */
 export function orderedPlayers(state: GameState): readonly string[] {
@@ -35,6 +38,7 @@ export function validateCoreState(state: GameState): ValidationResult {
     }
     if (state.schemaVersion !== "0.2.1" || !isCount(state.revision) || !state.random.seed ||
       state.random.seed !== state.config.seed || !isCount(state.random.cursor)) issue("Invalid schema, revision or random state");
+    if(state.config.customRules!==undefined&&state.config.customRules!==true||!validTileReservations(state))issue("Invalid custom rules or tile reservations");
     if (!["A", "B", "C", "D", "E"].includes(state.turn.phase) || !Number.isInteger(state.turn.round) || state.turn.round < 1 || state.turn.round > 5) issue("Invalid phase/round");
     if(!validStartingSetup(state))issue("Invalid starting castle setup");
     const ids = state.players.map(p => p.id);
@@ -63,21 +67,27 @@ export function validateCoreState(state: GameState): ValidationResult {
     if(!validCustomTrade(state))issue("Invalid custom trade routes or pending reward");
     if (!validInns(state)) issue("Invalid inn supply or duplicate inn in region");
     if (!validFortressScores(state)) issue("Inconsistent fortress line scores");
-    const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [];
+    const tileLocations: string[] = [], goodsIds: string[] = [], dieIds: string[] = [],customMonks:number[]=[];
     for (const tile of Object.values(state.tiles)) {
       if (!["inn","castle","ship","mine","livestock","building","monastery"].includes(tile.type) || !["black","matching-color"].includes(tile.back) ||
-        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > 29 || (tile.number === 29 && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.number > 26 && tile.number < 29 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
+        (tile.type === "monastery" && (!Number.isInteger(tile.number) || tile.number < 1 || tile.number > (state.config.customRules?32:29) || (tile.number>=30 && tile.back!==(tile.number===31?'black':'matching-color')) || (tile.number === 29 && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.number > 26 && tile.number < 29 && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "building" && (!["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane","white-castle"].includes(tile.building) || (tile.building==="white-castle" && !state.config.extensions.some(e=>e.id==="white-castles")) || (tile.building==="crane" && !state.config.extensions.some(e=>e.id==="additional-hexes")))) ||
         (tile.type === "livestock" && (![2,3,4].includes(tile.count) || !["cattle","sheep","pigs","chickens","geese"].includes(tile.species) || (tile.species === "geese" && (tile.count !== 2 || tile.back !== "black" || !state.config.extensions.some(e=>e.id==="geese")))))) issue("Invalid base-game tile definition");
+      if(tile.type==='monastery'&&tile.number>=30)customMonks.push(tile.number);
     }
+    if(state.config.customRules&&(customMonks.length!==3||new Set(customMonks).size!==3))issue("Custom rules require three unique custom monasteries");
     const goods = (tiles: readonly { id: string; type: number }[]) => {
       for (const tile of tiles) { if (!tile.id || !isDie(tile.type)) issue("Invalid goods tile"); goodsIds.push(tile.id); }
     };
     for (const player of state.players) {
       if (![player.workers, player.silver, player.victoryPoints].every(isCount)) issue("Resources and points must be safe nonnegative integers");
-      if (player.storage.length < 3 || player.storage.length > Object.keys(state.tiles).length+3 || (player.storage.length !== 3 && !hasShield(state,player.id,4) && !(state.turn.pendingEffects[0]?.payload as {kind?:string}|null)?.kind?.startsWith("shield-storage"))) issue("Base tile storage must have three slots");
+      const limit=storageCapacity(state,player),pending=state.turn.pendingEffects[0],overflow=pending?.payload as {kind?:string}|null|undefined;
+      if (player.storage.length < limit || player.storage.length > Object.keys(state.tiles).length+4 || (player.storage.length !== limit && !hasShield(state,player.id,4) && !overflow?.kind?.startsWith("shield-storage"))) issue("Invalid tile storage capacity");
       tileLocations.push(...player.storage.filter((id): id is string => id !== null));
       const cellIds = player.duchy.cells.map(c => c.id);
+      const recolor=player.duchy.recoloredCell;
+      if(recolor&&(!state.config.customRules||!Object.hasOwn(TERRAIN_NAMES,recolor.terrain)||
+        !player.duchy.cells.some(c=>c.id===recolor.cellId&&c.terrain===recolor.terrain)))issue("Invalid monastery 31 territory");
       if (new Set(cellIds).size !== cellIds.length) issue("Duplicate cell ID");
       for (const cell of player.duchy.cells) {
         if (!isDie(cell.number) || !Number.isSafeInteger(cell.coord.q) || !Number.isSafeInteger(cell.coord.r)) issue("Invalid cell coordinate or number");
@@ -85,20 +95,20 @@ export function validateCoreState(state: GameState): ValidationResult {
       }
       const start = player.duchy.cells.find(c => c.id === player.duchy.startingCastleCellId);
       if (!startingCastlePending(state,player.id)&&(!start || start.terrain !== "castle" || start.tileId === null || state.tiles[start.tileId]?.type !== "castle")) issue("Missing starting castle");
-      if (player.goods.length > 3 || new Set(player.goods.map(g => g.type)).size !== player.goods.length) issue("At most three distinct goods stacks are allowed");
+      if (player.goods.length > goodsCapacity(state,player.id) && !(state.config.customRules&&player.goods.length<=6&&pending?.playerId===player.id&&overflow?.kind==='shield-goods') || new Set(player.goods.map(g => g.type)).size !== player.goods.length) issue("Invalid distinct goods stack count");
       for (const stack of player.goods) {
         if (!isDie(stack.type) || !stack.tiles.length || stack.tiles.some(t => t.type !== stack.type)) issue("Invalid goods stack");
         goods(stack.tiles);
       }
       goods(player.soldGoods);
       const dice = state.dice.players[player.id];
-      if (!dice || dice.length !== 2) issue("Each player needs two dice");
+      if (!dice || dice.length !== 2 && !(state.config.customRules&&dice.length===3&&dice[2].id===`${player.id}:c`)) issue("Invalid action dice count");
       else for (const die of dice) {
         if (!die.id || !isDie(die.value) || typeof die.used !== "boolean") issue("Invalid player die");
         dieIds.push(die.id);
       }
       const ledger = state.scoreLedger[player.id];
-      if (!ledger || ledger.some(e => !isCount(e.points)) || ledger.reduce((sum, e) => sum + e.points, 0) !== player.victoryPoints) issue("Score ledger must match earned victory points");
+      if (!ledger || !validEarnedEntries(ledger,!!recolor) || ledger.reduce((sum, e) => sum + e.points, 0) !== player.victoryPoints) issue("Score ledger must match earned victory points");
     }
     if (new Set(dieIds).size !== dieIds.length || Object.keys(state.dice.players).some(id => !ids.includes(id))) issue("Duplicate or unknown die owner");
     if (state.dice.whiteDie !== null && !isDie(state.dice.whiteDie)) issue("Invalid white die");

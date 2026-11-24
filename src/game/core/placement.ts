@@ -1,4 +1,3 @@
-import { regionSizePoints } from "../inns";
 import { hasShield } from "../shields";
 import type { EngineIssue } from "../interfaces";
 import type { DieValue, GameState, PlayerState, ScoreEntry, Tile } from "../types";
@@ -7,9 +6,10 @@ import { deriveRegions } from "../boards/regions";
 import { validateBoardDefinition } from "../boards/validation";
 import { monasteryNumbers } from "./state";
 import { fortressLineScore, PHASE_COMPLETION_POINTS } from "./fortress-lines";
+import {colorCompletion,regionPoints} from './territory';
 
 export function supportsPlacement(tile: Tile): boolean {
-  return tile.type !== "monastery" || (Number.isInteger(tile.number) && tile.number >= 1 && tile.number <= 29);
+  return tile.type !== "monastery" || (Number.isInteger(tile.number) && tile.number >= 1 && tile.number <= 32);
 }
 
 /** Geometry is injected, not inferred from a board number or certified official here. */
@@ -29,8 +29,8 @@ export function placementIssue(state: GameState, player: PlayerState, tileId: st
   if (!result.valid) return fail("Injected board geometry or regions are inconsistent", "invalid-config");
   const region = cells.filter(c => c.regionId === cell.regionId);
   if(tile.type === "inn" && region.some(c=>c.tileId && state.tiles[c.tileId]?.type === "inn"))return fail("이 구역에는 이미 여관이 있습니다.");
-  if (region.length > 8) return fail("Base scoring supports regions of size 1-8 only", "unresolved-rule");
-  if (player.duchy.completedRegionIds.includes(cell.regionId) || player.duchy.completedColors.includes(cell.terrain)) return fail("Empty target belongs to an already completed region/color", "invalid-config");
+  if (region.length > 8 && !player.duchy.recoloredCell) return fail("Base scoring supports regions of size 1-8 only", "unresolved-rule");
+  if (player.duchy.completedRegionIds.includes(cell.regionId) || (!player.duchy.recoloredCell && player.duchy.completedColors.includes(cell.terrain))) return fail("Empty target belongs to an already completed region/color", "invalid-config");
   if (tile.type === "building" && !monasteryNumbers(state, player).includes(1) && region.some(c => {
     const existing = c.tileId && state.tiles[c.tileId];
     return existing && existing.type === "building" && existing.building === tile.building;
@@ -66,17 +66,18 @@ export function resolvePlacement(state: GameState, player: PlayerState, tileId: 
   const completedRegionIds = [...player.duchy.completedRegionIds];
   const completedColors = [...player.duchy.completedColors];
   const region = cells.filter(c => c.regionId === cell.regionId);
-  if (region.every(c => c.tileId !== null)) {
+  if (region.every(c => c.tileId !== null) && !completedRegionIds.includes(cell.regionId)) {
     completedRegionIds.push(cell.regionId);
-    score("region-size", regionSizePoints(region.length+(region.some(c=>c.tileId&&state.tiles[c.tileId]?.type==="inn")?1:0)+(hasShield(state,player.id,17)?1:0)), [4, 9]);
+    score("region-size", regionPoints(state,player,region), [4, 9]);
     score("phase-bonus", PHASE_COMPLETION_POINTS[state.turn.phase], [4, 9]);
   }
   let bonusTiles = [...state.market.bonusTiles];
   const bonuses = [...player.bonuses];
-  if (cells.filter(c => c.terrain === cell.terrain).every(c => c.tileId !== null)) {
+  const completion=colorCompletion(state,player,cells,cell.terrain);
+  if (completion) {
     completedColors.push(cell.terrain);
-    const bonus = bonusTiles.filter(b => b.color === cell.terrain).sort((a, b) => Number(a.rank === "second") - Number(b.rank === "second"))[0];
-    if (bonus) { bonuses.push(bonus); bonusTiles = bonusTiles.filter(b => b.id !== bonus.id); score("color-bonus", bonus.points*(hasShield(state,player.id,7)?2:1), [9,18]); }
+    const bonus=completion.bonus;
+    if (bonus) { bonuses.push(bonus); bonusTiles = bonusTiles.filter(b => b.id !== bonus.id); score("color-bonus", completion.points, [9,18]); }
   }
   const updated = { ...player, silver, workers, bonuses, storage: player.storage.map(id => id === tileId ? null : id), duchy: { ...player.duchy, cells, completedRegionIds, completedColors } };
   entries.push(...fortressLineScore(state, player, updated));

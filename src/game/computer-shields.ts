@@ -1,5 +1,5 @@
 import {VINE_TILES} from "./vineyards";
-import { shieldLayout, type ShieldAcquireAction } from "./shields";
+import { shieldLayout,SHIELD_POINTS, type ShieldAcquireAction } from "./shields";
 import { directCost } from "./direct-actions";
 import { monasteryNumbers } from "./core/state";
 import { resolvePlacement } from "./core/placement";
@@ -8,8 +8,8 @@ import type { GameState, PlayerState, GameAction } from "./types";
 export function shieldComputerValue(state:GameState,p:PlayerState,n:number):number{
  const layout=shieldLayout(state)!,remaining=5-"ABCDE".indexOf(state.turn.phase),tiles=p.duchy.cells.flatMap(c=>c.tileId?[state.tiles[c.tileId]]:[]),count=(type:string)=>tiles.filter(t=>t.type===type).length;
  const goods=p.goods.reduce((sum,g)=>sum+g.tiles.length,0),owned=layout.mounted.filter(m=>m.playerId===p.id).length;
- const potential=[0,count("livestock")*2,3,Math.min(p.workers,8),p.storage.filter(Boolean).length*2,goods,Math.max(...state.players.map(other=>monasteryNumbers(state,other).length))*2,3,count("mine")*3,goods*2,count("monastery")*2,count("castle"),goods*2,owned*4,5,5,4,4,6][n];
- return (n<=6?12:n<=12?8:4)+potential*Math.max(0,remaining-1)+Math.max(0,remaining-1)*2;
+ const potential=[0,count("livestock")*2,3,Math.min(p.workers,8),p.storage.filter(Boolean).length*2,goods,Math.max(...state.players.map(other=>monasteryNumbers(state,other).length))*2,3,count("mine")*3,goods*2,count("monastery")*2,count("castle"),goods*2,owned*4,5,5,4,4,6,2,2,4,10,3,5][n];
+ return SHIELD_POINTS[n-1]+potential*Math.max(0,remaining-1)+Math.max(0,remaining-1)*2;
 }
 export function shieldExtensionValue(state:GameState,p:PlayerState,a:Extract<GameAction,{type:"extension"}>):number{
  const payload=a.payload as Record<string,unknown>,layout=shieldLayout(state)!;
@@ -27,6 +27,7 @@ export function shieldChoiceValue(state:GameState,p:PlayerState,optionId:string)
  if(payload?.pay&&payload.shieldNumber){const worth=shieldComputerValue(state,p,payload.shieldNumber);return payload.pay==="remove"?-worth:worth-(payload.pay==="worker"?(p.workers>p.silver?1:4):(p.silver>1?2:5));}
  if(payload?.tileId&&payload.cellId){const result=resolvePlacement(state,{...p,storage:[...p.storage,payload.tileId]},payload.tileId,payload.cellId);return 35+result.entries.reduce((n,e)=>n+e.points,0)*2+(result.player.silver-p.silver)*3+(result.player.workers-p.workers);}
  if(optionId.startsWith("discard:")&&payload?.tileId)return -((VINE_TILES[payload.tileId]?6:state.tiles[payload.tileId]?.type==="castle"?8:4));
+ if(optionId.startsWith('discard-goods:'))return -(p.goods.find(g=>g.type===Number(optionId.split(':')[1]))?.tiles.length??0);
  if(optionId.startsWith("shield5:")&&payload?.goodsType)return 10+state.market.numberedDepots.reduce((n,d)=>n+d.goods.filter(g=>g.type===payload.goodsType).length,0)*4;
  if(payload?.shield){const n=shieldLayout(state)!.slots.find(s=>s.id===payload.shield!.slotId)!.shieldNumber!;return 25+shieldComputerValue(state,p,n)-(payload.shield.replaceShieldNumber?shieldComputerValue(state,p,payload.shield.replaceShieldNumber):0)-directCost(state,{type:'resolve-choice',playerId:p.id,choiceId:state.turn.pendingChoice!.id,optionId})*3-(payload.shield.dieId?16:0);}
  return null;

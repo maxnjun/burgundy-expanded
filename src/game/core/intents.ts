@@ -4,6 +4,7 @@ import type { ActionIntent, DieValue, GameState, PlayerState } from "../types";
 import { placementIssue, resolvePlacement } from "./placement";
 import { monasteryNumbers } from "./state";
 import { advanceCustomTrade } from "./trade-effects";
+import {mayTakeSupply} from './custom-actions';
 type Mutable<T, D extends unknown[] = [
 ]> = D["length"] extends 8 ? T : T extends object ? {
     -readonly [K in keyof T]: Mutable<T[K], [
@@ -29,7 +30,7 @@ export function intentIssue(state: GameState, player: PlayerState, intent: Actio
         case "vineyard": return (value!==undefined&&!vineValues(state,intent).includes(value))?"Vineyard die mismatch":intent.command==="take"?vineTakeIssue(state,player,intent):vinePlacementIssue(state,player,intent);
         case "take-workers": return null;
         case "sell-goods": return (value === undefined || intent.goodsType === value) && player.goods.some(g => g.type === intent.goodsType) ? null : "Goods stack or die mismatch";
-        case "take-tile": return (value === undefined || intent.depot === value) && state.market.numberedDepots.find(d => d.number === intent.depot)?.slots.some(s => s.tileId === intent.tileId) ? destinationIssue(player, intent) : "Depot or die mismatch";
+        case "take-tile": return (value === undefined || intent.depot === value) && mayTakeSupply(state,player.id,intent.tileId) && state.market.numberedDepots.find(d => d.number === intent.depot)?.slots.some(s => s.tileId === intent.tileId) ? destinationIssue(player, intent) : "Depot, reservation or die mismatch";
         case "place-tile": return placementIssue(state, player, intent.tileId, intent.cellId, value ?? player.duchy.cells.find(c => c.id === intent.cellId)?.number ?? 1)?.message ?? null;
         default: return "Unknown intent";
     }
@@ -84,6 +85,6 @@ export function executeIntent(state: GameState, playerId: string, intent: Action
             break;
         }
     }
-    const next=rewardShieldWorkerGain(draft,playerId,player.workers-state.players.find(p=>p.id===playerId)!.workers);
+    const next=rewardShieldWorkerGain(draft,playerId,player.workers-prepared.players.find(p=>p.id===playerId)!.workers);
     return intent.kind==="sell-goods"?advanceCustomTrade(next,playerId,intent.goodsType,state.players.find(p=>p.id===playerId)!.goods.find(g=>g.type===intent.goodsType)!.tiles.map(g=>g.id)):next;
 }

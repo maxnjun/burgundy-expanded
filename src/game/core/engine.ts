@@ -1,11 +1,11 @@
-import {purchaseUsed,numberedPurchaseTile} from '../purchases';
+import {purchaseBlocked,numberedPurchaseTile} from '../purchases';
 import {startingCastleCells,placeStartingCastle} from "../starting-castles";
-import {vineIntents,vineTakeIssue,vineValues,executeVine,keyOccupant,discardStored} from "../vineyards";
+import {vineIntents,vineTakeIssue,vineValues,executeVine,discardStored} from "../vineyards";
 import {isCastleAction,suspendCastleAction} from "../castle-actions";
 import {resumeVineyards,vineStoreIntents} from "./vineyard-effects";
 import {intentIssue} from "./intents";
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
-import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, type ShieldAcquireAction } from "../shields";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps,hasShield, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -15,6 +15,8 @@ import { advancePhase } from "./phases";
 import { prepareTileEffect, resolveTileChoice, validPendingChoice, refreshPendingChoice, resumeCastleAction } from "./effects";
 import { executeIntent, destinationIssue as tileDestination } from "./intents";
 import { adjustmentValid, planAdjustment } from "./modifiers";
+import {applyRecolor,previewRecolor,recolorTargets,type RecolorTarget} from './territory';
+import {applyCustomShieldAction,customShieldActions,customShieldCommands,customShieldIssue,mayTakeSupply,storageDestinations} from './custom-actions';
 
 type Mutable<T, D extends unknown[] = []> = D["length"] extends 8 ? T : T extends object ? { -readonly [K in keyof T]: Mutable<T[K], [...D, 0]> } : T;
 type Draft = Mutable<GameState>;
@@ -61,23 +63,30 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
   if (state.turn.stage !== "player-turn" || state.turn.activePlayerId !== action.playerId) return failure("illegal-action", "Not this player's turn");
   if (action.type === "end-turn") {
     if(state.turn.castleActions?.length)return failure("unresolved-rule","Use the remaining castle actions first");
-    if (state.dice.players[player.id].some(d => !d.used)) return failure("illegal-action", "Both dice actions must be resolved before ending the turn");
+    if (state.dice.players[player.id].some(d => !d.used)) return failure("illegal-action", "All action dice must be resolved before ending the turn");
     return null;
   }
   if (action.type === "extension") {
-    if(action.extensionId==="vineyards"){const i=action.payload as unknown as import("../vineyards").VineIntent;return action.command!=="buy"||!state.vineyards||purchaseUsed(state.turn)||player.silver<2||i.kind!=="vineyard"||i.command!=="take"||i.source!=="store"||vineTakeIssue(state,player,i)?failure("illegal-action","Invalid vineyard purchase"):null;}
+    if(action.extensionId==='additional-hexes'&&action.command==='recolor'){
+      const target=action.payload as RecolorTarget|null;
+      return target&&recolorTargets(state,player).some(t=>t.cellId===target.cellId&&t.terrain===target.terrain)?null:failure('illegal-action','Invalid monastery 31 recolor');
+    }
+    if(action.extensionId==="vineyards"){const i=action.payload as unknown as import("../vineyards").VineIntent;return action.command!=="buy"||!state.vineyards||purchaseBlocked(state,player.id)||player.silver<2||i.kind!=="vineyard"||i.command!=="take"||i.source!=="store"||vineTakeIssue(state,player,i)?failure("illegal-action","Invalid vineyard purchase"):null;}
+    if(action.extensionId==='shields'&&customShieldCommands.includes(action.command)){
+      const issue=customShieldIssue(state,player,action);return issue?failure('illegal-action',issue):null;
+    }
     if(action.extensionId!=="shields" || !state.config.extensions.some(e=>e.id==="shields"))return failure("unsupported-extension", "Extensions are outside this core subset");
     const issue=action.command==="change-die"?shieldSpecialIssue(state,action):shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
   if (action.type === "resolve-choice") return failure("illegal-action", "No pending choice");
   if (action.type === "use-monastery-six") {
-    if (!monasteryNumbers(state, player).includes(6) || player.workers < 2 || purchaseUsed(state.turn)) return failure("illegal-action", "Monastery 6 requires two workers and an unused tile purchase");
-    if (!numberedPurchaseTile(state,action.depot,action.tileId)) return failure("illegal-action", "Monastery 6 purchases a numbered-depot tile");
+    if (!monasteryNumbers(state, player).includes(6) || player.workers < 2 || purchaseBlocked(state,player.id)) return failure("illegal-action", "Monastery 6 requires two workers and an available tile purchase");
+    if (!mayTakeSupply(state,player.id,action.tileId)||!numberedPurchaseTile(state,action.depot,action.tileId)) return failure("illegal-action", "Monastery 6 purchases an available numbered-depot tile");
     const issue = tileDestination(player, action); return issue ? failure("illegal-action", issue) : null;
   }
   if (action.type === "buy-black-tile") {
-    if (purchaseUsed(state.turn) || player.silver < 2) return failure("illegal-action", "Black purchase requires two silver and is limited to once per turn");
-    if (!state.market.blackDepot.includes(action.tileId) && state.market.inns?.stack.at(-1)!==action.tileId) return failure("illegal-action", "Tile is not in the black depot");
+    if (purchaseBlocked(state,player.id) || player.silver < 2) return failure("illegal-action", "Black purchase requires two silver and an available purchase");
+    if (!mayTakeSupply(state,player.id,action.tileId)||!state.market.blackDepot.includes(action.tileId) && state.market.inns?.stack.at(-1)!==action.tileId) return failure("illegal-action", "Tile is unavailable in the black depot");
     const issue = tileDestination(player, action);
     return issue ? failure("illegal-action", issue) : null;
   }
@@ -96,7 +105,7 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
     case "take-tile": {
       const intent = action.intent;
       const depot = state.market.numberedDepots.find(d => d.number === intent.depot);
-      if (value !== intent.depot || !depot?.slots.some(s => s.tileId === intent.tileId)) return failure("illegal-action", "Tile must be in the depot matching the adjusted die");
+      if (value !== intent.depot || !mayTakeSupply(state,player.id,intent.tileId)||!depot?.slots.some(s => s.tileId === intent.tileId)) return failure("illegal-action", "Tile must be available in the depot matching the adjusted die");
       const issue = tileDestination(player, intent);
       return issue ? failure("illegal-action", issue) : null;
     }
@@ -158,6 +167,14 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
   try {
     if(action.type==="place-starting-castle"){draft=structuredClone(placeStartingCastle(draft,action.playerId,action.cellId)) as Draft;} else if(action.type==="extension"&&action.extensionId==="vineyards"){
       draft=structuredClone(executeVine(draft,action.playerId,action.payload as unknown as import("../vineyards").VineIntent)) as Draft;draft.players.find(p=>p.id===action.playerId)!.silver-=2;draft.turn.blackPurchaseUsed=true;draft=structuredClone(refreshPendingChoice(draft)) as Draft;
+    } else if(action.type==='extension'&&action.extensionId==='additional-hexes'&&action.command==='recolor'){
+      const target=action.payload as RecolorTarget;
+      const preview=previewRecolor(state,player,target);
+      draft=structuredClone(applyRecolor(state,player,target)) as Draft;
+      payload={actionType:'recolor',...target,pointsReturned:preview.points,pointsDelta:draft.players.find(p=>p.id===player.id)!.victoryPoints-player.victoryPoints};
+    } else if(action.type==='extension'&&action.extensionId==='shields'&&customShieldCommands.includes(action.command)){
+      draft=structuredClone(applyCustomShieldAction(draft,player,action)) as Draft;
+      payload={actionType:action.command,extensionId:'shields',...action.payload as object};
     } else if (action.type === "extension") {
       draft=structuredClone(action.command==="choose-monastery-target"||action.command==="change-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
       pages=[17,18];payload={actionType:action.command,extensionId:"shields",...action.payload as object};
@@ -168,9 +185,11 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
       pages = (state.turn.pendingEffects[0]?.payload as {kind?:string}|null)?.kind === "white-castle" ? [14] : [7];
     } else if (action.type === "roll-round") {
-      for (const p of [...draft.players].sort((a, b) => a.seat - b.seat)) for (const die of draft.dice.players[p.id]) {
-        const roll = drawDie(draft.random);
-        draft.random = roll.random; die.value = roll.value; die.used = false;
+      for (const p of [...draft.players].sort((a, b) => a.seat - b.seat)) {
+        const [first,second]=draft.dice.players[p.id];
+        const dice:Draft['dice']['players'][string]=hasShield(draft,p.id,22)?[first,second,{id:`${p.id}:c`,value:1,used:false}]:[first,second];
+        for(const die of dice){const roll=drawDie(draft.random);draft.random=roll.random;die.value=roll.value;die.used=false;}
+        draft.dice.players[p.id]=dice;
       }
       const white = drawDie(draft.random);
       draft.random = white.random; draft.dice.whiteDie = white.value;
@@ -250,6 +269,8 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
   if(state.status==="setup")return {ok:true,value:{actions:startingCastleCells(state,playerId).map(cellId=>({type:"place-starting-castle" as const,playerId,cellId})),unsupported:[]}};
   const candidates: GameAction[] = [{type:"buy-workers",playerId},{ type: "roll-round", playerId }, { type: "end-turn", playerId }, { type: "advance-phase", playerId }];
   const player = state.players.find(p => p.id === playerId)!;
+  if(state.turn.stage==='player-turn'&&state.turn.activePlayerId===playerId&&!state.turn.pendingChoice&&!state.turn.pendingEffects.length)
+    for(const payload of recolorTargets(state,player))candidates.push({type:'extension',extensionId:'additional-hexes',command:'recolor',playerId,payload});
   if (state.turn.pendingChoice) for (const option of state.turn.pendingChoice.options) candidates.push({ type: "resolve-choice", playerId, choiceId: state.turn.pendingChoice.id, optionId: option.id });
   const layout=shieldLayout(state);
   if(layout?.effectsActive){
@@ -257,13 +278,14 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
       for(const target of state.players)candidates.push({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId,payload:{targetPlayerId:target.id}});
     if(state.turn.stage==="player-turn"&&state.turn.activePlayerId===playerId){
       if(layout.mounted.some(m=>m.playerId===playerId&&m.shieldNumber===16))for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:"change-die",playerId,payload:{dieId:die.id,value}});
-      if(!state.turn.pendingChoice&&!state.turn.pendingEffects.length&&!state.dice.players[playerId].some(d=>d.used))for(const slot of layout.slots)if(slot.shieldNumber!==null)for(const cell of player.duchy.cells)if(cell.tileId&&state.tiles[cell.tileId].type==="castle")
-        candidates.push({type:"extension",extensionId:"shields",command:"acquire",playerId,payload:{slotId:slot.id,castleCellId:cell.id,steps:state.dice.players[playerId].map(d=>shieldWorkerSteps(d.value,slot.depot)),replaceShieldNumber:layout.mounted.find(m=>m.playerId===playerId&&m.cellId===cell.id)?.shieldNumber??null}});
+      const dice=state.dice.players[playerId],pairs=dice.flatMap((first,i)=>dice.slice(i+1).filter(second=>!first.used&&!second.used).map(second=>[first,second] as const));
+      if(!state.turn.pendingChoice&&!state.turn.pendingEffects.length)for(const slot of layout.slots)if(slot.shieldNumber!==null)for(const cell of player.duchy.cells)if(cell.tileId&&state.tiles[cell.tileId].type==="castle")for(const pair of pairs)
+        candidates.push({type:"extension",extensionId:"shields",command:"acquire",playerId,payload:{slotId:slot.id,castleCellId:cell.id,steps:pair.map(d=>shieldWorkerSteps(d.value,slot.depot)),...(dice.length===3?{dieIds:pair.map(d=>d.id)}:{}),replaceShieldNumber:layout.mounted.find(m=>m.playerId===playerId&&m.cellId===cell.id)?.shieldNumber??null}});
     }
   }
   for(const intent of vineStoreIntents(state,player))candidates.push({type:"extension",extensionId:"vineyards",command:"buy",playerId,payload:intent as unknown as JsonValue});
-  const destinations = player.storage.map((tileId, storageSlot) => ({ storageSlot,
-    ...(keyOccupant(player,storageSlot) && !player.storage.some((_,i)=>!keyOccupant(player,i)) ? { discardTileId: keyOccupant(player,storageSlot)! } : {}) }));
+  const destinations = storageDestinations(player);
+  candidates.push(...customShieldActions(state,player,destinations));
   for (const tileId of [...state.market.blackDepot,...(state.market.inns?.stack.slice(-1)??[])]) if (tileId !== null) for (const dest of destinations) candidates.push({ type: "buy-black-tile", playerId, tileId, ...dest });
   for (const depot of state.market.numberedDepots) for (const slot of depot.slots) if (slot.tileId) for (const dest of destinations) candidates.push({type:"use-monastery-six",playerId,depot:depot.number,tileId:slot.tileId,...dest});
   for (const die of state.dice.players[playerId]) for (let value = 1; value <= 6; value++) {

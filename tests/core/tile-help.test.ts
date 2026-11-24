@@ -13,13 +13,14 @@ const building=(building:BuildingType)=>({type:"building" as const,building,back
 const seal={type:"livestock",species:"geese",count:2,back:"black"} as const;
 const guineaPig={type:"livestock",species:"chickens",count:2,back:"matching-color"} as const;
 
-test("encyclopedia and effects share complete numbered monastery29 and shield18 entries",()=>{
+test("encyclopedia and effects share complete numbered monastery32 and shield24 entries",()=>{
  assert.equal(new Set(TILE_HELP_ENTRIES.map(h=>h.id)).size,TILE_HELP_ENTRIES.length);
- for(const [kind,total] of [["monastery",29],["shield",18]] as const){
+ for(const [kind,total] of [["monastery",32],["shield",24]] as const){
   const list=TILE_HELP_ENTRIES.filter(h=>h.kind===kind);assert.deepEqual(list.map(h=>h.number),Array.from({length:total},(_,i)=>i+1));
   for(const h of list){assert.equal(getTileHelp(kind,h.number),h);for(const field of [h.name,h.summary,h.details,h.timing,h.conditions])assert.ok(field.length>4);if(h.tile)assert.equal(tileHelpId(h.tile),h.id);}
  }
- assert.equal(getTileHelp("monastery",30),undefined);assert.equal(getTileHelp("shield",0),undefined);
+ assert.equal(getTileHelp("monastery",33),undefined);assert.equal(getTileHelp("shield",0),undefined);
+ assert.equal(getTileHelp("monastery",31)!.tile?.back,"black");
  assert.equal(TILE_HELP_CATEGORIES.findIndex(c=>c.kind==="shield"),TILE_HELP_CATEGORIES.findIndex(c=>c.kind==="monastery")+1);
 });
 test("all approved images exist and the reference catalog covers buildings10 animals13 and extensions",()=>{

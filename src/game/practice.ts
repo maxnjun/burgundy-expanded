@@ -37,7 +37,9 @@ export function practiceBoard(variant = 0): BoardDefinition {
   return board;
 }
 
-export interface PracticeConfig { readonly chooseStartingCastles?:boolean; readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly tradeRoutes?:boolean; readonly vineyards?:boolean;readonly excludedGrapes?:readonly Grape[]; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+export interface PracticeConfig { readonly customRules?:boolean; readonly chooseStartingCastles?:boolean; readonly names: readonly string[]; readonly seed: string; readonly boardIds?: readonly string[]; readonly startingCastleIds?: readonly string[]; readonly firstSeat?: number; readonly fullEffects?: boolean; readonly officialSlots?: boolean; readonly colors?: readonly import("./types").PlayerColor[]; readonly additionalHexes?: boolean; readonly whiteCastles?: boolean; readonly inns?: boolean; readonly tradeRoutes?:boolean; readonly vineyards?:boolean;readonly excludedGrapes?:readonly Grape[]; readonly shieldPreview?: boolean; readonly shieldRules?: boolean; readonly geese?: boolean; readonly borderPosts?: boolean }
+
+const customMonasteries=():import('./types').BaseTile[]=>([30,31,32] as const).map(number=>({id:`custom:monastery:${number}`,type:'monastery',number,back:number===31?'black':'matching-color'}));
 
 /** Explicit partial exercise setup; its supply/first seat are NOT an official createGame implementation. */
 export function createPracticeSession(config: PracticeConfig): GameState {
@@ -124,6 +126,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     // Replace authored exercise batches with one finite, user-approved project set.
     for (const id of Object.keys(tiles)) delete tiles[id];
     const catalog = createProjectBaseTiles();
+    if(config.customRules)catalog.push(...customMonasteries());
     if (config.whiteCastles) catalog.push(...whiteCastleTiles());
     if (config.additionalHexes) catalog.push(
       {id:"project-extra:27",type:"monastery",number:27,back:"matching-color"},
@@ -186,8 +189,8 @@ export function createPracticeSession(config: PracticeConfig): GameState {
       {id:"project-extra:crane",type:"building",building:"crane",back:"black"},
     ] as const) {tiles[tile.id]=tile;remainingTileIds.push(tile.id);}
   }
-  if (config.whiteCastles && !(useOfficialSlots && count === 2)) {
-    for (const tile of whiteCastleTiles()) { tiles[tile.id] = tile; remainingTileIds.push(tile.id); }
+  if ((config.whiteCastles||config.customRules) && !(useOfficialSlots && count === 2)) {
+    for (const tile of [...(config.whiteCastles?whiteCastleTiles():[]),...(config.customRules?customMonasteries():[])]) { tiles[tile.id] = tile; remainingTileIds.push(tile.id); }
     // Mix into the respective supplies BEFORE phase A, including authored 3–4 seat setups.
     remainingTileIds.push(...numberedDepots.flatMap(d=>d.slots.flatMap(s=>s.tileId?[s.tileId]:[])), ...blackDepot);
     const draw = (back: Tile["back"], type?: TileType) => {
@@ -202,7 +205,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
   }
   const roundGoods = phaseGoods.A;
   const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing", discardedTiles:[],
-    config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,
+    config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,...(config.customRules?{customRules:true as const}:{}),
       players: players.map(p => ({ id: p.id, name: p.name, color: p.color, seat: p.seat, boardId: p.duchy.boardId, startingCastleCellId: p.duchy.startingCastleCellId, controller: "human" })),
       startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.vineyards?[{id:"vineyards" as const,options:{}}]:[]),...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
     players, tiles, market: { numberedDepots, blackDepot, supplyPools: [{ id: "practice:authored-reserve", remainingTileIds }], removedTileIds,
@@ -213,7 +216,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
     turn: { phase: "A", round: 1, stage: "round-setup", activePlayerId: null, orderTrack: [{ position: 0, players: [...players.slice(firstSeat), ...players.slice(0, firstSeat)].map(p => p.id) }], actedPlayerIds: [], blackPurchaseUsed: false, monasterySixUsed: false, pendingEffects: [], pendingChoice: null },
     scoreLedger: Object.fromEntries(players.map(p => [p.id, []])), random, extensionStates: {}, finalScores: null };
   if(config.shieldPreview||config.shieldRules){
-    const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules);
+    const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules,!!config.customRules&&!!config.shieldRules);
     Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:config.shieldRules?{rules:true}:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
   }
   const prepared = setupVineyards(setupCustomTrade(supplyInn(state, "A")),config.excludedGrapes);

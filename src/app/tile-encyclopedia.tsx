@@ -15,7 +15,7 @@ export function TileEncyclopedia(){
   {entries.length>1&&<div className="tile-help-list" role="group" aria-label={`${TILE_HELP_CATEGORIES.find(c=>c.kind===category)!.name} 목록`}>{entries.map(h=><button type="button" key={h.id} data-help-entry={h.id} aria-label={h.name} aria-pressed={selected===h.id} onClick={()=>setSelected(selected===h.id?null:h.id)}>
    <span className="tile-help-icon"><TileHelpArt help={h}/></span><span>{h.number??h.name}</span>
   </button>)}</div>}
-  {category==="shield"&&<details className="tile-help-maintenance"><summary>방패 공통 유지 규칙</summary><p>{SHIELD_MAINTENANCE}</p><p>현재 방패 18종은 PNG 대신 기존 번호·능력이 연결된 공통 SVG 그림을 재사용합니다.</p></details>}
+  {category==="shield"&&<details className="tile-help-maintenance"><summary>방패 공통 유지 규칙</summary><p>{SHIELD_MAINTENANCE}</p><p>신규 방패는 번호와 점수가 표시된 임시 그림을 사용합니다.</p></details>}
   {help&&<section className="tile-help-selected" aria-label="선택한 타일 설명" aria-live="polite"><TileHelpContent help={help}/></section>}
  </details>;
 }

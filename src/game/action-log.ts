@@ -4,6 +4,7 @@ import {directCost} from "./direct-actions";
 import {shieldLayout} from "./shields";
 import {isPlayerColor,playerColorKey} from './player-colors';
 import {vineValues} from './vineyards';
+import {previewRecolor,TERRAIN_NAMES,type RecolorTarget} from './core/territory';
 const tileName=(s:GameState,id:string)=>{const t=s.tiles[id];return t.type==="building"?({"white-castle":"흰 성",crane:"기중기",market:"시장",bank:"은행",church:"교회",warehouse:"창고","boarding-house":"숙소","carpenters-workshop":"목공소","town-hall":"시청",watchtower:"감시탑"})[t.building]:t.type==="monastery"?`수도원${t.number}`:t.type==="livestock"?`${LIVESTOCK_NAMES[t.species]}${t.count}`:({inn:"여관",castle:"성",mine:"광산",ship:"선박"})[t.type];};
 const intentLabel=(s:GameState,i:import("./types").ActionIntent):string=>i.kind==="take-workers"?"일꾼 획득":i.kind==="sell-goods"?`${i.goodsType}번 상품 판매`:i.kind==="vineyard"?`포도 타일 ${i.command==="take"?"획득":"배치"}`:i.kind==="take-tile"?`${i.depot}번 ${tileName(s,i.tileId)} 획득 · 보관${i.storageSlot+1}${i.discardTileId?" 교체":""}`:`${tileName(s,i.tileId)} 배치`;
 export function actionLabel(s:GameState,a:GameAction):string{
@@ -15,12 +16,20 @@ export function actionLabel(s:GameState,a:GameAction):string{
   if(a.type==="buy-black-tile"||a.type==="use-monastery-six")return `${a.type==="use-monastery-six"?"수도원 6번 · 일꾼 2개":"은화 2개"}를 사용하여 ${tileName(s,a.tileId)} 타일 구매 · 보관${a.storageSlot+1}${a.discardTileId?" 교체":""}`;
   if(a.type==="extension"&&a.extensionId==="shields"){
     const payload=a.payload as Record<string,unknown>;
+    if(a.command==="cancel-reservation")return "방패 20번 · 찜 취소";
+    if(a.command==="reserve-tile")return `방패 20번 · ${tileName(s,payload.tileId as string)} 찜`;
+    if(a.command==="buy-rival-tile")return `방패 21번 · ${s.players.find(p=>p.id===payload.ownerId)?.name}에게 은화 2개 지급 · ${tileName(s,payload.tileId as string)} 구매`;
+    if(a.command==="discard-storage")return `보관 타일 폐기 · ${s.tiles[payload.tileId as string]?tileName(s,payload.tileId as string):'포도 타일'}`;
     if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
     if(a.command==="change-die")return `방패16 · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
     const number=shieldLayout(s)?.slots.find(slot=>slot.id===payload.slotId)?.shieldNumber;
     return `방패${number} 획득 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 반환·교체`:""}`;
   }
   if(a.type==="extension"&&a.extensionId==="vineyards")return "포도 상점 구매 · 은화2";
+  if(a.type==='extension'&&a.extensionId==='additional-hexes'&&a.command==='recolor'){
+    const target=a.payload as RecolorTarget;
+    return `수도원 31번 · ${target.cellId} ${TERRAIN_NAMES[target.terrain]}로 변경`;
+  }
   if(a.type!=="use-die")return "확장 행동";
   return `${intentLabel(s,a.intent)}${a.adjustment.workersSpent?` · 일꾼${a.adjustment.workersSpent}`:""}`;
 }
@@ -30,6 +39,7 @@ export interface ActionLogData {text:string;playerId?:string;playerColor?:import
 export function createActionLog(before:GameState,after:GameState,action:GameAction,prefix=""):string {
  const p=before.players.find(p=>p.id===action.playerId)!,next=after.players.find(other=>other.id===p.id)!;
  const delta=([['승점',next.victoryPoints-p.victoryPoints],['은화',next.silver-p.silver],['일꾼',next.workers-p.workers]] as const).filter(([,n])=>n!==0).map(([name,n])=>`${name} ${n>0?'+':''}${n}`);
+ if(action.type==='extension'&&action.extensionId==='additional-hexes'&&action.command==='recolor')delta.push(`기존 지역 점수 ${previewRecolor(before,p,action.payload as RecolorTarget).points}점 반납`);
  const dice:ActionLogData['dice']=(before.dice.players[p.id]??[]).flatMap((d,i)=>!d.used&&after.dice.players[p.id]?.[i]?.used?[{index:i+1,value:after.dice.players[p.id][i].value,source:'player' as const,color:playerColorKey(p)}]:[]);
  const payload=action.type==='resolve-choice'?before.turn.pendingChoice?.options.find(o=>o.id===action.optionId)?.payload as unknown as {intent?:import('./types').ActionIntent;tileId?:string;vineBlack?:{tileId:string};shield?:import('./core/shield-effects').BonusShieldTarget}|null:undefined;
  const intent=action.type==='use-die'?action.intent:payload?.intent;
@@ -43,6 +53,6 @@ export function createActionLog(before:GameState,after:GameState,action:GameActi
  return JSON.stringify({format:'action-log-v1',playerId:p.id,playerColor:playerColorKey(p),text:[prefix,p.name,actionLabel(before,action),...delta].filter(Boolean).join(' · '),dice,...(tileId?{tileId}:{})});
 }
 export function readActionLog(record:string):ActionLogData {
- try{const d=JSON.parse(record);if(d?.format==='action-log-v1'&&typeof d.text==='string'&&(d.playerId===undefined||typeof d.playerId==='string')&&(d.playerColor===undefined||isPlayerColor(d.playerColor))&&Array.isArray(d.dice)&&d.dice.length<=3&&d.dice.every((x:ActionLogData['dice'][number])=>[0,1,2].includes(x.index)&&(x.value===null||Number.isInteger(x.value)&&x.value>=1&&x.value<=6)&&(x.source===undefined||['player','white','bonus'].includes(x.source))&&(x.color===undefined||['blue','red','green','yellow','purple','pink'].includes(x.color)))&&(d.tileId===undefined||typeof d.tileId==='string'))return d;}catch{}
+ try{const d=JSON.parse(record);if(d?.format==='action-log-v1'&&typeof d.text==='string'&&(d.playerId===undefined||typeof d.playerId==='string')&&(d.playerColor===undefined||isPlayerColor(d.playerColor))&&Array.isArray(d.dice)&&d.dice.length<=3&&d.dice.every((x:ActionLogData['dice'][number])=>[0,1,2,3].includes(x.index)&&(x.value===null||Number.isInteger(x.value)&&x.value>=1&&x.value<=6)&&(x.source===undefined||['player','white','bonus'].includes(x.source))&&(x.color===undefined||['blue','red','green','yellow','purple','pink'].includes(x.color)))&&(d.tileId===undefined||typeof d.tileId==='string'))return d;}catch{}
  return {text:record.replace(/(\(| · )승점 \+0(?= · |\)|$)/g,'$1').replace(/ ·\s*· /g,' · ').replace(/\(\s*· /g,'(').replace(/ ·\s*$/g,'').replace(/ → \([^)]*\) 배치/g,' 배치').replace(/\s*\([^)]*\) 배치/g,' 배치').replace(/시작 성 배치 · [^ ·)]+/g,'시작 성 배치').replace(/포도 배치 V\d{2}(?= · |$)/g,'포도 배치').replace(/(방패\d+ 획득) · 성 [^ ·]+ · 두 주사위/g,'$1 · 두 주사위'),dice:[]};
 }

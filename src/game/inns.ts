@@ -1,4 +1,5 @@
 import type { GameState, Phase } from "./types";
+import {deriveRegions} from './boards/regions';
 
 export const INN_PHASES: readonly Phase[] = ["A","B","C","D","E"];
 export const innId = (phase: Phase) => `project:inn:${phase}`;
@@ -21,7 +22,14 @@ export function validInns(state: GameState): boolean {
   if(new Set(supply.stack).size!==supply.stack.length || supply.stack.some(id=>state.tiles[id]?.type!=="inn"))return false;
   if(supply.stack.some((id,i)=>i>0&&phases.findIndex(p=>innId(p)===id)<=phases.findIndex(p=>innId(p)===supply.stack[i-1])))return false;
   if([...state.market.blackDepot,...state.market.supplyPools.flatMap(p=>p.remainingTileIds)].some(id=>id&&state.tiles[id]?.type==="inn"))return false;
-  return state.players.every(p=>p.duchy.cells.every(c=>!c.tileId||state.tiles[c.tileId]?.type!=="inn"||p.duchy.cells.filter(n=>n.regionId===c.regionId&&n.tileId&&state.tiles[n.tileId]?.type==="inn").length===1));
+  return state.players.every(p=>deriveRegions(p.duchy.cells).every(region=>{
+    const inns=p.duchy.cells.filter(c=>region.cellIds.includes(c.id)&&c.tileId&&state.tiles[c.tileId]?.type==='inn');
+    if(inns.length<2)return true;
+    const changed=p.duchy.recoloredCell;
+    if(!changed||!region.cellIds.includes(changed.cellId)||inns.some(c=>c.id===changed.cellId))return false;
+    return deriveRegions(p.duchy.cells.filter(c=>region.cellIds.includes(c.id)&&c.id!==changed.cellId))
+      .every(component=>inns.filter(c=>component.cellIds.includes(c.id)).length<2);
+  }));
 }
 /** The existing triangular size table extends explicitly to size10 (inn + shield17). */
 export function regionSizePoints(size: number): number {
