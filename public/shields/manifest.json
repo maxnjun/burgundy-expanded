@@ -462,7 +462,11 @@
       ],
       "sourceMode": "RGBA",
       "zipEntry": "방패 타일/21번.png",
-      "outputSha256": "e53019c606c8d2c5fb4d0f3bb26407bd056747b7c68a1a91d97a006503f3a5e1",
+      "scoreArtwork": {
+        "points": 12,
+        "numeralFromShield": 23
+      },
+      "outputSha256": "987fc89765ce12023fcba19c5e692b7db6efac78be4834911086e31ede1816d2",
       "sourceBounds": [
         31,
         58,
@@ -537,7 +541,11 @@
       ],
       "sourceMode": "RGB",
       "zipEntry": "방패 타일/24번.png",
-      "outputSha256": "5acb22ade70a511817e543bea19c0d63bdfec4bd2abff017c4c794dfc8e20b6f",
+      "scoreArtwork": {
+        "points": 12,
+        "numeralFromShield": 23
+      },
+      "outputSha256": "ff98a5862fc57253139f5ce6ecfe5885a2c0328178db3de7e1831e233f7e9b7c",
       "sourceBounds": [
         82,
         57,

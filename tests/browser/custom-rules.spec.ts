@@ -33,44 +33,45 @@ function nextPhase(game:GameState){
  return n.turn.stage==='phase-end'?step(n,a):n;
 }
 
-test('shield dice cooldowns gray out independently and survive reload',async({page},info)=>{
+test('shield 21 skips a turn and shield 22 grays out until the next phase',async({page},info)=>{
  const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:'seat-1'});
- let game=customMount(customMount(customGame(),22),16);
- const layout=shieldLayout(game)!;
- game=setShieldLayout(game,{...layout,rules:{...layout.rules!,extraDieSchedule:{playerId:'seat-1',firstRound:2}}});
- await load(page,roll(finishDiceRound(game)));
- const control=page.getByLabel('방패16 주사위 변경',{exact:true});
- const shield=(number:number)=>page.locator(`[data-mounted-shield="${number}"]`);
+ await load(page,customMount(customMount(customGame(),22),21));
+ const control=page.getByLabel('방패21 주사위 변경',{exact:true});
+ const shield=(n:number)=>page.locator('[data-mounted-shield="'+n+'"]');
  const dice=page.locator('.direct-dice button');
- await expect(dice).toHaveCount(3);
+ const extra=page.getByRole('button',{name:'방패22 · 세 번째 주사위 굴리기',exact:true});
+ const used=page.getByRole('button',{name:'방패22 · 이번 페이즈 사용 완료',exact:true});
+ await expect(dice).toHaveCount(2);
  await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
- game=await current(page);
+ await press(extra);
+ await expect(dice).toHaveCount(3);
+ await expect(used).toBeDisabled();
+ const game=await current(page);
  const face=game.dice.players['seat-1'][2]!.value===1?2:1;
- await press(page.getByLabel('방패16 변경 대상 주사위 3',{exact:true}));
- await press(page.getByLabel(`방패16 눈금 ${face}로 변경`,{exact:true}));
+ await press(page.getByLabel('방패21 변경 대상 주사위 3',{exact:true}));
+ await press(page.getByLabel('방패21 눈금 '+face+'로 변경',{exact:true}));
  await expect(control).toHaveAttribute('disabled','');
- await expect(shield(16)).toHaveAttribute('data-shield-dice-status','used');
+ await expect(shield(21)).toHaveAttribute('data-shield-dice-status','used');
 
  await load(page,roll(finishDiceRound(await current(page))));
  await page.reload();
  await expect(dice).toHaveCount(2);
  await expect(control).toHaveAttribute('disabled','');
- await expect(control).toContainText('다음 자신의 턴부터 사용 가능');
- for(const number of [16,22]){
-  await expect(shield(number)).toHaveAttribute('data-shield-dice-status','cooldown');
-  await expect(shield(number)).toHaveCSS('filter','grayscale(1)');
- }
- await expect(shield(22).locator('title').last()).toHaveText(/이번 턴 행동 주사위 2개/);
- await page.screenshot({path:info.outputPath('shield-dice-cooldowns.png')});
-
- await load(page,roll(finishDiceRound(await current(page))));
- await expect(dice).toHaveCount(3);
- await expect(control).not.toHaveAttribute('disabled','');
- await expect(page.getByLabel('방패16 변경 대상 주사위 3',{exact:true})).toBeEnabled();
- await expect(shield(16)).toHaveAttribute('data-shield-dice-status','ready');
- await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
+ await expect(used).toBeDisabled();
+ for(const number of [21,22])await expect(shield(number)).toHaveCSS('filter','grayscale(1)');
+ await expect(shield(22).locator('title').last()).toHaveText(/이번 페이즈에 사용 완료/);
+ await page.screenshot({path:info.outputPath('shield-dice-used.png')});
+ const advance:GameAction={type:'advance-phase',playerId:'seat-1'};
+ let next=step(boundary(await current(page)),advance);
+ while(next.turn.pendingChoice)next=choose(next,o=>o.id.startsWith('pay:')&&o.id.endsWith(':silver'));
+ if(next.turn.stage==='phase-end')next=step(next,advance);
+ await load(page,roll(next));
+ await expect(dice).toHaveCount(2);
+ await expect(extra).toBeEnabled();
+ await expect(page.getByLabel('방패21 변경 대상 주사위 1',{exact:true})).toBeEnabled();
+ for(const number of [21,22])await expect(shield(number)).toHaveAttribute('data-shield-dice-status','ready');
+ await expect(shield(21).locator('title').last()).toHaveText(/기본 종료 승점 12점/);
 });
-
 test('monastery 31 previews the historical refund, cancels, persists and undoes',async({page},info)=>{
  const {game,a,target,region}=officialTerritory();await load(page,game);
  await press(page.getByText('수도원 31번 · 빈 영지 칸 색상 변경',{exact:true}));

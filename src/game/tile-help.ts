@@ -1,5 +1,5 @@
 import type { Tile, BuildingType, MonasteryNumber } from "./types";
-import { SHIELD_ABILITIES } from "./shields";
+import { SHIELD_ABILITIES,SHIELD_POINTS } from "./shields";
 import { MONASTERY_BUILDINGS } from "./core/monasteries";
 import beige from "../../public/assets/tiles/beige/final/manifest.json";
 import animals from "../../public/assets/tiles/animals/final/manifest.json";
@@ -100,8 +100,8 @@ const shieldDetails = [
     ["영지 타일을 기존 타일과 인접하지 않아도 배치할 수 있습니다.","빈칸·지형 색상·주사위 눈·건물 중복 조건은 유지됩니다. 별도 포도밭의 시작·인접 배치 규칙을 없애지는 않습니다.","개인 영지 타일 배치 시"],
     ["보관 타일 폐기당 은화 1개를 받습니다.","포도 타일도 실제 한 장으로 세며 수도원 30번과 함께 적용합니다.","확정된 폐기마다"],
     ["공용 타일 하나를 찜합니다.","번호·검은 공급처에서 페이즈당 한 번 사용합니다. 타일은 공급처에 남으며 자기 차례에 기존 비용으로 가져옵니다.","자기 차례"],
-    ["은화 2개로 상대의 보관 타일을 구매합니다.","상대에게 직접 은화를 지급합니다. 포도 타일은 제외하고 방패 24번과 중첩됩니다.","자기 차례"],
-    ["자신의 턴마다 행동 주사위 3개와 2개를 번갈아 굴립니다.","획득한 다음 자신의 턴에 3개를 굴리고 이후 2개, 3개 순으로 반복합니다. 페이즈가 바뀌어도 순서는 이어집니다. 3개가 있는 턴에 방패를 획득할 때는 사용 가능한 두 개를 선택합니다.","획득한 다음 자신의 턴부터"],
+    ["은화 2개로 상대의 보관 타일을 구매하거나, 미사용 행동 주사위 하나의 눈금을 변경합니다.","상대에게 직접 은화를 지급합니다. 포도 타일은 제외하고 방패 24번과 중첩됩니다. 눈금 변경은 무료이며, 사용한 턴과 다음 자신의 턴에는 이 방패로 다시 변경할 수 없습니다.","구매는 자기 차례 · 눈금 변경은 자신의 턴 두 번당 한 번"],
+    ["페이즈당 한 번, 원하는 자기 턴에 세 번째 행동 주사위를 굴립니다.","주사위는 기본 두 개입니다. 효과를 활성화해 추가로 굴린 주사위는 다른 행동 주사위와 똑같이 사용합니다. 남은 기회는 이월되지 않으며 다음 페이즈가 시작되면 다시 한 번 사용할 수 있습니다.","자기 차례 · A~E 페이즈마다 한 번"],
     ["상품 6종을 보관합니다.","방패를 잃으면 보유 상품 중 세 종류를 초과하는 만큼 직접 골라 폐기합니다.","방패 장착 중"],
     ["턴당 공통 구매 한도를 해제합니다.","은화 구매와 수도원 6번을 포함합니다. 비용과 각 구매 조건은 유지됩니다.","방패 장착 중"],
 ] as const;
@@ -118,7 +118,7 @@ export const TILE_HELP_ENTRIES: readonly TileHelp[] = [
     ...(["castle","mine","ship"] as const).map(type=>tileEntry({id:`help:${type}`,type,back:"matching-color"},{castle:"성",mine:"광산",ship:"선박"}[type],`/tiles/illustrations/${type}.png`,type==="mine"?"각 단계 종료":"배치 즉시",type==="castle"?"추가 행동은 실제 주사위를 소모하지 않습니다. 남은 실제 주사위와 독립 행동의 순서를 선택할 수 있지만 시작한 필수 후속 선택은 완료해야 합니다.":type==="ship"?"선택 공급처에서 보관 가능한 상품 종류의 모든 장을 가져옵니다. 3종류 한도를 넘으면 가져올 종류를 선택합니다.":"방패 유지비 처리 후 수입을 받으며 마지막 E단계에도 수입이 적용됩니다.")),
     ...monasteries.assets.filter(a=>a.number<=29).map(a=>{const n=a.number,building=MONASTERY_BUILDINGS[n];return tileEntry({id:`help:monastery:${n}`,type:"monastery",number:n as MonasteryNumber,back:"matching-color"},`${n}번 수도원 타일`,`/assets/tiles/monastery/final/${a.file}`,n===2?"각 단계 종료":n>=15&&n!==27&&n!==28?"게임 종료":n===6?"자기 차례당 한 번":n===28?"게임 진행 중 · 은화가 있으면 반복":"영지에 배치된 동안",monkDetails[n]??`영지에 놓인 ${building?buildingNames[building]:"해당 건물"}마다 4점입니다. 기중기는 보유한 16~23·29 중 한 종류에만 한 번 적용합니다.`,n===29?"흰 성 확장을 사용하며 자기 영지에 이 수도원이 배치되어 있어야 합니다.":"자기 영지에 배치된 효과가 적용됩니다. 방패 6으로 공유할 때는 해당 방패의 조건을 따릅니다.");}),
     ...monasteries.assets.filter(a=>a.number>=30).map(({number,file})=>tileEntry({id:`help:monastery:${number}`,type:"monastery",number:number as MonasteryNumber,back:number===31?"black":"matching-color"},`${number}번 수도원 타일`,`/assets/tiles/monastery/final/${file}`,number===31?"자기 차례 · 게임당 1회":"영지에 배치된 동안",number===31?"기존 크기·단계 점수를 반납하며 재완성 시 새 점수를 받습니다. 전체 색상 완성 보상은 한 번만 받습니다.":"다른 방패 및 수도원 효과와 함께 적용합니다.")),
-    ...shieldDetails.map(([summary,details,timing],i)=>({id:`shield:${i+1}`,kind:"shield" as const,number:i+1,name:`${i+1}번 방패 · ${i===5?"선택한 플레이어 수도원 공유":SHIELD_ABILITIES[i]}`,imagePath:null,summary,details,timing,conditions:"방패 규칙을 활성화하고 자신의 성에 장착해야 합니다. 매 단계 종료에 방패당 은화 1개(방패 3은 일꾼 대납 가능)를 내며, 내지 않은 방패는 제거합니다.",notes:i===8?"은화 계산은 프로젝트에서 확정한 U15 처리를 설명합니다.":undefined})),
+    ...shieldDetails.map(([summary,details,timing],i)=>({id:`shield:${i+1}`,kind:"shield" as const,number:i+1,name:`${i+1}번 방패 · ${i===5?"선택한 플레이어 수도원 공유":SHIELD_ABILITIES[i]}`,imagePath:null,summary,details,timing,conditions:"방패 규칙을 활성화하고 자신의 성에 장착해야 합니다. 매 단계 종료에 방패당 은화 1개(방패 3은 일꾼 대납 가능)를 내며, 내지 않은 방패는 제거합니다.",notes:i===8?"은화 계산은 프로젝트에서 확정한 U15 처리를 설명합니다.":i===20||i===23?`기본 종료 승점 ${SHIELD_POINTS[i]}점`:undefined})),
     {id:"inn",kind:"inn",name:"여관",imagePath:"/tiles/illustrations/inn.png",tile:{id:"help:inn",type:"inn",back:"black"},summary:"모든 지형색에 놓을 수 있으며, 그 지역 완성 크기를 1칸 크게 계산합니다.",details:"단계마다 독립 스택에 1개씩 추가되고 미구매 타일은 이월됩니다. 같은 지역에는 여관 1개만 놓습니다. 여관 자체의 성·선박 등 지형별 효과는 없습니다.",timing:"지역 완성 시",conditions:"은화 2개로 구매하며 검은 타일·포도 상점과 턴당 1회 구매 제한을 공유합니다.",notes:"프로젝트 확정 여관 규칙입니다."},
     {id:"vineyard",kind:"vineyard",name:"포도밭 · 이중 육각형 타일",imagePath:null,summary:"연결된 4층 포도밭에 이중 타일을 놓고 두 칸의 보너스를 순서대로 처리합니다.",details:"24칸·12자리, 첫 배치는 1층이며 이후 인접 배치합니다. 보관 시 2칸을 차지합니다. 각 층 완성 때 남은 보너스 토큰 1개를 선택하며 시작 1개+층 4개로 최대 5개입니다. 층 완성 자체의 승점은 없습니다. 같은 색 연결 영역과 보유 토큰으로 종료 점수를 계산합니다.",timing:"배치·층 완성·게임 종료",conditions:"포도밭 확장 활성화. 상점 은화 2개 구매는 검은 타일·여관과 턴당 1회를 공유합니다.",notes:"공식 완전 재현이 아닌 프로젝트 복원판 v0.2 데이터입니다."},
     {id:"trade-route",kind:"trade-route",name:"무역로",imagePath:null,summary:"주사위로 상품을 직접 판매한 행동마다 경로를 한 칸 진행합니다.",details:"해당 칸과 판매 상품의 종류가 같으면 보상 건물 효과를 선택합니다. 다르면 상품 뒷면으로 기록하고 진행합니다. 보상에서 파생된 추가 판매는 경로를 다시 진행하지 않습니다.",timing:"주사위 상품 판매 시",conditions:"무역로 확장 활성화. 한 번 판매하는 묶음의 장수가 아니라 판매 행동 1회당 1칸입니다.",notes:"프로젝트에서 설계한 경로 데이터를 사용합니다."},

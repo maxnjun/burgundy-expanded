@@ -1,5 +1,5 @@
 import {VINE_TILES} from "./vineyards";
-import { shieldLayout,SHIELD_POINTS, type ShieldAcquireAction } from "./shields";
+import { dieChangeShield,shieldLayout,SHIELD_POINTS, type ShieldAcquireAction } from "./shields";
 import { directCost } from "./direct-actions";
 import { monasteryNumbers } from "./core/state";
 import { resolvePlacement } from "./core/placement";
@@ -14,7 +14,11 @@ export function shieldComputerValue(state:GameState,p:PlayerState,n:number):numb
 export function shieldExtensionValue(state:GameState,p:PlayerState,a:Extract<GameAction,{type:"extension"}>):number{
  const payload=a.payload as Record<string,unknown>,layout=shieldLayout(state)!;
  if(a.command==="choose-monastery-target"){const target=state.players.find(v=>v.id===payload.targetPlayerId)!;return 500+monasteryNumbers(state,target).filter(n=>n!==27&&!monasteryNumbers(state,p).includes(n)).length*5+(target.id!==p.id?1:0);}
- if(a.command==="change-die"){
+ if(a.command==="use-extra-die"){
+  if(state.turn.round===5)return 25;
+  return p.workers>=3&&p.storage.some(Boolean)&&state.dice.players[p.id].every(d=>d.used)?0:-130;
+ }
+ if(dieChangeShield(a.command)){
   const value=Number(payload.value),die=state.dice.players[p.id].find(d=>d.id===payload.dieId)!;
   const usefulness=(n:number)=>p.duchy.cells.filter(c=>!c.tileId&&c.number===n&&p.storage.some(id=>id&&state.tiles[id].type===c.terrain)).length*5+(p.goods.find(g=>g.type===n)?.tiles.length??0)*3;
   return usefulness(value)>usefulness(die.value)?28+usefulness(value):-120;

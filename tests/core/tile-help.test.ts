@@ -61,6 +61,7 @@ test("shield6 self target and the shield16 cooldown match actual validation",()=
  assert.equal(shieldSpecialIssue(g,a),null);const next=step(g,a);assert.ok(shieldSpecialIssue(next,a));assert.equal(next.dice.players[p.id][0].used,false);
  assert.match(getTileHelp("shield",6)!.details,/자신을 제외/);
  assert.match(getTileHelp("shield",16)!.timing,/다음 자신의 턴에 재사용 불가/);
- assert.match(getTileHelp("shield",22)!.timing,/획득한 다음 자신의 턴/);
+ assert.match(getTileHelp("shield",21)!.timing,/자신의 턴 두 번당 한 번/);
+ assert.match(getTileHelp("shield",22)!.timing,/페이즈마다 한 번/);
  assert.match(getTileHelp("shield",3)!.details,/일꾼 1개/);assert.match(getTileHelp("shield",14)!.details,/유지비/);assert.match(getTileHelp("shield",15)!.details,/포도 상점은 대상이 아닙니다/);assert.match(SHIELD_MAINTENANCE,/14·15/);
 });

@@ -83,12 +83,38 @@ def register_shield(original):
     return canvas, {"sourceBounds": bounds, "artBounds": art_bounds}
 
 
+def update_shield_score(image, donor, number):
+    # Reuse shield 23's approved numeral. Only the red field behind the score is touched.
+    field = donor.crop((482, 310, 716, 520))
+    top = 281 if number == 21 else 284
+    existing = image.crop((482, top, 716, top + field.height))
+
+    def numeral_mask(crop, bounds):
+        _, green, blue, _ = crop.split()
+        light = ImageChops.multiply(green.point(lambda v: 255 if v > 95 else 0),
+                                    blue.point(lambda v: 255 if v > 65 else 0))
+        inset = Image.new("L", crop.size)
+        ImageDraw.Draw(inset).rectangle(bounds, fill=255)
+        return ImageChops.multiply(inset, light)
+
+    numeral = ImageChops.lighter(numeral_mask(existing, (40, 10, 193, 195)),
+                                numeral_mask(field, (12, 15, 221, 197)))
+    mask = numeral.filter(ImageFilter.MaxFilter(21)).filter(ImageFilter.GaussianBlur(2))
+    original_alpha = image.getchannel("A")
+    image.paste(field, (482, top), mask)
+    assert image.getchannel("A").tobytes() == original_alpha.tobytes()
+
+
 def update_family(family, folder, first, last, check):
     manifest_path = folder / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     existing = [a for a in manifest["assets"] if a["number"] < first]
     assert [a["number"] for a in existing] == list(range(1, first))
     alpha = monastery.geometry.common_alpha(MONASTERY_CANVAS) if family == "monastery" else None
+    if family == "shield":
+        donor_bytes = (ROOT / "asset-inbox/shield-approved/originals/shield-23.png").read_bytes()
+        assert sha256(donor_bytes).hexdigest() == SOURCE_HASHES["shield-23"]
+        donor, _ = register_shield(Image.open(BytesIO(donor_bytes)))
     assets = []
     for number in range(first, last + 1):
         name = f"{family}-{number}"
@@ -100,6 +126,8 @@ def update_family(family, folder, first, last, check):
         original = Image.open(BytesIO(data))
         assert original.format == "PNG"
         image, geometry = register_monastery(original, alpha) if alpha else register_shield(original)
+        if family == "shield" and number in (21, 24):
+            update_shield_score(image, donor, number)
         output = folder / filename
         if check:
             actual = Image.open(output)
@@ -110,6 +138,8 @@ def update_family(family, folder, first, last, check):
         assets.append({"number": number, "file": filename, "source": source, "sourceSha256": digest,
                        "sourceSize": original.size, "sourceMode": original.mode,
                        "zipEntry": f"{'수도원' if alpha else '방패'} 타일/{number}번.png",
+                       **({"scoreArtwork": {"points": 12, "numeralFromShield": 23}}
+                          if family == "shield" and number in (21, 24) else {}),
                        "outputSha256": sha256(output.read_bytes()).hexdigest(), **geometry})
         print(f"{filename}: {original.size} {original.mode} → {image.size} RGBA")
     expected = {**manifest, "assets": [*existing, *assets]}

@@ -140,25 +140,10 @@ test('shield20 protects supply across owners and consumes its phase use even aft
  assert.equal(advance(game).tileReservations,undefined);
 });
 
-test('22 rolls next round, 16 changes the third die and shield acquisition spends only the selected pair',()=>{
- let game=customMount(customMount(customGame(),22),16);
- assert.equal(game.dice.players['seat-1'].length,2);
- const next={...game,dice:{...game.dice,whiteDie:null,rolledForRound:false,roundGoodsDistributed:false},turn:{...game.turn,activePlayerId:null,stage:'round-setup' as const},
-  market:{...game.market,roundGoods:[game.market.numberedDepots.flatMap(d=>d.goods)[0],...game.market.roundGoods],numberedDepots:game.market.numberedDepots.map(d=>({...d,goods:[]}))}};
- game=step(next,{type:'roll-round',playerId:'seat-1'});
- const dice=game.dice.players['seat-1'];assert.equal(dice.length,3);
- game=step(game,special('change-die',{dieId:dice[2]!.id,value:dice[2]!.value===1?2:1}));
- const a=options(game).find(a=>a.type==='extension'&&a.command==='acquire'&&(a.payload as {dieIds?:string[]}).dieIds?.join(',')===[dice[0].id,dice[2]!.id].join(','))!;
- const acquired=step(game,a);
- assert.deepEqual(acquired.dice.players['seat-1'].map(d=>d.used),[true,false,true]);
- assert.equal(validateCoreAction(acquired,{type:'end-turn',playerId:'seat-1'}).valid,false);
-});
+const rollCustomRound=(game:GameState)=>step(game,{type:'roll-round',playerId:orderedPlayers(game)[0]});
 
-test('shield 22 starts after acquisition and alternates independently of shield 16 across phases',()=>{
- const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:orderedPlayers(game)[0]});
- const status=(game:GameState,number:number)=>diceShieldStatus(shieldLayout(game),game.turn,game.dice,'seat-1',number);
+test('shield 22 grants a third regular die on demand once per phase',()=>{
  let game=placed(customMount(customGame(3),16),0,{type:'castle',back:'matching-color'});
- for(let i=0;i<3;i++)game=roll(finishDiceRound(game));
  const layout=shieldLayout(game)!;
  const slot=layout.slots.find(s=>s.shieldNumber===22)??layout.slots.find(s=>s.shieldNumber!==null)!;
  if(slot.shieldNumber!==22)game=setShieldLayout(game,{...layout,slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:22}:s),boxed:layout.boxed.map(n=>n===22?slot.shieldNumber!:n)});
@@ -169,44 +154,94 @@ test('shield 22 starts after acquisition and alternates independently of shield 
  });
  assert.ok(acquire);
  game=roundtrip(step(game,acquire));
- assert.equal(status(game,22),'pending');
- assert.equal(game.dice.players['seat-1'].length,2);
- game=roll(finishDiceRound(game));
- assert.deepEqual([game.turn.phase,game.turn.round,status(game,22)],['A',5,'ready']);
+ const activate=special('use-extra-die');
+ const status=()=>diceShieldStatus(shieldLayout(game),game.turn,game.dice,'seat-1',22);
+ assert.equal(status(),'ready');
+ assert.deepEqual(game.dice.players['seat-1'].map(d=>d.used),[true,true]);
+ assert.equal(applyCoreAction(game,{...activate,playerId:'seat-2'}).ok,false);
+ assert.equal(applyCoreAction(game,special('use-extra-die',{})).ok,false);
+ const result=step(game,activate);
+ assert.deepEqual(step(game,activate),result);
+ game=roundtrip(result);
+ assert.equal(status(),'used');
  assert.deepEqual(game.players.map(p=>game.dice.players[p.id].length),[3,2,2]);
  const die=game.dice.players['seat-1'][2]!;
- const change=special('change-die',{dieId:die.id,value:die.value===1?2:1});
- game=roundtrip(step(game,change));
- assert.equal(status(game,16),'used');
- const end=finishDiceRound(game);
- assert.equal(end.turn.stage,'phase-end');
- game=roll(advance(end));
- assert.deepEqual([game.turn.phase,game.turn.round,status(game,16),status(game,22)],['B',1,'cooldown','cooldown']);
+ game=step(game,special('change-die',{dieId:die.id,value:die.value===1?2:1}));
+ const use=options(game).find(a=>a.type==='use-die'&&a.dieId===die.id&&a.intent.kind==='take-workers');
+ assert.ok(use);
+ game=step(game,use);
+ assert.equal(game.dice.players['seat-1'][2]!.used,true);
+ assert.equal(applyCoreAction(game,activate).ok,false);
+ for(let i=0;i<4;i++){
+  game=rollCustomRound(finishDiceRound(game));
+  assert.equal(status(),'used');
+  assert.equal(game.dice.players['seat-1'].length,2);
+  assert.equal(applyCoreAction(game,activate).ok,false);
+ }
+ game=rollCustomRound(advance(finishDiceRound(game)));
+ assert.equal(game.turn.phase,'B');
+ assert.equal(status(),'ready');
  assert.equal(game.dice.players['seat-1'].length,2);
- assert.equal(applyCoreAction(game,special('change-die',{dieId:game.dice.players['seat-1'][0].id,value:6})).ok,false);
- assert.ok(!options(game).some(a=>a.type==='extension'&&a.command==='change-die'));
- assert.ok(game.turn.activePlayerId==='seat-1');
+ game=step(game,activate);
+ assert.equal(applyCoreAction(game,activate).ok,false);
+});
+
+test('the third die can be paired for shield acquisition like a regular die',()=>{
+ let game=customMount(customGame(),22);
+ game=step(game,special('use-extra-die'));
+ const dice=game.dice.players['seat-1'];
+ const action=options(game).find(a=>a.type==='extension'&&a.command==='acquire'&&(a.payload as {dieIds?:string[]}).dieIds?.join(',')===[dice[0].id,dice[2]!.id].join(','));
+ assert.ok(action);
+ const acquired=step(game,action);
+ assert.deepEqual(acquired.dice.players['seat-1'].map(d=>d.used),[true,false,true]);
+ assert.equal(validateCoreAction(acquired,{type:'end-turn',playerId:'seat-1'}).valid,false);
+});
+
+test('legacy third dice remain playable and count as the phase use on reload',()=>{
+ const used=step(customMount(customGame(),22),special('use-extra-die'));
+ const layout=shieldLayout(used)!;
+ const legacy=roundtrip(setShieldLayout(used,{...layout,rules:{...layout.rules!,extraDieUsedRound:undefined,extraDieSchedule:{playerId:'seat-1',firstRound:1}}}));
+ assert.equal(legacy.dice.players['seat-1'].length,3);
+ assert.equal(applyCoreAction(legacy,special('use-extra-die')).ok,false);
+ const next=rollCustomRound(finishDiceRound(legacy));
+ assert.equal(next.dice.players['seat-1'].length,2);
+ assert.equal(shieldLayout(next)!.rules!.extraDieUsedRound,1);
+ assert.equal(applyCoreAction(next,special('use-extra-die')).ok,false);
+});
+
+test('shield 21 has its own persisted dice cooldown and 21 and 24 score 12 each',()=>{
+ let game=customMount(customMount(customGame(),21),16);
+ const change=(number:16|21)=>special(number===16?'change-die':'change-die-21',{dieId:game.dice.players['seat-1'][0].id,value:game.dice.players['seat-1'][0].value===6?5:6});
+ const status=(number:number)=>diceShieldStatus(shieldLayout(game),game.turn,game.dice,'seat-1',number);
+ game=roundtrip(step(game,change(21)));
+ assert.deepEqual([status(16),status(21)],['ready','used']);
+ assert.equal(applyCoreAction(game,change(21)).ok,false);
+ game=rollCustomRound(finishDiceRound(game));
+ assert.deepEqual([status(16),status(21)],['ready','cooldown']);
+ assert.ok(!options(game).some(a=>a.type==='extension'&&a.command==='change-die-21'));
+ game=step(game,change(16));
+ game=rollCustomRound(finishDiceRound(game));
+ assert.deepEqual([status(16),status(21)],['cooldown','ready']);
+ game=rollCustomRound(finishDiceRound(game));
+ assert.equal(status(21),'ready');
+ game=customMount(game,24);
+ const final=finalScore(game,game.players[0]);
+ assert.ok(final.ok);
+ assert.deepEqual(final.value.finalAdditions.filter(e=>/shield-(21|24)$/.test(e.id)).map(e=>e.points),[12,12]);
+});
+
+test('AI uses shield 22 by the end of the phase when available',()=>{
+ let game=customMount(customGame(),22);
+ for(let i=0;i<4;i++)game=rollCustomRound(finishDiceRound(game));
+ assert.equal(game.turn.round,5);
+ for(const die of game.dice.players['seat-1'])game=step(game,{type:'use-die',playerId:'seat-1',dieId:die.id,adjustment:{steps:[],workersSpent:0},intent:{kind:'take-workers'}});
  const ai=chooseComputerAction(game,'seat-1');
- assert.ok(ai.ok&&!(ai.value.type==='extension'&&ai.value.command==='change-die'));
- game=roll(finishDiceRound(roundtrip(game)));
- assert.deepEqual([status(game,16),game.dice.players['seat-1'].length],['ready',3]);
- game=roll(finishDiceRound(game));
- assert.deepEqual([status(game,16),game.dice.players['seat-1'].length],['ready',2]);
+ assert.ok(ai.ok);
+ assert.deepEqual(ai.value,special('use-extra-die'));
+ game=step(game,ai.value);
+ const after=chooseComputerAction(game,'seat-1');
+ assert.ok(after.ok&&!(after.value.type==='extension'&&after.value.command==='use-extra-die'));
 });
-
-test('legacy shield 22 saves keep previously rolled dice and anchor the next roll',()=>{
- const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:orderedPlayers(game)[0]});
- let game=roll(finishDiceRound(customMount(customGame(),22)));
- assert.equal(game.dice.players['seat-1'].length,3);
- const layout=shieldLayout(game)!;
- game=roundtrip(setShieldLayout(game,{...layout,rules:{...layout.rules!,extraDieSchedule:undefined}}));
- assert.equal(game.dice.players['seat-1'].length,3);
- game=roll(finishDiceRound(game));
- assert.equal(game.dice.players['seat-1'].length,2);
- assert.deepEqual(shieldLayout(game)!.rules!.extraDieSchedule,{playerId:'seat-1',firstRound:2});
- assert.equal(roll(finishDiceRound(roundtrip(game))).dice.players['seat-1'].length,3);
-});
-
 test('19 and 30 stack, 32 gives a fourth key, and shield 13 doubles each explicit new value',()=>{
  let n=customMount(customMount(customGame(2,true,true),19),13);
  for(const number of [30,32]){const cellId=n.players[0].duchy.cells.find(c=>c.terrain==='monastery'&&!c.tileId)!.id;n=settleShieldState(moveTile(n,t=>t.type==='monastery'&&t.number===number,cellId).game);}

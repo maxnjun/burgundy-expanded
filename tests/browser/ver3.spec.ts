@@ -3,6 +3,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {setup,mount,stash} from '../fixtures/shields';
 import {bonusShieldFixture,shieldFiveFixture} from '../fixtures/ver3';
+import {customGame,customMount} from '../fixtures/custom-rules';
 import {directActions,boardTarget,directCost} from '../../src/game/direct-actions';
 import {refreshPendingChoice} from '../../src/game/core/effects';
 import {serializeSavedGame} from '../../src/game/save';
@@ -50,7 +51,7 @@ test('Ver3 shield5 shows actual goods art/count, transfers once and supports rel
  await page.getByLabel('타일 효과 선택',{exact:true}).screenshot({path:info.outputPath('shield5-goods.png')});await page.reload();await press(page.getByLabel('4번 상품 5개 획득',{exact:true}));await expect.poll(async()=>(await state(page)).turn.pendingChoice).toBe(null);const n=await state(page);expect(n.players[0].goods.find(x=>x.type===4)!.tiles.length).toBe(6);expect(n.market.numberedDepots.flatMap(d=>d.goods).some(x=>x.type===4)).toBe(false);expect(n.players[1]).toEqual(g.players[1]);
 });
 
-test('Ver3 online two seats pair/Undo, sync after reload and offer visual shield16 and goods5',async({page,browser},info)=>{
+test('Ver3 online two seats pair/Undo, sync after reload and offer shield dice effects and goods5',async({page,browser},info)=>{
  const server=await isolatedRooms(),peer=await browser.newContext();try{
  const owner=await(await fetch(server.url+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'A',shieldRules:true})})).json(),guest=await(await fetch(`${server.url}/api/rooms/${owner.id}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'B'})})).json();const path=join(server.directory,owner.id+'.json');
  const seed=async(g:GameState)=>{const raw=JSON.parse(await readFile(path,'utf8'));raw.game={...g,revision:raw.game.revision+10};raw.history={...beginHistory(raw.game,[],true),past:[{game:raw.game,logs:[]}]};raw.logs=[];await writeFile(path,JSON.stringify(raw));return raw.game as GameState;};
@@ -58,6 +59,13 @@ test('Ver3 online two seats pair/Undo, sync after reload and offer visual shield
  await page.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),owner);await peer.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),{id:owner.id,token:guest.token});const other=await peer.newPage();const view=async()=>await(await fetch(`${server.url}/api/rooms/${owner.id}`,{headers:{Authorization:`Bearer ${owner.token}`}})).json() as RoomView;
  await page.goto('/online');await other.goto(page.url());await press(page.getByLabel('방패 결합 주사위 2',{exact:true}));const a=(await view()).actions.find(a=>a.target.shield?.dieId)!,target=a.target.shield!;await press(page.locator(`[data-shield-slot="${target.slotId}"]`));await press(page.getByRole('button',{name:new RegExp(`^온라인 규칙A 칸 ${target.castleCellId} `)}));await expect.poll(async()=>(await view()).dice.players['seat-1'][1].used).toBe(true);await other.reload();await expect(other.locator('[data-mounted-shield]')).toHaveCount(1);await page.reload();await expect(page.getByRole('button',{name:'이전 행동으로',exact:true})).toBeEnabled();await press(page.getByRole('button',{name:'이전 행동으로',exact:true}));await expect.poll(async()=>(await view()).dice).toEqual(g.dice);await page.locator('.online-controls').screenshot({path:info.outputPath('online-pair-undo.png')});
  const s=mount(mount(setup(),6),16);await seed(s);await page.reload();await expect(page.getByLabel('필수 효과 및 준비 행동').getByRole('button')).toHaveCount(1);await press(page.getByLabel('필수 효과 및 준비 행동').getByRole('button'));await press(page.getByLabel('방패16 변경 대상 주사위 2',{exact:true}));const face=s.dice.players['seat-1'][1].value===6?5:6;await press(page.getByLabel(`방패16 눈금 ${face}로 변경`,{exact:true}));await expect.poll(async()=>(await view()).dice.players['seat-1'][1].value).toBe(face);await expect(page.getByLabel('방패16 주사위 변경',{exact:true})).toHaveAttribute('disabled','');await other.reload();await expect(other.locator('[data-mounted-shield="16"]')).toHaveAttribute('data-shield-dice-status','used');await expect(other.getByText('방패6 공유 대상: 규칙B',{exact:true})).toBeVisible();
+ await seed(customMount(customGame(),22));await page.reload();
+ await press(page.getByRole('button',{name:'방패22 · 세 번째 주사위 굴리기',exact:true}));
+ await expect.poll(async()=>(await view()).dice.players['seat-1'].length).toBe(3);
+ await expect(page.getByRole('button',{name:'방패22 · 이번 페이즈 사용 완료',exact:true})).toBeDisabled();
+ await other.reload();
+ await expect(other.locator('[data-mounted-shield="22"]')).toHaveAttribute('data-shield-dice-status','used');
+ await expect(other.locator('.online-player[data-player-id="seat-1"] .estate-dice button')).toHaveCount(3);
  await seed(shieldFiveFixture());await page.reload();await expect(page.locator('.shield-goods-choice')).toHaveCount(2);await press(page.getByLabel('4번 상품 5개 획득',{exact:true}));await expect.poll(async()=>(await view()).players[0].goods.find(x=>x.type===4)!.tiles.length).toBe(6);await other.reload();await expect(other.locator('[data-goods-type="4"]').first()).toBeVisible();
  }finally{await peer.close();await server.close();}
 });

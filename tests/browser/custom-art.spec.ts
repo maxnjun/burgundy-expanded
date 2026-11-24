@@ -57,7 +57,7 @@ test('approved monastery faces share real estate edges and mounted shield 24 sta
  await mounted.locator('..').click();
  const detail=page.getByRole('dialog',{name:'방패 상세',exact:true});
  await expect(detail.locator('image[data-shield-image="24"]')).toBeAttached();
- await expect(detail).toContainText('기본 종료 승점 4점');
+ await expect(detail).toContainText('기본 종료 승점 12점');
  await detail.getByRole('button',{name:'방패 상세 닫기'}).click();
  await expect(detail).toHaveCount(0);
 });

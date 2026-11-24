@@ -26,7 +26,7 @@ export function ShieldArt({number,x=0,y=0,numberSize=17,placeholder="—"}: {num
 export function shieldLabel(number:number) { return `방패 ${number} · ${SHIELD_ABILITIES[number-1]}`; }
 
 export function diceShieldStatusText(number:number,status:DiceShieldStatus):string {
-  if(number===22)return status==="pending"?"다음 자신의 턴에 행동 주사위 3개":status==="ready"?"이번 턴 행동 주사위 3개":"이번 턴 행동 주사위 2개";
+  if(number===22)return status==="ready"?"이번 페이즈 사용 가능 · 자기 턴에 세 번째 주사위 굴리기":"이번 페이즈에 사용 완료 · 다음 페이즈에 다시 사용 가능";
   return status==="used"?"이번 턴에 사용함 · 다음 자신의 턴은 재사용 대기":status==="cooldown"?"이번 턴은 재사용 대기 · 다음 자신의 턴부터 사용 가능":"이번 턴 사용 가능";
 }
 
@@ -36,7 +36,7 @@ export function ShieldThumbnail({number}:{number:number}) {
 
 /** Same board coordinates as the underlying castle; the parent hex owns the touch target. */
 export function MountedShield({number,tileId,x,y,status}:{number:number;tileId:string;x:number;y:number;status?:DiceShieldStatus}) {
-  return <g data-mounted-shield={number} data-castle-tile={tileId} data-shield-dice-status={status} data-shield-dice-inactive={status&&status!=="ready"||undefined} transform={`translate(${x} ${y})`} pointerEvents="none"><title>{shieldLabel(number)}{status&&` · ${diceShieldStatusText(number,status)}`}</title><g data-mounted-shield-scale={MOUNTED_SHIELD_SCALE} transform={`scale(${MOUNTED_SHIELD_SCALE})`}><ShieldArt number={number} numberSize={23}/></g></g>;
+  return <g data-mounted-shield={number} data-castle-tile={tileId} data-shield-dice-status={status} data-shield-dice-inactive={status&&status!=="ready"||undefined} transform={`translate(${x} ${y})`} pointerEvents="none"><title>{shieldLabel(number)}{(number===21||number===24)&&` · 기본 종료 승점 ${SHIELD_POINTS[number-1]}점`}{status&&` · ${diceShieldStatusText(number,status)}`}</title><g data-mounted-shield-scale={MOUNTED_SHIELD_SCALE} transform={`scale(${MOUNTED_SHIELD_SCALE})`}><ShieldArt number={number} numberSize={23}/></g></g>;
 }
 export function ShieldDetails({number,onClose,active=true,status}:{number:number;onClose:()=>void;active?:boolean;status?:DiceShieldStatus}) {
   const help=getTileHelp("shield",number)!;

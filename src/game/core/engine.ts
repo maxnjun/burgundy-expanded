@@ -5,7 +5,7 @@ import {isCastleAction,suspendCastleAction} from "../castle-actions";
 import {resumeVineyards,vineStoreIntents} from "./vineyard-effects";
 import {intentIssue} from "./intents";
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
-import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, anchorLegacyExtraDie, diceShieldStatus, type ShieldAcquireAction } from "../shields";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, recordLegacyExtraDie, diceShieldStatus, dieChangeShield, DIE_CHANGE_COMMANDS, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -40,7 +40,7 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
     const owner=state.players.find(p=>p.id===action.playerId);
     return owner && owner.silver>=1 && monasteryNumbers(state,owner).includes(28) ? null : failure("illegal-action","Monastery28 requires one silver");
   }
-  if(action.type==="extension"&&action.extensionId==="shields"&&(action.command==="choose-monastery-target"||(action.command==="change-die"&&state.turn.stage==="player-turn"&&state.turn.activePlayerId===action.playerId))){
+  if(action.type==="extension"&&action.extensionId==="shields"&&(action.command==="choose-monastery-target"||(dieChangeShield(action.command)&&state.turn.stage==="player-turn"&&state.turn.activePlayerId===action.playerId))){
     if((state.turn.pendingChoice||state.turn.pendingEffects.length)&&!(pendingValid??validPendingChoice(state)))return failure("unresolved-rule","Invalid pending choice");
     const issue=shieldSpecialIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
@@ -76,7 +76,7 @@ function actionIssue(state: GameState, action: GameAction, pendingValid?: boolea
       const issue=customShieldIssue(state,player,action);return issue?failure('illegal-action',issue):null;
     }
     if(action.extensionId!=="shields" || !state.config.extensions.some(e=>e.id==="shields"))return failure("unsupported-extension", "Extensions are outside this core subset");
-    const issue=action.command==="change-die"?shieldSpecialIssue(state,action):shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
+    const issue=action.command==="use-extra-die"?shieldSpecialIssue(state,action):shieldAcquireIssue(state,action);return issue?failure("illegal-action",issue):null;
   }
   if (action.type === "resolve-choice") return failure("illegal-action", "No pending choice");
   if (action.type === "use-monastery-six") {
@@ -159,8 +159,8 @@ function finishTurn(draft: Draft) {
 export function applyCoreAction(state: GameState, action: GameAction): EngineResult<Transition> {
   const validation = validateCoreAction(state, action);
   if (!validation.valid) return { ok: false, issues: validation.issues };
-  if (action.type === "advance-phase") return advancePhase(state, action.playerId);
-  let draft = structuredClone(action.type==="use-die"?suspendCastleAction(state):state) as Draft;
+  if (action.type === "advance-phase") return advancePhase(recordLegacyExtraDie(state), action.playerId);
+  let draft = structuredClone(recordLegacyExtraDie(action.type==="use-die"?suspendCastleAction(state):state)) as Draft;
   let player = draft.players.find(p => p.id === action.playerId)!;
   let pages = [6];
   let payload: JsonValue = { actionType: action.type };
@@ -176,7 +176,7 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       draft=structuredClone(applyCustomShieldAction(draft,player,action)) as Draft;
       payload={actionType:action.command,extensionId:'shields',...action.payload as object};
     } else if (action.type === "extension") {
-      draft=structuredClone(action.command==="choose-monastery-target"||action.command==="change-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
+      draft=structuredClone(action.command==="choose-monastery-target"||dieChangeShield(action.command)||action.command==="use-extra-die"?applyShieldSpecial(draft,action):acquireShieldPreview(draft,action as ShieldAcquireAction)) as Draft;
       pages=[17,18];payload={actionType:action.command,extensionId:"shields",...action.payload as object};
     } else if (action.type === "buy-workers") {
       player.silver--;player.workers+=2;draft=structuredClone(refreshPendingChoice(rewardShieldWorkerGain(draft,player.id,2))) as Draft;pages=[13];payload={actionType:action.type,workersDelta:2,silverDelta:-1};
@@ -185,13 +185,8 @@ export function applyCoreAction(state: GameState, action: GameAction): EngineRes
       payload = { actionType: action.type, choiceId: action.choiceId, optionId: action.optionId };
       pages = (state.turn.pendingEffects[0]?.payload as {kind?:string}|null)?.kind === "white-castle" ? [14] : [7];
     } else if (action.type === "roll-round") {
-      const anchored=anchorLegacyExtraDie(draft);
-      if(anchored!==draft)draft=structuredClone(anchored) as Draft;
-      const layout=shieldLayout(draft);
       for (const p of [...draft.players].sort((a, b) => a.seat - b.seat)) {
-        const [first,second]=draft.dice.players[p.id];
-        const extra=diceShieldStatus(layout,draft.turn,draft.dice,p.id,22)==="ready";
-        const dice:Draft['dice']['players'][string]=extra?[first,second,{id:`${p.id}:c`,value:1,used:false}]:[first,second];
+        const dice:Draft['dice']['players'][string]=[draft.dice.players[p.id][0],draft.dice.players[p.id][1]];
         for(const die of dice){const roll=drawDie(draft.random);draft.random=roll.random;die.value=roll.value;die.used=false;}
         draft.dice.players[p.id]=dice;
       }
@@ -281,7 +276,8 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
     if(layout.mounted.some(m=>m.playerId===playerId&&m.shieldNumber===6)&&layout.rules?.monasteryTarget===null)
       for(const target of state.players)candidates.push({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId,payload:{targetPlayerId:target.id}});
     if(state.turn.stage==="player-turn"&&state.turn.activePlayerId===playerId){
-      if(diceShieldStatus(layout,state.turn,state.dice,playerId,16)==="ready")for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:"change-die",playerId,payload:{dieId:die.id,value}});
+      for(const number of [16,21] as const)if(diceShieldStatus(layout,state.turn,state.dice,playerId,number)==="ready")for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:DIE_CHANGE_COMMANDS[number],playerId,payload:{dieId:die.id,value}});
+      if(diceShieldStatus(layout,state.turn,state.dice,playerId,22)==="ready")candidates.push({type:"extension",extensionId:"shields",command:"use-extra-die",playerId,payload:null});
       const dice=state.dice.players[playerId],pairs=dice.flatMap((first,i)=>dice.slice(i+1).filter(second=>!first.used&&!second.used).map(second=>[first,second] as const));
       if(!state.turn.pendingChoice&&!state.turn.pendingEffects.length)for(const slot of layout.slots)if(slot.shieldNumber!==null)for(const cell of player.duchy.cells)if(cell.tileId&&state.tiles[cell.tileId].type==="castle")for(const pair of pairs)
         candidates.push({type:"extension",extensionId:"shields",command:"acquire",playerId,payload:{slotId:slot.id,castleCellId:cell.id,steps:pair.map(d=>shieldWorkerSteps(d.value,slot.depot)),...(dice.length===3?{dieIds:pair.map(d=>d.id)}:{}),replaceShieldNumber:layout.mounted.find(m=>m.playerId===playerId&&m.cellId===cell.id)?.shieldNumber??null}});

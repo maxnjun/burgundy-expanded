@@ -18,7 +18,7 @@ import {createActionLog,readActionLog} from "../game/action-log";
 import {ShieldUpkeep,isShieldUpkeep} from "./shield-upkeep";
 import {PersonalScorePages} from "./score-pages";
 import {EmptyEstateCell,EstateDecoration} from "./board-surfaces";
-import {ShieldDieChange,ShieldPairDice} from "./shield-dice";
+import {ShieldDieChange,ShieldExtraDie,ShieldPairDice} from "./shield-dice";
 import {PlacementCost} from "./placement-cost";
 import {PLAYER_COLORS,PLAYER_PALETTE,normalizeSeatColors,playerPaint} from "../game/player-colors";
 import {startingCastlePending,type StartingCastlePreview} from "../game/starting-castles";
@@ -395,7 +395,8 @@ export default function GameScreen() {
         {shields.effectsActive && <div className="shield-rule-tools">
 
           {shields.mounted.filter(m=>m.shieldNumber===6).map(m=><div key={m.shieldNumber}><strong>{game.players.find(p=>p.id===m.playerId)?.name} · 방패6</strong>{shields.rules!.monasteryTarget?<p>수도원 공유 대상: {game.players.find(p=>p.id===shields.rules!.monasteryTarget)?.name} · 상대 수도원27 제외</p>:<><label>수도원 공유 대상 <select aria-label="방패6 수도원 공유 대상" value={shieldTarget} onChange={e=>setShieldTarget(e.target.value)}><option value="">플레이어 선택</option>{game.players.filter(p=>p.id!==m.playerId).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><button className="outline-button" disabled={!shieldTarget||!permitted({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId:m.playerId,payload:{targetPlayerId:shieldTarget}})} onClick={()=>run({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId:m.playerId,payload:{targetPlayerId:shieldTarget}})}>방패6 대상 확정 (변경 불가)</button></>}</div>)}
-          {hasShield(game,actorId,16)&&<ShieldDieChange status={shieldStatus(16,actorId)} dice={dice} player={active} actions={computerTurn?[]:actions} onAction={run}/>}
+          {([16,21] as const).map(number=>hasShield(game,actorId,number)&&<ShieldDieChange key={number} number={number} status={shieldStatus(number,actorId)} dice={dice} player={active} actions={computerTurn?[]:actions} onAction={run}/>)}
+          <ShieldExtraDie status={shieldStatus(22,actorId)} actions={actions} disabled={computerTurn||!!choice.selected||!!choice.vine} onAction={run}/>
           {freeShield&&<button aria-pressed={!pairId} disabled={computerTurn} onClick={()=>selectShieldDie("")}>방패11 · 보상만 사용</button>}
           {!computerTurn&&pairIds.length>0&&<ShieldPairDice dice={dice} player={active} ids={pairIds} selected={pairId} onSelect={selectShieldDie}/>}
         </div>}

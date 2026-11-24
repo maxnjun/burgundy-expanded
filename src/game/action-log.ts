@@ -1,7 +1,7 @@
 import type {GameAction,GameState} from "./types";
 import {LIVESTOCK_NAMES} from "./tile-help";
 import {directCost} from "./direct-actions";
-import {shieldLayout} from "./shields";
+import {dieChangeShield,shieldLayout} from "./shields";
 import {isPlayerColor,playerColorKey} from './player-colors';
 import {vineValues} from './vineyards';
 import {previewRecolor,TERRAIN_NAMES,type RecolorTarget} from './core/territory';
@@ -21,7 +21,9 @@ export function actionLabel(s:GameState,a:GameAction):string{
     if(a.command==="buy-rival-tile")return `방패 21번 · ${s.players.find(p=>p.id===payload.ownerId)?.name}에게 은화 2개 지급 · ${tileName(s,payload.tileId as string)} 구매`;
     if(a.command==="discard-storage")return `보관 타일 폐기 · ${s.tiles[payload.tileId as string]?tileName(s,payload.tileId as string):'포도 타일'}`;
     if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
-    if(a.command==="change-die")return `방패16 · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
+    if(a.command==="use-extra-die")return "방패 22번 · 세 번째 주사위 굴리기";
+    const change=dieChangeShield(a.command);
+    if(change)return `방패${change} · 주사위${s.dice.players[a.playerId].findIndex(d=>d.id===payload.dieId)+1} → ${payload.value}`;
     const number=shieldLayout(s)?.slots.find(slot=>slot.id===payload.slotId)?.shieldNumber;
     return `방패${number} 획득 · 일꾼${directCost(s,a)}${payload.replaceShieldNumber?` · 기존 방패${payload.replaceShieldNumber} 반환·교체`:""}`;
   }
