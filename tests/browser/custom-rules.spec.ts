@@ -104,7 +104,7 @@ test('the added slot stays beside the original with one backdrop and both empty 
  const n0=shieldLayout(b)!.slots.find(s=>s.depot===slot.depot&&s.index===0)!.shieldNumber!;
  const started=step(b,{type:'roll-round',playerId:'seat-1'});
  const emptyBoth=customMount(customMount(started,n0),slot.shieldNumber!);
- const returned=nextPhase(emptyBoth);
+ const returned=step(nextPhase(emptyBoth),{type:'roll-round',playerId:'seat-1'});
  const layout=shieldLayout(started)!;
  const extra=layout.boxed.find(n=>n>=19)!;
  const bothNew=setShieldLayout(started,{...layout,slots:layout.slots.map(s=>s.depot===slot.depot&&s.index===0?{...s,shieldNumber:extra}:s),boxed:layout.boxed.map(n=>n===extra?n0:n)});
@@ -165,71 +165,111 @@ test('three-seat side additions clear numbered tiles at regular and larger zooms
  }
 });
 
-for(const count of [2,3,4] as const)test(`${count}-seat lower shield zone stays centered between score panels`,async({page},info)=>{
+for(const count of [2,3,4] as const)test(count+'-seat shared board keeps shield zones clear and centered',async({page},info)=>{
  await page.addInitScript(()=>localStorage.setItem('burgundy-expanded:pinned-guidance-v1','off'));
  const initial=customGame(count,true,true);
- let game=initial;
- if(count===2){
-  const next=nextPhase(initial),layout=shieldLayout(next)!;
-  game=setShieldLayout(next,{...layout,slots:layout.slots.map(slot=>slot.index===1?{...slot,id:'shield:depot:4:1',depot:4}:slot)});
-  game=step(game,{type:'roll-round',playerId:'seat-1'});
+ let expanded=initial;
+ for(const depot of count===2?[1,3,4,6]:count===3?[1,3,5]:[]){
+  const previous=shieldLayout(expanded)!;
+  const next=nextPhase(expanded),layout=shieldLayout(next)!;
+  const added=layout.slots.find(s=>!previous.slots.some(old=>old.id===s.id))!;
+  expanded=setShieldLayout(next,{...layout,slots:layout.slots.map(slot=>slot.id===added.id?{...slot,depot:depot as typeof slot.depot,id:'shield:depot:'+depot+':1'}:slot)});
  }
- const board=page.locator('.common-board-svg'),zone=board.locator('[data-shield-zone="4"]');
- for(const source of count===2?[initial,game]:[game]){
+ if(expanded!==initial)expanded=step(expanded,{type:'roll-round',playerId:'seat-1'});
+
+ const board=page.locator('.common-board-svg');
+ const slot=(depot:number)=>board.locator('[data-shield-slot="shield:depot:'+depot+':0"]');
+ const verify=async()=>{
+  const out=await board.evaluate(svg=>{
+   const bounds=(selector:string)=>svg.querySelector(selector)!.getBoundingClientRect();
+   const center=({left,right,top,bottom}:DOMRect)=>({x:(left+right)/2,y:(top+bottom)/2});
+   const within=(b:DOMRect,p:DOMRect)=>b.left>=p.left-.1&&b.right<=p.right+.1&&b.top>=p.top-.1&&b.bottom<=p.bottom+.1;
+   const boardBounds=svg.getBoundingClientRect();
+   const unit=boardBounds.width/(svg as SVGSVGElement).viewBox.baseVal.width;
+   const zones=[[1,'phase-goods','turn-order','phase-goods-content','turn-order-content'],[4,'region-score','color-bonuses','region-score-panel','color-bonuses']].map(([depot,leftId,rightId,leftContent,rightContent])=>{
+    const left=bounds('[data-info-panel="'+leftId+'"]'),right=bounds('[data-info-panel="'+rightId+'"]');
+    const zone=bounds('[data-shield-zone="'+depot+'"]'),group=bounds('[data-shield-depot="'+depot+'"]');
+    const label=bounds('[data-shield-depot="'+depot+'"] .shield-depot-number');
+    const slots=Array.from(svg.querySelectorAll('[data-shield-depot="'+depot+'"] [data-shield-slot]'),el=>({box:el.querySelector('.shield-outline')!.getBoundingClientRect(),empty:el.getAttribute('data-empty')==='true'}));
+    return {x:center(zone).x,y:center(zone).y,width:zone.width,height:zone.height,marginLeft:zone.left-left.right,marginRight:right.left-zone.right,
+     centered:Math.abs(center(zone).x-center(boardBounds).x)<.1,
+     labelCentered:Math.abs(center(label).x-center(zone).x)<.1,
+     panelsFit:Math.abs(left.width-right.width)<.1&&within(bounds('[data-'+leftContent+']'),left)&&within(bounds('[data-'+rightContent+']'),right),
+     groupFits:within(group,zone),slotSizes:slots.filter(s=>!s.empty).map(s=>[s.box.width/unit,s.box.height/unit]),
+     centers:slots.map(s=>(center(s.box).x-center(zone).x)/unit),sameHeight:slots.every(s=>Math.abs(center(s.box).y-center(zone).y)<2*unit)};
+   });
+   const sideClear=[3,5,6].every(depot=>{
+    const zone=svg.querySelector<SVGGeometryElement>('[data-shield-zone="'+depot+'"]')!;
+    const inverse=zone.getScreenCTM()!.inverse(),b=zone.getBoundingClientRect();
+    const poses=Array.from(svg.querySelectorAll('[data-shield-depot="'+depot+'"] [data-shield-slot] .shield-outline, [data-shield-depot="'+depot+'"] [data-shield-cost]'),el=>el.getBoundingClientRect());
+    if(poses.some(p=>!within(p,b)))return false;
+    return Array.from(svg.querySelectorAll('[data-depot="'+depot+'"] [data-supply-hit],[data-depot="'+depot+'"] [data-numbered-empty]')).every(tile=>{
+     const hit=tile.getBoundingClientRect();
+     for(let y=Math.max(hit.top,b.top);y<Math.min(hit.bottom,b.bottom);y+=unit)
+      for(let x=Math.max(hit.left,b.left);x<Math.min(hit.right,b.right);x+=unit)
+       if(zone.isPointInFill(new DOMPoint(x,y).matrixTransform(inverse)))return false;
+     return poses.every(p=>p.right<=hit.left||p.left>=hit.right||p.bottom<=hit.top||p.top>=hit.bottom);
+    });
+   });
+   return {zones,sideClear,mirrorError:Math.abs(zones[0].y+zones[1].y-center(boardBounds).y*2)};
+  });
+  expect(out.mirrorError).toBeLessThan(.1);
+  expect(Math.abs(out.zones[0].x-out.zones[1].x)).toBeLessThan(.1);
+  expect(Math.abs(out.zones[0].width-out.zones[1].width)).toBeLessThan(.1);
+  expect(Math.abs(out.zones[0].height-out.zones[1].height)).toBeLessThan(.1);
+  expect(out.sideClear).toBe(true);
+  for(const zone of out.zones){
+   expect(zone.marginLeft).toBeGreaterThan(0);
+   expect(Math.abs(zone.marginRight-zone.marginLeft)).toBeLessThan(.1);
+   expect(zone.centered&&zone.labelCentered&&zone.panelsFit&&zone.groupFits&&zone.sameHeight).toBe(true);
+   for(const [width,height] of zone.slotSizes){expect(width).toBeCloseTo(52,2);expect(height).toBeCloseTo(52*1480/1200,2);}
+   const expected=zone.centers.length===2?[-35,35]:[0];
+   expect(zone.centers).toHaveLength(expected.length);
+   for(const [i,x] of zone.centers.entries())expect(x).toBeCloseTo(expected[i],2);
+  }
+ };
+
+ for(const source of expanded===initial?[initial]:[initial,expanded]){
   const [first,second]=source.dice.players['seat-1'];
   const playerName='가나다라마바사아자차카타파하가나다라마바사아자차카타파하가나';
-  const state:GameState={...source,
-   players:count===4?source.players.map(player=>player.id==='seat-1'?{...player,name:playerName}:player):source.players,
+  const game:GameState={...source,players:count===4?source.players.map(p=>p.id==='seat-1'?{...p,name:playerName}:p):source.players,
    dice:{...source.dice,players:{...source.dice.players,'seat-1':[{...first,value:1},{...second,value:1}]}}};
-  await load(page,state);
-  const countSlots=shieldLayout(state)!.slots.filter(slot=>slot.depot===4).length;
-  const verify=async()=>{
-   const geometry=await board.evaluate(svg=>{
-    const bounds=(selector:string)=>svg.querySelector(selector)!.getBoundingClientRect();
-    const left=bounds('[data-info-panel="region-score"]'),right=bounds('[data-info-panel="color-bonuses"]');
-    const zone=bounds('[data-shield-zone="4"]'),group=bounds('[data-shield-depot="4"]');
-    const score=bounds('[data-region-score-panel]'),bonuses=bounds('[data-color-bonuses]');
-    const center=({left,right}:DOMRect)=>((left+right)/2);
-    const within=(b:DOMRect,p:DOMRect)=>b.left>=p.left&&b.right<=p.right&&b.top>=p.top&&b.bottom<=p.bottom;
-    const slots=Array.from(svg.querySelectorAll('[data-shield-depot="4"] .shield-outline'),el=>el.getBoundingClientRect());
-    const unit=svg.getBoundingClientRect().width/(svg as SVGSVGElement).viewBox.baseVal.width;
-    const label=bounds('[data-shield-depot="4"] .shield-depot-number');
-    return {marginLeft:zone.left-left.right,marginRight:right.left-zone.right,
-     centerError:Math.abs(center(zone)-center(svg.getBoundingClientRect())),panelsMatch:Math.abs(left.width-right.width)<.01,
-     groupFits:within(group,zone),labelError:Math.abs(center(label)-center(zone)),scoreFits:within(score,left),bonusFits:within(bonuses,right),
-     slots:slots.map(slot=>({width:slot.width/unit,height:slot.height/unit,centerY:(slot.top+slot.height/2)/unit})),
-     distance:slots.length>1?(center(slots[1])-center(slots[0]))/unit:0};
-   });
-   expect(geometry.marginLeft).toBeGreaterThan(0);
-   expect(geometry.marginRight).toBeGreaterThan(0);
-   expect(Math.abs(geometry.marginLeft-geometry.marginRight)).toBeLessThan(.1);
-   expect(geometry.centerError).toBeLessThan(.1);
-   expect(geometry.labelError).toBeLessThan(.1);
-   expect(geometry.panelsMatch&&geometry.groupFits&&geometry.scoreFits&&geometry.bonusFits).toBe(true);
-   expect(geometry.slots).toHaveLength(countSlots);
-   for(const slot of geometry.slots){expect(slot.width).toBeCloseTo(52,2);expect(slot.height).toBeCloseTo(52*1480/1200,2);}
-   if(countSlots===2){expect(geometry.distance).toBeCloseTo(70,2);expect(geometry.slots[0].centerY).toBeCloseTo(geometry.slots[1].centerY,2);}
-  };
-  await expect(zone).toBeAttached();
-  if(count===4)await expect(board.locator('[data-region-score-panel] .score-page-total')).toHaveAttribute('aria-label',`${playerName} · 현재 누적 0점`);
-  if(source===game){
-   await expect(page.locator('.direct-toast')).toHaveCount(0);
-   await zone.evaluate(el=>el.scrollIntoView({block:'center',inline:'center',behavior:'instant'}));
-   await page.screenshot({path:info.outputPath('lower-shields.png')});
-  }
+  await load(page,game);
+  if(count===4)await expect(board.locator('[data-region-score-panel] .score-page-total')).toHaveAttribute('aria-label',playerName+' · 현재 누적 0점');
   await verify();
+  if(source!==expanded)continue;
   await press(page.getByRole('button',{name:'공용 점수판 다음 페이지',exact:true}));
   await expect(board.locator('[data-score-page="2"]')).toBeAttached();
   await press(page.getByRole('button',{name:/^행동 주사위 1 눈/}));
-  await expect(board.locator('[data-shield-depot="4"] [data-worker-cost="6"]')).toHaveCount(countSlots);
+  await expect(board.locator('[data-shield-depot="4"] [data-worker-cost="6"]')).toHaveCount(2);
   await verify();
-  if(source===game)for(let i=0;i<3;i++){
+  for(let i=0;i<3;i++){
    await press(page.getByRole('button',{name:'공용 보드 확대',exact:true}));
    await verify();
   }
+  await press(page.getByRole('button',{name:'공용 보드 배율 복원',exact:true}));
+  const topPosition=await slot(1).getAttribute('transform');
+  await press(slot(1));
+  const castle=page.locator(active()+' [data-estate-cell="'+game.players[0].duchy.startingCastleCellId+'"]');
+  await expect(castle).toHaveClass(/direct-legal/);
+  await press(castle);
+  await expect(slot(1)).toHaveAttribute('data-empty','true');
+  await expect(slot(1)).toHaveAttribute('transform',topPosition!);
+  await verify();
+  const lowerNumber=shieldLayout(game)!.slots.find(s=>s.depot===4&&s.index===0)!.shieldNumber!;
+  const lowerPosition=await slot(4).getAttribute('transform');
+  await load(page,customMount(game,lowerNumber));
+  await expect(slot(4)).toHaveAttribute('data-empty','true');
+  await expect(slot(4)).toHaveAttribute('transform',lowerPosition!);
+  await verify();
+  if(info.project.name==='desktop-1280'&&count===3){
+   await page.mouse.move(1,1);
+   await expect(page.locator('#tile-effect-tooltip')).toHaveCount(0);
+   await expect(page.locator('.direct-toast')).toHaveCount(0);
+   await board.screenshot({path:info.outputPath('symmetric-shield-depots.png')});
+  }
  }
 });
-
 test('shield 20 reserves a board tile and 21 purchases a chosen rival tile',async({page},info)=>{
  let game=customMount(customMount(customGame(),20),21);
  const rival=moveTile(game,t=>t.type==='mine',undefined,1);game=rival.game;
