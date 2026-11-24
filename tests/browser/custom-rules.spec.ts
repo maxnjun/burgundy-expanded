@@ -165,6 +165,71 @@ test('three-seat side additions clear numbered tiles at regular and larger zooms
  }
 });
 
+for(const count of [2,3,4] as const)test(`${count}-seat lower shield zone stays centered between score panels`,async({page},info)=>{
+ await page.addInitScript(()=>localStorage.setItem('burgundy-expanded:pinned-guidance-v1','off'));
+ const initial=customGame(count,true,true);
+ let game=initial;
+ if(count===2){
+  const next=nextPhase(initial),layout=shieldLayout(next)!;
+  game=setShieldLayout(next,{...layout,slots:layout.slots.map(slot=>slot.index===1?{...slot,id:'shield:depot:4:1',depot:4}:slot)});
+  game=step(game,{type:'roll-round',playerId:'seat-1'});
+ }
+ const board=page.locator('.common-board-svg'),zone=board.locator('[data-shield-zone="4"]');
+ for(const source of count===2?[initial,game]:[game]){
+  const [first,second]=source.dice.players['seat-1'];
+  const playerName='가나다라마바사아자차카타파하가나다라마바사아자차카타파하가나';
+  const state:GameState={...source,
+   players:count===4?source.players.map(player=>player.id==='seat-1'?{...player,name:playerName}:player):source.players,
+   dice:{...source.dice,players:{...source.dice.players,'seat-1':[{...first,value:1},{...second,value:1}]}}};
+  await load(page,state);
+  const countSlots=shieldLayout(state)!.slots.filter(slot=>slot.depot===4).length;
+  const verify=async()=>{
+   const geometry=await board.evaluate(svg=>{
+    const bounds=(selector:string)=>svg.querySelector(selector)!.getBoundingClientRect();
+    const left=bounds('[data-info-panel="region-score"]'),right=bounds('[data-info-panel="color-bonuses"]');
+    const zone=bounds('[data-shield-zone="4"]'),group=bounds('[data-shield-depot="4"]');
+    const score=bounds('[data-region-score-panel]'),bonuses=bounds('[data-color-bonuses]');
+    const center=({left,right}:DOMRect)=>((left+right)/2);
+    const within=(b:DOMRect,p:DOMRect)=>b.left>=p.left&&b.right<=p.right&&b.top>=p.top&&b.bottom<=p.bottom;
+    const slots=Array.from(svg.querySelectorAll('[data-shield-depot="4"] .shield-outline'),el=>el.getBoundingClientRect());
+    const unit=svg.getBoundingClientRect().width/(svg as SVGSVGElement).viewBox.baseVal.width;
+    const label=bounds('[data-shield-depot="4"] .shield-depot-number');
+    return {marginLeft:zone.left-left.right,marginRight:right.left-zone.right,
+     centerError:Math.abs(center(zone)-center(svg.getBoundingClientRect())),panelsMatch:Math.abs(left.width-right.width)<.01,
+     groupFits:within(group,zone),labelError:Math.abs(center(label)-center(zone)),scoreFits:within(score,left),bonusFits:within(bonuses,right),
+     slots:slots.map(slot=>({width:slot.width/unit,height:slot.height/unit,centerY:(slot.top+slot.height/2)/unit})),
+     distance:slots.length>1?(center(slots[1])-center(slots[0]))/unit:0};
+   });
+   expect(geometry.marginLeft).toBeGreaterThan(0);
+   expect(geometry.marginRight).toBeGreaterThan(0);
+   expect(Math.abs(geometry.marginLeft-geometry.marginRight)).toBeLessThan(.1);
+   expect(geometry.centerError).toBeLessThan(.1);
+   expect(geometry.labelError).toBeLessThan(.1);
+   expect(geometry.panelsMatch&&geometry.groupFits&&geometry.scoreFits&&geometry.bonusFits).toBe(true);
+   expect(geometry.slots).toHaveLength(countSlots);
+   for(const slot of geometry.slots){expect(slot.width).toBeCloseTo(52,2);expect(slot.height).toBeCloseTo(52*1480/1200,2);}
+   if(countSlots===2){expect(geometry.distance).toBeCloseTo(70,2);expect(geometry.slots[0].centerY).toBeCloseTo(geometry.slots[1].centerY,2);}
+  };
+  await expect(zone).toBeAttached();
+  if(count===4)await expect(board.locator('[data-region-score-panel] .score-page-total')).toHaveAttribute('aria-label',`${playerName} · 현재 누적 0점`);
+  if(source===game){
+   await expect(page.locator('.direct-toast')).toHaveCount(0);
+   await zone.evaluate(el=>el.scrollIntoView({block:'center',inline:'center',behavior:'instant'}));
+   await page.screenshot({path:info.outputPath('lower-shields.png')});
+  }
+  await verify();
+  await press(page.getByRole('button',{name:'공용 점수판 다음 페이지',exact:true}));
+  await expect(board.locator('[data-score-page="2"]')).toBeAttached();
+  await press(page.getByRole('button',{name:/^행동 주사위 1 눈/}));
+  await expect(board.locator('[data-shield-depot="4"] [data-worker-cost="6"]')).toHaveCount(countSlots);
+  await verify();
+  if(source===game)for(let i=0;i<3;i++){
+   await press(page.getByRole('button',{name:'공용 보드 확대',exact:true}));
+   await verify();
+  }
+ }
+});
+
 test('shield 20 reserves a board tile and 21 purchases a chosen rival tile',async({page},info)=>{
  let game=customMount(customMount(customGame(),20),21);
  const rival=moveTile(game,t=>t.type==='mine',undefined,1);game=rival.game;
