@@ -36,6 +36,49 @@ test("old rooms bypass the new opt-in lobby; production versions gate mutations 
  const response=await handlers.act(request,a.id);assert.equal(response.status,426);assert.equal(response.headers.get("x-game-version"),"test-release");assert.equal((await store.view(a.id,a.token)).revision,before.revision);
  }finally{if(old===undefined)delete process.env.GAME_VERSION;else process.env.GAME_VERSION=old;}
 });
+
+test("online starter rolls are independent, authenticated and survive rereading the lobby",async()=>{
+ const dir=await mkdtemp(join(tmpdir(),"burgundy-starter-")),store=new RoomStore(dir);
+ const a=await store.create("A",false,false,null,false,false,false,[],true,{lobby:true,starterMethod:"roll"});
+ const b=await store.joinRoom(a.id,"B");
+ let v=await store.view(a.id,a.token);
+ const command=(seat:number,command:string,round?:number)=>({playerId:`seat-${seat}`,command,round,ready:true});
+ v=await store.control(a.id,a.token,v.revision,command(1,"ready"));
+ v=await store.control(a.id,b.token,v.revision,command(2,"ready"));
+ const dice=v.dice;
+ await assert.rejects(store.control(a.id,a.token,v.revision,command(1,"start")));
+ await assert.rejects(store.control(a.id,b.token,v.revision,command(1,"roll-starter",1)),(e:unknown)=>e instanceof RoomError&&e.status===403);
+ for(let attempts=0;v.lobby?.starterRolls?.winner===null&&attempts<20;attempts++){
+  const {round}=v.lobby.starterRolls;
+  const revision=v.revision;
+  const first=await store.control(a.id,a.token,revision,command(1,"roll-starter",round));
+  await assert.rejects(store.control(a.id,a.token,first.revision,command(1,"roll-starter",round)));
+  assert.deepEqual((await new RoomStore(dir).view(a.id,b.token)).lobby?.starterRolls,first.lobby?.starterRolls);
+  v=await store.control(a.id,b.token,revision,command(2,"roll-starter",round));
+  assert.deepEqual(v.dice,dice);
+  assert.equal(v.actions.length,0);
+ }
+ const winningSeat=v.lobby!.starterRolls!.winner;
+ assert.ok(winningSeat!==null);
+ v=await store.control(a.id,a.token,v.revision,command(1,"start"));
+ assert.equal(v.activePlayerId,`seat-${winningSeat+1}`);
+ assert.equal(v.players[winningSeat].workers,1);
+ assert.equal(v.players[1-winningSeat].workers,2);
+ assert.equal(v.commonBoard.orderTrack[0].players[0],v.activePlayerId);
+ assert.deepEqual([v.phase,v.round,v.dice.rolledForRound],["A",1,false]);
+});
+
+test("online manual starter can designate the guest",async()=>{
+ const dir=await mkdtemp(join(tmpdir(),"burgundy-starter-")),store=new RoomStore(dir);
+ const a=await store.create("A",false,false,null,false,false,false,[],true,{lobby:true,starterMethod:"manual",manualStarter:1});
+ const b=await store.joinRoom(a.id,"B");
+ let v=await store.view(a.id,a.token);
+ v=await store.control(a.id,a.token,v.revision,{playerId:"seat-1",command:"ready",ready:true});
+ v=await store.control(a.id,b.token,v.revision,{playerId:"seat-2",command:"ready",ready:true});
+ v=await store.control(a.id,a.token,v.revision,{playerId:"seat-1",command:"start"});
+ assert.equal(v.activePlayerId,"seat-2");
+ assert.deepEqual(v.players.map(p=>p.workers),[2,1]);
+});
 test("storage read errors stop creation instead of treating existing data as a missing room",async()=>{
  const dir=await mkdtemp(join(tmpdir(),"burgundy-storage-")),id=randomBytes(12).toString("hex"),token=randomBytes(32).toString("hex"),store=new RoomStore(dir);await mkdir(join(dir,`${id}.json`));
  const unavailable=(e:unknown)=>e instanceof RoomError&&e.status===500;

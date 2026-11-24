@@ -48,7 +48,7 @@ test("new AI demonstration plays a full 25-round game and survives reload",async
   await page.getByLabel("주사위 시드",{exact:true}).fill(`browser-full-${info.project.name}`);
   await page.getByLabel("좌석 1 영지 선택",{exact:true}).selectOption("se:base:1");
   await page.getByLabel(/추가 타일 ·/).check();
-  await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
+  await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
   let finished=false;
   for(let step=0;step<650;step++){
     await page.clock.runFor(500);
@@ -100,7 +100,7 @@ test("common board retains drag mode and pinch while personal boards use native 
 
 test("paused computer stays paused after timers and refresh",async({page})=>{
   await page.clock.install();await page.goto("/");await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();
-  await page.getByLabel("플레이 방식",{exact:true}).selectOption("demo");await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
+  await page.getByLabel("플레이 방식",{exact:true}).selectOption("demo");await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
   await page.getByRole("button",{name:"AI 일시정지",exact:true}).click();
   const revision=await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.revision);
   await page.clock.runFor(5000);expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.revision)).toBe(revision);
@@ -112,7 +112,7 @@ test("three and four player local practice seats each finish a round",async({pag
   await page.goto("/");
   for(const count of [3,4]){
     await page.getByRole("button",{name:"⚙ 게임 준비",exact:true}).click();await page.getByLabel("플레이어 수",{exact:true}).selectOption(String(count));
-    await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();await expect(page.locator(".live-estates>.estate-panel")).toHaveCount(count);await chooseLocalStarts(page,count);
+    await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();await expect(page.locator(".live-estates>.estate-panel")).toHaveCount(count);await chooseLocalStarts(page,count);
     await expect(page.getByRole("button",{name:/^행동 주사위 1 눈/})).toBeEnabled();
     for(let seat=0;seat<count;seat++){
       for(let die=0;die<2;die++){await page.getByRole("button",{name:new RegExp(`^행동 주사위 ${die+1} 눈`)}).click();await page.getByLabel("일꾼 자원",{exact:true}).click();}

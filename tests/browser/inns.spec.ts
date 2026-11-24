@@ -63,7 +63,7 @@ test('local setup starts2/3/4 seats with the selected inn extension',async({page
  await page.goto('/');
  for(const count of [2,3,4]){
   await page.getByRole('button',{name:/게임 준비/}).click();await page.getByLabel('플레이어 수',{exact:true}).selectOption(String(count));await page.getByLabel('플레이 방식',{exact:true}).selectOption('local');await page.getByLabel('여관 확장',{exact:true}).check();
-  await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
+  await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
   await expect.poll(()=>page.evaluate(()=>{const g=JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game;return {count:g.config.playerCount,enabled:g.config.extensions.some((e:{id:string})=>e.id==='inns'),supply:g.market.inns?.stack.length};})).toEqual({count,enabled:true,supply:1});
   await expect(page.locator('[data-inn-stack]')).toHaveCount(1);
  }

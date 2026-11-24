@@ -32,7 +32,7 @@ for(const count of [2,3,4])test(`Android hotseat ${count} identities, active boa
  const colors=['purple','pink','green','yellow'];
  for(let i=0;i<count;i++){await page.getByLabel(`좌석 ${i+1} 이름`,{exact:true}).fill(`핫시트${i+1}`);await page.getByLabel(`좌석 ${i+1} 색상`,{exact:true}).selectOption(colors[i]);}
  await expect(page.getByLabel('좌석 2 색상',{exact:true}).locator('option[value="purple"]')).toHaveAttribute('disabled','');
- await page.getByLabel('포도밭 확장',{exact:true}).check();await page.getByRole('button',{name:'핫시트 게임 시작',exact:true}).click();
+ await page.getByLabel('포도밭 확장',{exact:true}).check();await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'핫시트 게임 시작',exact:true}).click();
  await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');
  for(let i=0;i<count;i++){
   const id=`seat-${i+1}`;await expect(page.locator('main')).toHaveAttribute('data-active-player',id);
@@ -87,7 +87,7 @@ test('web keeps its existing mode menu and ignores Android position preference',
 });
 test('Android keyboard height leaves the hotseat start button reachable',async({page},info)=>{
  test.skip(info.project.name!=='desktop-1280');await page.setViewportSize({width:866,height:364});await android(page);await load(page,vineFixture());
- await page.getByRole('button',{name:'핫시트 — 한 기기에서 2~4인',exact:true}).click();await page.setViewportSize({width:866,height:127});
+ await page.getByRole('button',{name:'핫시트 — 한 기기에서 2~4인',exact:true}).click();await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.setViewportSize({width:866,height:127});
  await expect(page.locator('.intro')).toHaveCSS('position','static');const start=page.getByRole('button',{name:'핫시트 게임 시작',exact:true});
  await start.evaluate(e=>e.scrollIntoView({block:'center',behavior:'instant'}));expect(await start.evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
  page.once('dialog',d=>d.accept());await start.click();await expect(page.getByRole('button',{name:'⚙ 게임 준비',exact:true})).toHaveAttribute('aria-expanded','false');await expect(page.locator('main')).toHaveAttribute('data-hotseat','true');await expect.poll(async()=>(await state(page)).status).toBe('setup');

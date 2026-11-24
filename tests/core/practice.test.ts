@@ -4,6 +4,37 @@ import { createPracticeSession, practiceBoard } from "../../src/game/practice";
 import { validateBoardDefinition } from "../../src/game/boards/validation";
 import { VERIFIED_BOARD_DEFINITIONS, getSelectableBoards } from "../../src/game/boards/catalog";
 import { applyCoreAction, validateCoreState } from "../../src/game/core";
+import {applyStarterRoll,prepareStarterRolls,validStarterRolls} from "../../src/game/starting-player";
+
+test("starter dice retain only the highest tied seats through repeated ties",()=>{
+  let rolls=prepareStarterRolls(4);
+  for(const [seat,face] of [[2,6],[0,1],[1,6],[3,5]] as const)rolls=applyStarterRoll(rolls,seat,face);
+  assert.deepEqual(rolls.pending,[1,2]);
+  assert.deepEqual(rolls.faces,[1,6,6,5]);
+  assert.equal(applyStarterRoll(rolls,0,6),rolls);
+  rolls=applyStarterRoll(rolls,1,2);
+  assert.equal(applyStarterRoll(rolls,1,6),rolls);
+  rolls=applyStarterRoll(rolls,2,2);
+  assert.equal(rolls.round,3);
+  rolls=applyStarterRoll(applyStarterRoll(rolls,2,1),1,4);
+  assert.equal(rolls.winner,1);
+  assert.equal(validStarterRolls(rolls,4),true);
+  assert.equal(validStarterRolls({...rolls,pending:[1]},4),false);
+});
+
+for(const count of [2,3,4])test(`starter in a ${count}-seat game sets castle order and workers without any game rolls`,()=>{
+  const names=Array.from({length:count},(_,i)=>`좌석 ${i+1}`);
+  const config={names,chooseStartingCastles:true,seed:"starter-independent"};
+  const normal=createPracticeSession(config),started=createPracticeSession({...config,firstSeat:count-1});
+  const order=[`seat-${count}`,...names.slice(0,-1).map((_,i)=>`seat-${i+1}`)];
+  assert.equal(started.config.startingPlayerId,order[0]);
+  assert.equal(started.turn.activePlayerId,order[0]);
+  assert.deepEqual(started.turn.orderTrack[0].players,order);
+  assert.deepEqual(started.players.map(p=>p.workers),[...names.slice(1).map((_,i)=>i+2),1]);
+  assert.deepEqual(started.random,normal.random);
+  assert.deepEqual(started.dice,normal.dice);
+  assert.deepEqual([started.turn.phase,started.turn.round,started.turn.stage],["A",1,"setup"]);
+});
 
 test("authored exercise boards have valid distinct geometry but no official number or verified status", () => {
   for (const variant of [0, 1]) {

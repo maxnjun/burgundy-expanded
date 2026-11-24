@@ -6,7 +6,7 @@ test("online each seat chooses its own saved candidate before game start",async(
  const proxy=async(route:Route)=>{const req=route.request(),r=await fetch(isolated.url+new URL(req.url()).pathname,{method:req.method(),headers:{...req.headers(),host:new URL(isolated.url).host,origin:isolated.url},body:req.postData()??undefined});await route.fulfill({status:r.status,headers:Object.fromEntries(r.headers),body:Buffer.from(await r.arrayBuffer())});};
  try{
   await page.context().route('**/api/rooms{,/**}',proxy);await context.route('**/api/rooms{,/**}',proxy);const guest=await context.newPage();
-  await page.goto('/online');await page.getByRole('checkbox',{name:'랜덤 후보2개 중 영지 선택',exact:true}).check();await page.getByLabel('온라인 초기 영지 범위',{exact:true}).selectOption('fortress');await page.getByRole('button',{name:'2인 방 만들기',exact:true}).click();
+  await page.goto('/online');await page.getByRole('checkbox',{name:'랜덤 후보2개 중 영지 선택',exact:true}).check();await page.getByLabel('온라인 초기 영지 범위',{exact:true}).selectOption('fortress');await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'2인 방 만들기',exact:true}).click();
   const code=await page.getByLabel('공유할 방 코드',{exact:true}).inputValue();await guest.goto('/online');await guest.getByLabel('방 코드',{exact:true}).fill(code);await guest.getByRole('button',{name:'방 참가',exact:true}).click();
   await expect(page.getByLabel("온라인 상태",{exact:true})).toContainText("상태 1");
   const own=page.getByRole('region',{name:'seat-1 영지 후보',exact:true});await expect(own.getByRole('button').first()).toBeEnabled();await expect(page.getByRole('region',{name:'seat-2 영지 후보',exact:true}).getByRole('button').first()).toBeDisabled();

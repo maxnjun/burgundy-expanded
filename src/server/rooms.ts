@@ -11,7 +11,7 @@ import {actionLabel,createActionLog} from "../game/action-log";
 import {GRAPES,type Grape} from "../game/vineyards";
 import { createBoardDraft, redrawBoardSeat, selectDraftBoard, validBoardDraft, draftReady, type BoardDraft, type PublicBoardDraft, type BoardRange } from "../game/board-draft";
 import type { ScoreEntry } from "../game/types";
-import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomInt, createHash, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, readdir, writeFile, open, unlink, statfs } from "node:fs/promises";
 import {gzip,gunzip} from "node:zlib";
 import {promisify} from "node:util";
@@ -26,6 +26,8 @@ import type { GameAction, GameState, PlayerState, Tile } from "../game/types";
 import {beginHistory,recordTurnAction,undoTurn,canUndoTurn,turnKey,type TurnHistory} from "../game/turn-history";
 import {restoreTurnHistory} from "../game/turn-history-cache";
 import {startingCastleCells} from "../game/starting-castles";
+import {applyStarterRoll,prepareStarterRolls,setStartingPlayer,validStarterRolls,type StarterRolls} from "../game/starting-player";
+import type {DieValue} from "../game/types";
 
 import {RoomError} from "./room-error";
 import type {UpstashRooms} from "./upstash-rooms";
@@ -38,7 +40,8 @@ interface Receipt {id:string;seat:number;hash:string}
 export function requireRoomSpace(available:number){
   if(available<WRITE_RESERVE)throw new RoomError(503,"서버 디스크의 남은 저장 공간이 부족하여 새 방을 만들 수 없습니다. 기존 방은 보존됩니다. 관리자에게 저장 공간 점검을 요청하세요.","ROOM_STORAGE_FULL");
 }
-interface StoredRoom { requests?:Receipt[];history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:{ready:[boolean,boolean];started:boolean};draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
+interface RoomLobby {ready:[boolean,boolean];started:boolean;starterRolls?:StarterRolls;manualStarter?:0|1}
+interface StoredRoom { requests?:Receipt[];history?:TurnHistory;undoBarrier?:string;startingPreview?:{playerId:string;cellId:string};lobby?:RoomLobby;draft?:BoardDraft;version:1;id:string;createdAt:number;updatedAt:number;tokens:(string|null)[];game:GameState;logs:string[] }
 export type OnlineUndoAction={type:"undo-turn"|"undo-action";playerId:string};
 export interface RoomView {
   customRules?:true;tileReservations?:GameState["tileReservations"];regionRefunds?:Record<string,readonly ScoreEntry[]>;
@@ -46,7 +49,7 @@ export interface RoomView {
   discardedTiles?:GameState["discardedTiles"];
   commonBoard:{marketRecipeId:GameState["config"]["marketRecipeId"];orderTrack:GameState["turn"]["orderTrack"];phaseGoodsCounts:Record<GameState["turn"]["phase"],number>;roundGoodsCount:number;revealedGoods?:readonly (import("../game/types").GoodsTile|null)[];bonusTiles:GameState["market"]["bonusTiles"]};
   undo?:{turnReason:string;actionReason:string};startingPreview?:{playerId:string;cellId:string};
-  release?:ReturnType<typeof serverRelease>;lobby?:{ready:readonly boolean[];started:boolean;capacity:number};
+  release?:ReturnType<typeof serverRelease>;lobby?:(Omit<RoomLobby,"ready">&{ready:readonly boolean[];capacity:number});
   automaticChoice?:GameAction|null;
   boardDraft:PublicBoardDraft|null;fortressScores:Record<string,readonly ScoreEntry[]>;
   shields:Pick<ShieldLayout,"format"|"effectsActive"|"slots"|"mounted"|"removed"|"rules">|null;
@@ -113,6 +116,8 @@ export class RoomStore {
     if(room.requests!==undefined&&(!Array.isArray(room.requests)||room.requests.length>REQUEST_LIMIT||room.requests.some(r=>!r||typeof r.id!=="string"||!REQUEST_ID.test(r.id)||![0,1].includes(r.seat)||typeof r.hash!=="string"||!/^[a-f0-9]{64}$/.test(r.hash))||new Set(room.requests.map(r=>`${r.seat}:${r.id}`)).size!==room.requests.length))throw new RoomError(500,"행동 복구 기록 검증 실패 · 원본은 보존됩니다.");
     room.requests??=[]; // Additive v1 migration in memory; a read never rewrites legacy Redis data.
     if(room.lobby&&(!Array.isArray(room.lobby.ready)||room.lobby.ready.length!==2||room.lobby.ready.some(r=>typeof r!=="boolean")||typeof room.lobby.started!=="boolean"))throw new RoomError(500,"방 준비 데이터 검증 실패");
+    if(room.lobby?.starterRolls!==undefined&&(!validStarterRolls(room.lobby.starterRolls,2)||room.lobby.manualStarter!==undefined||room.lobby.started&&room.lobby.starterRolls.winner===null)||
+      room.lobby?.manualStarter!==undefined&&room.lobby.manualStarter!==0&&room.lobby.manualStarter!==1)throw new RoomError(500,"시작 플레이어 데이터 검증 실패");
     if(room.draft&&!validBoardDraft(room.draft,["seat-1","seat-2"]))throw new RoomError(500,"영지 후보 검증 실패");
     room.game=parseSavedGame(JSON.stringify({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:room.game,logs:room.logs,view:{zoom:1,focus:false,boardZooms:{}}})).game;
     if(room.draft&&draftReady(room.draft)&&room.draft.seats.some((s,i)=>s.selected!==room.game.players[i].duchy.boardId))throw new RoomError(500,"선택 영지와 게임 상태가 일치하지 않습니다.");
@@ -174,8 +179,10 @@ export class RoomStore {
     if(typeof geese!=="boolean")throw new RoomError(400,"하프물범 설정은 참/거짓이어야 합니다.");
     if(typeof shieldRules!=="boolean")throw new RoomError(400,"방패 설정은 참/거짓이어야 합니다.");
     if(!connection||typeof connection!=="object"||Array.isArray(connection))throw new RoomError(400,"연결 정보를 확인하세요.");
-    const c=connection as {id?:unknown;token?:unknown;lobby?:unknown;color?:unknown};
+    const c=connection as {id?:unknown;token?:unknown;lobby?:unknown;color?:unknown;starterMethod?:unknown;manualStarter?:unknown};
     if(c.lobby!==undefined&&typeof c.lobby!=="boolean"||((c.id===undefined)!==(c.token===undefined))||c.id!==undefined&&(typeof c.id!=="string"||!/^[a-f0-9]{24}$/.test(c.id)||typeof c.token!=="string"||!/^[A-Za-z0-9_-]{43,128}$/.test(c.token)))throw new RoomError(400,"연결 정보를 확인하세요.");
+    if(c.starterMethod!==undefined&&(!c.lobby||c.starterMethod!=="roll"&&c.starterMethod!=="manual")||
+      c.manualStarter!==undefined&&(c.starterMethod!=="manual"||c.manualStarter!==0&&c.manualStarter!==1))throw new RoomError(400,"시작 플레이어 설정을 확인하세요.");
     const id=c.id as string|undefined??randomBytes(12).toString("hex"),token=c.token as string|undefined??randomBytes(32).toString("base64url"),now=Date.now();
     if(c.id){try{const old=await this.read(id);if(old.tokens[0]!==digest(token))throw new RoomError(409,"이미 사용 중인 방 코드입니다.");return {id,token};}catch(e){if(!(e instanceof RoomError)||e.status!==404)throw e;}}
     name(ownerName);
@@ -183,7 +190,10 @@ export class RoomStore {
     const ownerColor=isPlayerColor(c.color)?c.color:"blue",guestColor=PLAYER_COLORS.find(color=>color!==ownerColor)!;
     if(!this.remote){await mkdir(this.directory,{recursive:true});await this.maintain();const disk=await statfs(this.directory);requireRoomSpace(disk.bavail*disk.bsize);}
     const game=createPracticeSession({customRules:true,names:[name(ownerName),"영주 2"],colors:[ownerColor,guestColor],seed:randomBytes(16).toString("hex"),chooseStartingCastles,shieldRules,whiteCastles,inns,tradeRoutes,vineyards,geese,excludedGrapes:excludedGrapes as Grape[],officialSlots:true,boardIds:["se:base:1","se:base:2"]});
-    const room:StoredRoom={...(c.lobby?{lobby:{ready:[false,false],started:false}}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
+    const lobby:RoomLobby={ready:[false,false],started:false};
+    if(c.starterMethod==="roll")lobby.starterRolls=prepareStarterRolls(2);
+    if(c.starterMethod==="manual")lobby.manualStarter=c.manualStarter===1?1:0;
+    const room:StoredRoom={...(c.lobby?{lobby}:{}),...(boardRange!==null?{draft:createBoardDraft(["seat-1","seat-2"],boardRange as BoardRange,randomBytes(16).toString("hex"))}:{}),version:1,id,createdAt:now,updatedAt:now,tokens:[digest(token),null],game,logs:["2인 방을 준비했습니다. 참가자를 기다립니다."]};
     await this.write(room);return {id,token};
   });}
   async joinRoom(id:string,guestName:unknown,reconnectToken:unknown=undefined,color:unknown=undefined){return this.serial(id,async()=>{
@@ -241,10 +251,11 @@ export class RoomStore {
     return room.undoBarrier||(kind==="turn"&&!room.history?.start?"이 차례의 시작 기록이 없습니다. 새 행동의 이전 행동으로만 복원할 수 있습니다.":"되돌릴 확정 행동이 없습니다. 종료된 차례는 복원할 수 없습니다.");
   }
   async control(id:string,token:string,revision:unknown,command:unknown,requestId?:unknown){return this.mutate(id,token,revision,command,requestId,async(room,seat)=>{
-    const c=command as {command?:string;ready?:unknown;playerId?:string;name?:unknown;color?:unknown};
+    const c=command as {command?:string;ready?:unknown;playerId?:string;name?:unknown;color?:unknown;round?:unknown};
     if(!room.lobby||room.lobby.started)throw new RoomError(409,"이미 시작된 방입니다.");
-    if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인의 준비와 이름·색상만 변경할 수 있습니다.");
-    if(revision!==room.game.revision)throw new RoomError(409,"최신 준비 상태에서 다시 선택하세요.");
+    if(c?.playerId!==room.game.players[seat].id)throw new RoomError(403,"본인 좌석만 조작할 수 있습니다.");
+    // Two different seats can submit together, provided both rolls still belong to this throw.
+    if(c.command!=="roll-starter"&&revision!==room.game.revision)throw new RoomError(409,"최신 준비 상태에서 다시 선택하세요.");
     if(c.command==="ready"&&typeof c.ready==="boolean")room.lobby.ready[seat]=c.ready;
     else if(c.command==="profile"){
       const nextName=name(c.name);
@@ -258,9 +269,21 @@ export class RoomStore {
       room.game={...room.game,players:profiles,config:{...room.game.config,players:room.game.config.players.map((p,i)=>({...p,name:profiles[i].name,color:profiles[i].color}))}};
       room.lobby.ready[seat]=false;
     }
-    else if(c.command==="start"){
-      if(seat!==0)throw new RoomError(403,"방장만 시작할 수 있습니다.");
-      if(!room.tokens[1]||!room.lobby.ready.every(Boolean)||room.draft&&!draftReady(room.draft))throw new RoomError(409,"두 플레이어의 준비와 영지 선택을 완료하세요.");room.lobby.started=true;
+    else if(c.command==="roll-starter"||c.command==="start"){
+      if(!room.tokens[1]||!room.lobby.ready.every(Boolean)||room.draft&&!draftReady(room.draft))throw new RoomError(409,"두 플레이어의 준비와 영지 선택을 완료하세요.");
+      const rolls=room.lobby.starterRolls;
+      if(c.command==="roll-starter"){
+        if(typeof revision!=="number"||!Number.isSafeInteger(revision)||revision<0||revision>room.game.revision||
+          !rolls||c.round!==rolls.round||!rolls.pending.includes(seat))throw new RoomError(409,"현재 굴릴 수 있는 주사위를 확인하세요.");
+        room.lobby.starterRolls=applyStarterRoll(rolls,seat,randomInt(1,7) as DieValue);
+      }else{
+        if(seat!==0)throw new RoomError(403,"방장만 시작할 수 있습니다.");
+        if(rolls?.winner===null)throw new RoomError(409,"주사위를 굴려 시작 플레이어를 정하세요.");
+        const winner=rolls?.winner??room.lobby.manualStarter??0;
+        room.game=setStartingPlayer(room.game,winner);
+        room.logs=[`첫 차례는 ${room.game.players[winner].name}입니다.`,...room.logs].slice(0,60);
+        room.lobby.started=true;
+      }
     }else throw new RoomError(400,"준비 명령을 확인하세요.");
     room.game={...room.game,revision:room.game.revision+1};room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}

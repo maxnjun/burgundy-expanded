@@ -234,3 +234,23 @@ button:has([data-approved-shield]):is(:hover,:active,:focus,:focus-visible,[aria
 .recolor-preview button{margin:6px 6px 0 0}
 .recolor-preview button:first-of-type{background:#ecdbb1;font-weight:700}
 [data-recolor-selected=true] [data-estate-fill]{stroke:#a66518;stroke-width:3}
+.starter-dialog{width:min(34rem,calc(100% - 1.5rem));max-height:calc(100dvh - 1.5rem);overflow:auto;box-sizing:border-box;margin:auto;padding:clamp(.85rem,3vw,1.6rem);color:#3c2b1b;background:linear-gradient(145deg,#fff8e8,#f1e0b8);border:2px solid #9a7643;border-radius:.75rem;box-shadow:0 1rem 3rem #26190966}
+.starter-dialog::backdrop{background:#2b2119aa}
+.starter-dialog h2{margin:0 0 .55rem}
+.starter-dialog p{margin:.45rem 0}
+.starter-seats{display:grid;gap:.4rem;margin:.8rem 0;padding:0;list-style:none}
+.starter-seats li{display:grid;grid-template-columns:minmax(0,1fr) 3rem minmax(5.8rem,1fr);align-items:center;gap:.4rem;padding:.2rem .45rem;border:1px solid #c6ad7d;border-radius:.45rem;background:#fff7e1}
+.starter-seats li[data-starter-tied]{border-color:#a84621;background:#fae5c0}
+.starter-seats li[data-starter-winner]{border-color:#967020;background:#ffe7a1}
+.starter-name{display:flex;align-items:center;gap:.3rem;min-width:0;overflow-wrap:anywhere}
+.starter-name .seat-color-preview{flex-shrink:0}
+.starter-result{font-size:.84rem}
+.starter-roll{display:grid;place-items:center;width:3rem;height:3rem;padding:0}
+.starter-roll svg{width:2.6rem;height:2.6rem}
+.starter-roll:disabled{opacity:1;cursor:default}
+.starter-controls{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;flex-wrap:wrap}
+.starter-controls button{min-height:44px}
+.starter-tumbling{animation:starter-tumble 450ms ease-out both}
+@keyframes starter-tumble{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(-8px) rotate(155deg)}72%{transform:translateY(-2px) rotate(295deg)}100%{transform:translateY(0) rotate(360deg)}}
+@media(max-height:460px){.starter-dialog{padding:.8rem}.starter-seats{gap:.25rem;margin:.45rem 0}.starter-seats li{padding-block:.1rem}}
+@media(prefers-reduced-motion:reduce){.starter-tumbling{animation:none}}

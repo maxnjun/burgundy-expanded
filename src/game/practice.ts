@@ -1,5 +1,6 @@
 import {isPlayerColor} from "./player-colors";
 import {deferStartingCastles} from "./starting-castles";
+import {setStartingPlayer} from "./starting-player";
 import {setupVineyards,type Grape} from "./vineyards";
 import {setupCustomTrade} from "./custom-trade-routes";
 import { supplyInn } from "./inns";
@@ -81,7 +82,7 @@ export function createPracticeSession(config: PracticeConfig): GameState {
       duchy: { boardId: board.id, cells, startingCastleCellId: start,
         completedRegionIds: board.regions.filter(r => r.cellIds.every(id => id === start)).map(r => r.id), completedColors: [] },
       storage: [null, null, null], goods: [...new Set(initialGoods.map(g => g.type))].map(type => ({ type, tiles: initialGoods.filter(g => g.type === type) })),
-      soldGoods: [], silver: 1, workers: (i - firstSeat + count) % count + 1, victoryPoints: 0, bonuses: [] };
+      soldGoods: [], silver: 1, workers: 1, victoryPoints: 0, bonuses: [] };
   });
   const numberedDepots = Array.from({ length: 6 }, (_, i) => ({ number: (i + 1) as DieValue,
     slots: Array.from({ length: 2 }, (_, j) => {
@@ -207,19 +208,19 @@ export function createPracticeSession(config: PracticeConfig): GameState {
   const state: GameState = { schemaVersion: "0.2.1", revision: 0, status: "playing", discardedTiles:[],
     config: { ruleset: "special-edition-base", mode: "competitive", playerCount: count,...(config.customRules?{customRules:true as const}:{}),
       players: players.map(p => ({ id: p.id, name: p.name, color: p.color, seat: p.seat, boardId: p.duchy.boardId, startingCastleCellId: p.duchy.startingCastleCellId, controller: "human" })),
-      startingPlayerId: players[firstSeat].id, seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.vineyards?[{id:"vineyards" as const,options:{}}]:[]),...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
+      seed: config.seed, catalogId: useOfficialSlots && count === 2 ? "project:base-160-v1" : "practice:non-official-supply", ...(useOfficialSlots?{marketRecipeId:count === 2 ? "se:main:2" as const : "se:main:3-4" as const}:{}), extensions: [...(config.vineyards?[{id:"vineyards" as const,options:{}}]:[]),...(config.tradeRoutes?[{id:"trade-routes" as const,options:{}}]:[]), ...(config.inns ? [{id:"inns" as const,options:{}}] : []), ...(config.whiteCastles ? [{id:"white-castles" as const,options:{}}] : []), ...(config.additionalHexes ? [{id:"additional-hexes" as const,options:{}}] : []), ...(geese ? [{ id: "geese" as const, options: {} }] : []), ...(config.borderPosts ? [{ id: "border-posts" as const, options: {} }] : [])] },
     players, tiles, market: { numberedDepots, blackDepot, supplyPools: [{ id: "practice:authored-reserve", remainingTileIds }], removedTileIds,
       bonusTiles: (["castle", "ship", "mine", "livestock", "building", "monastery"] as const).flatMap(color => (["first", "second"] as const).map(rank => ({ id: `bonus:${color}:${rank}`, color, rank, points: count + (rank === "first" ? 3 : 0) }))),
       phaseGoods: { ...phaseGoods, A: [] }, roundGoods, revealedPhaseGoods:{A:[...roundGoods]} },
     dice: { players: Object.fromEntries(players.map(p => [p.id, [{ id: `${p.id}:a`, value: 1, used: false }, { id: `${p.id}:b`, value: 1, used: false }]])),
       whiteDie: null, rolledForRound: false, roundGoodsDistributed: false },
-    turn: { phase: "A", round: 1, stage: "round-setup", activePlayerId: null, orderTrack: [{ position: 0, players: [...players.slice(firstSeat), ...players.slice(0, firstSeat)].map(p => p.id) }], actedPlayerIds: [], blackPurchaseUsed: false, monasterySixUsed: false, pendingEffects: [], pendingChoice: null },
+    turn: { phase: "A", round: 1, stage: "round-setup", activePlayerId: null, orderTrack: [], actedPlayerIds: [], blackPurchaseUsed: false, monasterySixUsed: false, pendingEffects: [], pendingChoice: null },
     scoreLedger: Object.fromEntries(players.map(p => [p.id, []])), random, extensionStates: {}, finalScores: null };
   if(config.shieldPreview||config.shieldRules){
     const shields=createShieldLayout(count as 2|3|4,state.random,!!config.shieldRules,!!config.customRules&&!!config.shieldRules);
     Object.assign(state,{config:{...state.config,extensions:[...state.config.extensions,{id:"shields",options:config.shieldRules?{rules:true}:{uiPreview:true}}]},random:shields.random,extensionStates:{shields:shields.layout}});
   }
-  const prepared = setupVineyards(setupCustomTrade(supplyInn(state, "A")),config.excludedGrapes);
+  const prepared = setupVineyards(setupCustomTrade(supplyInn(setStartingPlayer(state,firstSeat), "A")),config.excludedGrapes);
   const ready=config.chooseStartingCastles?deferStartingCastles(prepared):prepared;
   const valid = validateCoreState(ready);
   if (!valid.valid) throw new Error(valid.issues.map(i => i.message).join(", "));

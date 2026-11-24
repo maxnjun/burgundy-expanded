@@ -10,7 +10,7 @@ test("online names, unique colors, editable own lobby profile and 58px dice surv
  for(const ctx of [page.context(),peer]){await ctx.route("**/api/rooms{,/**}",proxy);await ctx.routeWebSocket("**/api/rooms/*/live",ws=>ws.close());}
  const press=async(target:ReturnType<typeof page.getByRole>)=>info.project.use.hasTouch?target.tap():target.click();
  try{
-  await page.goto("/online");await page.getByLabel("온라인 색상",{exact:true}).selectOption("purple");await press(page.getByRole("button",{name:"2인 방 만들기",exact:true}));
+  await page.goto("/online");await page.getByLabel("온라인 색상",{exact:true}).selectOption("purple");await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await press(page.getByRole("button",{name:"2인 방 만들기",exact:true}));
   const code=await page.getByLabel("공유할 방 코드",{exact:true}).inputValue();await expect(page.getByLabel("내 이름 수정",{exact:true})).toHaveValue("영주 1");
   await guest.goto(`/online?room=${code}`);await guest.getByLabel("온라인 색상",{exact:true}).selectOption("purple");await press(guest.getByRole("button",{name:"방 참가",exact:true}));
   await expect(guest.getByRole("alert",{name:"온라인 오류"})).toContainText("이미 사용 중인 색상");

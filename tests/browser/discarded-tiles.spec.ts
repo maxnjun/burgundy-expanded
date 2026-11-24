@@ -36,7 +36,7 @@ test('local phase history uses real images, folds independently and survives exp
  await expect.poll(async()=>(await current(page)).discardedTiles?.map(p=>p.phase)).toEqual(['A','B']);expect((await current(page)).discardedTiles![0]).toEqual(a);
  const history=(await current(page)).discardedTiles;await page.reload();await expect(panel).not.toHaveAttribute('open','');await panel.locator('summary').click();await expect(panel.locator('[data-discard-phase]')).toHaveCount(2);expect((await current(page)).discardedTiles).toEqual(history);
  await panel.screenshot({path:info.outputPath('discarded-two-phases.png')});
- await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();await expect(panel.locator('summary')).toHaveText('버려진 타일 · 총 0개');await expect(panel.locator('[data-discard-phase]')).toHaveCount(0);
+ await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();await expect(panel.locator('summary')).toHaveText('버려진 타일 · 총 0개');await expect(panel.locator('[data-discard-phase]')).toHaveCount(0);
 });
 
 test('legacy missing history and an empty completed phase show no invented old records',async({page},info)=>{

@@ -81,7 +81,7 @@ test("shield preview can be started from setup and explicitly stays local-only",
   await page.getByLabel("방패 UI 검증 모드 (능력·유지비 미구현, 로컬 전용)",{exact:true}).check();
   await expect(page.getByLabel("플레이 방식",{exact:true})).toHaveValue("local");
   await expect(page.getByLabel("플레이 방식",{exact:true})).toBeDisabled();
-  await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
+  await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole("button",{name:"새 연습 시작",exact:true}).click();
   await expect(page.locator("[data-shield-slot]").first()).toBeVisible();
   await expect(page.locator("[data-shield-depot]")).toHaveCount(6);
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).view.computerPlayerIds)).toEqual([]);

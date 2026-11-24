@@ -11,7 +11,7 @@ test("two browser seats synchronize turns, reconnect and cannot impersonate each
   await otherContext.route("**/api/rooms{,/**}",route);
   const guest=await otherContext.newPage();
   try{
-    await page.goto("/online");await page.getByLabel("온라인 이름").fill("온라인A");const created=page.waitForResponse(r=>r.url().endsWith("/api/rooms")&&r.request().method()==="POST");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();expect((await created).status()).toBe(200);
+    await page.goto("/online");await page.getByLabel("온라인 이름").fill("온라인A");const created=page.waitForResponse(r=>r.url().endsWith("/api/rooms")&&r.request().method()==="POST");await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole("button",{name:"2인 방 만들기",exact:true}).click();expect((await created).status()).toBe(200);
     const code=await page.getByLabel("공유할 방 코드").inputValue();expect(code).toMatch(/^[a-f0-9]{24}$/);
     await guest.goto(new URL("/online",page.url()).href);await guest.getByLabel("온라인 이름").fill("온라인B");await guest.getByLabel("방 코드",{exact:true}).fill(code);await guest.getByRole("button",{name:"방 참가",exact:true}).click();
     await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);

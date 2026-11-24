@@ -7,7 +7,7 @@ test("local ranges show two distinct previews, persist selection and start selec
  await page.reload();await page.getByRole('button',{name:/게임 준비/}).click();
  for(const id of ['seat-1','seat-2'])await expect(page.getByRole('region',{name:`${id} 영지 후보`,exact:true}).locator('[aria-pressed="true"]')).toHaveCount(1);
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:board-draft-v1')!))).toEqual(draft);
- await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
+ await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.players.map((p:{duchy:{boardId:string}})=>p.duchy.boardId))).toEqual(draft.seats.slice(0,2).map((s:{selected:string})=>s.selected));
  await expect(page.locator('[data-fortress-line]')).toHaveCount(6);
 });
@@ -21,6 +21,6 @@ test("four local seats start with their individually selected candidates",async(
  await page.getByRole('checkbox',{name:'랜덤 후보2개 중 영지 선택',exact:true}).check();
  for(const id of ['seat-1','seat-2','seat-3','seat-4']){await page.getByLabel(`${id} 보드 범위`,{exact:true}).selectOption('all');await page.getByRole('region',{name:`${id} 영지 후보`,exact:true}).getByRole('button').last().click();}
  const selected=await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:board-draft-v1')!).seats.map((s:{selected:string})=>s.selected));
- await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
+ await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'새 연습 시작',exact:true}).click();
  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.players.map((p:{duchy:{boardId:string}})=>p.duchy.boardId))).toEqual(selected);
 });

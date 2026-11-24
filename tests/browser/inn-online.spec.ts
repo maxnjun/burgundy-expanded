@@ -10,7 +10,7 @@ test('online inn option and real stack purchase synchronize across two clients a
  try{
   const route=async(r:Route)=>{const req=r.request(),response=await fetch(isolated.url+new URL(req.url()).pathname,{method:req.method(),headers:{...req.headers(),host:new URL(isolated.url).host,origin:isolated.url},body:req.postData()??undefined});await r.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});};
   await page.context().route('**/api/rooms{,/**}',route);await context.route('**/api/rooms{,/**}',route);const guest=await context.newPage();
-  await page.goto('/online');await page.getByLabel('온라인 이름').fill('여관온라인A');await page.getByLabel('온라인 여관 확장',{exact:true}).check();await page.getByRole('button',{name:'2인 방 만들기',exact:true}).click();
+  await page.goto('/online');await page.getByLabel('온라인 이름').fill('여관온라인A');await page.getByLabel('온라인 여관 확장',{exact:true}).check();await page.getByLabel("시작 플레이어 결정 방식",{exact:true}).selectOption("manual");await page.getByRole('button',{name:'2인 방 만들기',exact:true}).click();
   const code=await page.getByLabel('공유할 방 코드').inputValue();await guest.goto('/online');await guest.getByLabel('온라인 이름').fill('여관온라인B');await guest.getByLabel('방 코드',{exact:true}).fill(code);await guest.getByRole('button',{name:'방 참가',exact:true}).click();
   await startOnlineLobby(page,guest);await chooseOnlineStart(page);await chooseOnlineStart(guest);
   await expect(guest.locator('[data-inn-stack]')).toBeVisible();const path=join(isolated.directory,`${code}.json`),room=JSON.parse(await readFile(path,'utf8')),rolled=applyCoreAction(room.game,{type:'roll-round',playerId:'seat-1'});expect(rolled.ok).toBe(true);if(!rolled.ok)return;
