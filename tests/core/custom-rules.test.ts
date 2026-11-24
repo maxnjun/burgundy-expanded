@@ -6,11 +6,12 @@ import {previewRecolor,type RecolorTarget} from '../../src/game/core/territory';
 import {boardTarget} from '../../src/game/direct-actions';
 import {createActionLog,readActionLog} from '../../src/game/action-log';
 import {discardStored} from '../../src/game/vineyards';
-import {hasShield,shieldLayout,SHIELD_POINTS} from '../../src/game/shields';
+import {diceShieldStatus,hasShield,setShieldLayout,shieldLayout,SHIELD_POINTS} from '../../src/game/shields';
+import {orderedPlayers} from '../../src/game/core/state';
 import {settleShieldState} from '../../src/game/core/shield-effects';
 import {prepareShipChoice} from '../../src/game/core/ship';
 import {chooseComputerAction} from '../../src/game/computer';
-import {boundary,choose,roundtrip,step} from '../fixtures/shields';
+import {boundary,choose,finishDiceRound,placed,roundtrip,step} from '../fixtures/shields';
 import {customGame,customMount,moveTile,officialTerritory,special} from '../fixtures/custom-rules';
 import type {GameState,DieValue} from '../../src/game/types';
 
@@ -151,6 +152,59 @@ test('22 rolls next round, 16 changes the third die and shield acquisition spend
  const acquired=step(game,a);
  assert.deepEqual(acquired.dice.players['seat-1'].map(d=>d.used),[true,false,true]);
  assert.equal(validateCoreAction(acquired,{type:'end-turn',playerId:'seat-1'}).valid,false);
+});
+
+test('shield 22 starts after acquisition and alternates independently of shield 16 across phases',()=>{
+ const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:orderedPlayers(game)[0]});
+ const status=(game:GameState,number:number)=>diceShieldStatus(shieldLayout(game),game.turn,game.dice,'seat-1',number);
+ let game=placed(customMount(customGame(3),16),0,{type:'castle',back:'matching-color'});
+ for(let i=0;i<3;i++)game=roll(finishDiceRound(game));
+ const layout=shieldLayout(game)!;
+ const slot=layout.slots.find(s=>s.shieldNumber===22)??layout.slots.find(s=>s.shieldNumber!==null)!;
+ if(slot.shieldNumber!==22)game=setShieldLayout(game,{...layout,slots:layout.slots.map(s=>s.id===slot.id?{...s,shieldNumber:22}:s),boxed:layout.boxed.map(n=>n===22?slot.shieldNumber!:n)});
+ const acquire=options(game).find(a=>{
+  if(a.type!=='extension'||a.command!=='acquire')return false;
+  const {slotId,replaceShieldNumber}=a.payload as {slotId:string;replaceShieldNumber:number|null};
+  return slotId===slot.id&&replaceShieldNumber===null;
+ });
+ assert.ok(acquire);
+ game=roundtrip(step(game,acquire));
+ assert.equal(status(game,22),'pending');
+ assert.equal(game.dice.players['seat-1'].length,2);
+ game=roll(finishDiceRound(game));
+ assert.deepEqual([game.turn.phase,game.turn.round,status(game,22)],['A',5,'ready']);
+ assert.deepEqual(game.players.map(p=>game.dice.players[p.id].length),[3,2,2]);
+ const die=game.dice.players['seat-1'][2]!;
+ const change=special('change-die',{dieId:die.id,value:die.value===1?2:1});
+ game=roundtrip(step(game,change));
+ assert.equal(status(game,16),'used');
+ const end=finishDiceRound(game);
+ assert.equal(end.turn.stage,'phase-end');
+ game=roll(advance(end));
+ assert.deepEqual([game.turn.phase,game.turn.round,status(game,16),status(game,22)],['B',1,'cooldown','cooldown']);
+ assert.equal(game.dice.players['seat-1'].length,2);
+ assert.equal(applyCoreAction(game,special('change-die',{dieId:game.dice.players['seat-1'][0].id,value:6})).ok,false);
+ assert.ok(!options(game).some(a=>a.type==='extension'&&a.command==='change-die'));
+ assert.ok(game.turn.activePlayerId==='seat-1');
+ const ai=chooseComputerAction(game,'seat-1');
+ assert.ok(ai.ok&&!(ai.value.type==='extension'&&ai.value.command==='change-die'));
+ game=roll(finishDiceRound(roundtrip(game)));
+ assert.deepEqual([status(game,16),game.dice.players['seat-1'].length],['ready',3]);
+ game=roll(finishDiceRound(game));
+ assert.deepEqual([status(game,16),game.dice.players['seat-1'].length],['ready',2]);
+});
+
+test('legacy shield 22 saves keep previously rolled dice and anchor the next roll',()=>{
+ const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:orderedPlayers(game)[0]});
+ let game=roll(finishDiceRound(customMount(customGame(),22)));
+ assert.equal(game.dice.players['seat-1'].length,3);
+ const layout=shieldLayout(game)!;
+ game=roundtrip(setShieldLayout(game,{...layout,rules:{...layout.rules!,extraDieSchedule:undefined}}));
+ assert.equal(game.dice.players['seat-1'].length,3);
+ game=roll(finishDiceRound(game));
+ assert.equal(game.dice.players['seat-1'].length,2);
+ assert.deepEqual(shieldLayout(game)!.rules!.extraDieSchedule,{playerId:'seat-1',firstRound:2});
+ assert.equal(roll(finishDiceRound(roundtrip(game))).dice.players['seat-1'].length,3);
 });
 
 test('19 and 30 stack, 32 gives a fourth key, and shield 13 doubles each explicit new value',()=>{

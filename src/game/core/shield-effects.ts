@@ -1,7 +1,7 @@
 import { LIVESTOCK_NAMES } from "../tile-help";
 import {keyOccupant,storedWeight,compactVineStorage,discardStored,VINE_TILES} from "../vineyards";
 import type { GameState, JsonValue, PendingChoice, PlayerState, DieValue } from "../types";
-import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, shieldTurnKey, shieldWorkerSteps, shieldWorkerCost,goodsCapacity, type ShieldAcquireAction } from "../shields";
+import { hasShield, shieldLayout, setShieldLayout, acquireShieldPreview, shieldSlotCount, diceShieldStatus, shieldRoundNumber, shieldWorkerSteps, shieldWorkerCost,goodsCapacity, type ShieldAcquireAction } from "../shields";
 import { placementIssue } from "./placement";
 import { executeIntent } from "./intents";
 import { prepareTileEffect, refreshPendingChoice } from "./effects";
@@ -199,12 +199,12 @@ export function shieldSpecialIssue(state:GameState,action:Extract<import("../typ
   const layout=shieldLayout(state),p=action.payload as Record<string,unknown>|null;
   if(!layout?.effectsActive||!p||typeof p!=="object"||Array.isArray(p))return "Active shield rules required";
   if(action.command==="choose-monastery-target")return hasShield(state,action.playerId,6)&&layout.rules!.monasteryTarget===null&&Object.keys(p).join() ==="targetPlayerId"&&state.players.some(player=>player.id!==action.playerId&&player.id===p.targetPlayerId)?null:"Choose another player once for shield6";
-  if(action.command==="change-die")return hasShield(state,action.playerId,16)&&Object.keys(p).sort().join() ==="dieId,value"&&layout.rules!.dieChangedTurn!==shieldTurnKey(state,action.playerId)&&state.dice.players[action.playerId]?.some(d=>d.id===p.dieId&&!d.used)&&Number.isInteger(p.value)&&Number(p.value)>=1&&Number(p.value)<=6?null:"Shield16 changes one unused die once per turn";
+  if(action.command==="change-die")return diceShieldStatus(layout,state.turn,state.dice,action.playerId,16)==="ready"&&Object.keys(p).sort().join() ==="dieId,value"&&state.dice.players[action.playerId]?.some(d=>d.id===p.dieId&&!d.used)&&Number.isInteger(p.value)&&Number(p.value)>=1&&Number(p.value)<=6?null:"Shield16 changes one unused die every other personal turn";
   return "Unknown shield command";
 }
 export function applyShieldSpecial(state:GameState,action:Extract<import("../types").GameAction,{type:"extension"}>):GameState {
   const layout=shieldLayout(state)!,p=action.payload as Record<string,unknown>;
   if(action.command==="choose-monastery-target")return setShieldLayout(state,{...layout,rules:{...layout.rules!,monasteryTarget:p.targetPlayerId as string}});
   const dice=state.dice.players[action.playerId].map(d=>d.id===p.dieId?{...d,value:p.value}:d) as unknown as GameState["dice"]["players"][string];
-  return setShieldLayout({...state,dice:{...state.dice,players:{...state.dice.players,[action.playerId]:dice}}},{...layout,rules:{...layout.rules!,dieChangedTurn:shieldTurnKey(state,action.playerId)}});
+  return setShieldLayout({...state,dice:{...state.dice,players:{...state.dice.players,[action.playerId]:dice}}},{...layout,rules:{...layout.rules!,dieChangedRounds:{...layout.rules!.dieChangedRounds,[action.playerId]:shieldRoundNumber(state.turn)}}});
 }

@@ -2,10 +2,13 @@ import {useState} from 'react';
 import type {GameAction,GameState,PlayerState} from '../game/types';
 import {playerPaint} from '../game/player-colors';
 import {WhiteDie} from './white-die';
+import type {DiceShieldStatus} from '../game/shields';
+import {diceShieldStatusText} from './shield-art';
 
 type Dice=GameState['dice']['players'][string];
-export function ShieldDieChange({dice,player,actions,disabled=false,onAction}:{dice:Dice;player:PlayerState;actions:readonly GameAction[];disabled?:boolean;onAction:(a:GameAction)=>void}){
+export function ShieldDieChange({dice,player,actions,disabled=false,status,onAction}:{dice:Dice;player:PlayerState;actions:readonly GameAction[];disabled?:boolean;status?:DiceShieldStatus;onAction:(a:GameAction)=>void}){
  const [chosen,setChosen]=useState<string|null>(null);
+ if(status&&status!=="ready")return <fieldset className="shield-dice-change" disabled aria-label="방패16 주사위 변경" data-shield-dice-inactive data-shield-dice-status={status}><legend>방패16 · 주사위 변경</legend><p>{diceShieldStatusText(16,status)}</p></fieldset>;
  const changes=actions.filter((a):a is Extract<GameAction,{type:'extension'}>=>a.type==='extension'&&a.extensionId==='shields'&&a.command==='change-die');
  if(!changes.length)return null;
  const selected=dice.find(d=>d.id===chosen&&!d.used)?.id??dice.find(d=>!d.used)?.id;

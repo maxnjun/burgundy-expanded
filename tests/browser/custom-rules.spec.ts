@@ -7,7 +7,7 @@ import {serializeTurnHistory} from '../../src/game/turn-history-cache';
 import {boardTarget,directActions} from '../../src/game/direct-actions';
 import {settleShieldState} from '../../src/game/core/shield-effects';
 import {setShieldLayout,shieldLayout} from '../../src/game/shields';
-import {boundary,choose,step} from '../fixtures/shields';
+import {boundary,choose,finishDiceRound,step} from '../fixtures/shields';
 import {customGame,customMount,moveTile,officialTerritory} from '../fixtures/custom-rules';
 import {isolatedRooms} from './isolated-rooms';
 import type {GameState,GameAction} from '../../src/game/types';
@@ -32,6 +32,44 @@ function nextPhase(game:GameState){
  }
  return n.turn.stage==='phase-end'?step(n,a):n;
 }
+
+test('shield dice cooldowns gray out independently and survive reload',async({page},info)=>{
+ const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:'seat-1'});
+ let game=customMount(customMount(customGame(),22),16);
+ const layout=shieldLayout(game)!;
+ game=setShieldLayout(game,{...layout,rules:{...layout.rules!,extraDieSchedule:{playerId:'seat-1',firstRound:2}}});
+ await load(page,roll(finishDiceRound(game)));
+ const control=page.getByLabel('방패16 주사위 변경',{exact:true});
+ const shield=(number:number)=>page.locator(`[data-mounted-shield="${number}"]`);
+ const dice=page.locator('.direct-dice button');
+ await expect(dice).toHaveCount(3);
+ await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
+ game=await current(page);
+ const face=game.dice.players['seat-1'][2]!.value===1?2:1;
+ await press(page.getByLabel('방패16 변경 대상 주사위 3',{exact:true}));
+ await press(page.getByLabel(`방패16 눈금 ${face}로 변경`,{exact:true}));
+ await expect(control).toHaveAttribute('disabled','');
+ await expect(shield(16)).toHaveAttribute('data-shield-dice-status','used');
+
+ await load(page,roll(finishDiceRound(await current(page))));
+ await page.reload();
+ await expect(dice).toHaveCount(2);
+ await expect(control).toHaveAttribute('disabled','');
+ await expect(control).toContainText('다음 자신의 턴부터 사용 가능');
+ for(const number of [16,22]){
+  await expect(shield(number)).toHaveAttribute('data-shield-dice-status','cooldown');
+  await expect(shield(number)).toHaveCSS('filter','grayscale(1)');
+ }
+ await expect(shield(22).locator('title').last()).toHaveText(/이번 턴 행동 주사위 2개/);
+ await page.screenshot({path:info.outputPath('shield-dice-cooldowns.png')});
+
+ await load(page,roll(finishDiceRound(await current(page))));
+ await expect(dice).toHaveCount(3);
+ await expect(control).not.toHaveAttribute('disabled','');
+ await expect(page.getByLabel('방패16 변경 대상 주사위 3',{exact:true})).toBeEnabled();
+ await expect(shield(16)).toHaveAttribute('data-shield-dice-status','ready');
+ await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
+});
 
 test('monastery 31 previews the historical refund, cancels, persists and undoes',async({page},info)=>{
  const {game,a,target,region}=officialTerritory();await load(page,game);

@@ -9,6 +9,16 @@ import type { GameState, Tile, GameAction } from "../../src/game/types";
 /** TEST FIXTURE: inject physical tiles/dice/shields into known board geometry, never an official setup. */
 export function setup(count=2):GameState {const g=createPracticeSession({names:["규칙A","규칙B","규칙C","규칙D"].slice(0,count),boardIds:Array(count).fill("se:base:2"),seed:"shield-rules-fixture",officialSlots:true,additionalHexes:true,shieldRules:true});const r=applyCoreAction(g,{type:"roll-round",playerId:"seat-1"});assert.ok(r.ok);return {...r.value.state,players:r.value.state.players.map(p=>({...p,workers:30,silver:30}))};}
 export function step(g:GameState,a:GameAction):GameState {const r=applyCoreAction(g,a);assert.ok(r.ok,r.ok?"":JSON.stringify(r.issues));assert.ok(validateCoreState(r.value.state).valid);return r.value.state;}
+export function finishDiceRound(game:GameState):GameState {
+  while(game.turn.stage==="player-turn"){
+    const playerId=game.turn.activePlayerId!;
+    for(const die of game.dice.players[playerId].filter(d=>!d.used)){
+      game=step(game,{type:"use-die",playerId,dieId:die.id,adjustment:{steps:[],workersSpent:0},intent:{kind:"take-workers"}});
+    }
+    game=step(game,{type:"end-turn",playerId});
+  }
+  return game;
+}
 let serial=0;
 export function placed(g:GameState,index:number,tile:Omit<Tile,"id">,cellId?:string):GameState {
   const p=g.players[index],cell=p.duchy.cells.find(c=>c.tileId===null&&(cellId?c.id===cellId:c.terrain===tile.type));assert.ok(cell,"fixture space");const id=`shield-fixture:${serial++}`;return {...g,tiles:{...g.tiles,[id]:{...tile,id} as Tile},players:g.players.map((p,i)=>i===index?{...p,duchy:{...p.duchy,cells:p.duchy.cells.map(c=>c.id===cell.id?{...c,tileId:id}:c)}}:p)};

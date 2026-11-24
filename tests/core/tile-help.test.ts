@@ -54,11 +54,13 @@ test("monastery28 other-turn repeat purchase and29 crane count agree with descri
  g=placed(g,0,monk(29));g=placed(g,0,building("white-castle"));g=placed(g,0,building("crane"));
  const score=finalScore(g,g.players[0]);assert.ok(score.ok);assert.equal(score.value.finalAdditions.find(e=>e.id.endsWith("monastery-29"))!.points,4);assert.equal(score.value.finalAdditions.find(e=>e.id.endsWith("crane-building"))!.points,4);assert.match(getTileHelp("monastery",29)!.details,/일반 초록 성은 세지/);
 });
-test("shield6 self target and16 once-per-turn unused die condition match actual validation",()=>{
+test("shield6 self target and the shield16 cooldown match actual validation",()=>{
  const g=mount(mount(setup(),6),16),p=g.players[0];
  assert.notEqual(shieldSpecialIssue(g,{type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId:p.id,payload:{targetPlayerId:p.id}}),null);
  const a={type:"extension" as const,extensionId:"shields" as const,command:"change-die",playerId:p.id,payload:{dieId:g.dice.players[p.id][0].id,value:6}};
  assert.equal(shieldSpecialIssue(g,a),null);const next=step(g,a);assert.ok(shieldSpecialIssue(next,a));assert.equal(next.dice.players[p.id][0].used,false);
- assert.match(getTileHelp("shield",6)!.details,/자신을 제외/);assert.match(getTileHelp("shield",16)!.timing,/한 번/);
+ assert.match(getTileHelp("shield",6)!.details,/자신을 제외/);
+ assert.match(getTileHelp("shield",16)!.timing,/다음 자신의 턴에 재사용 불가/);
+ assert.match(getTileHelp("shield",22)!.timing,/획득한 다음 자신의 턴/);
  assert.match(getTileHelp("shield",3)!.details,/일꾼 1개/);assert.match(getTileHelp("shield",14)!.details,/유지비/);assert.match(getTileHelp("shield",15)!.details,/포도 상점은 대상이 아닙니다/);assert.match(SHIELD_MAINTENANCE,/14·15/);
 });

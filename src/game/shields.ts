@@ -7,9 +7,9 @@ export const SHIELD_ABILITIES = [
   "선박 배치 시 같은 종류 상품 추가", "선택한 상대 수도원 공유", "새 보너스 타일 점수 두 배", "광산 은화 두 배",
   "판매 상품마다 은화", "종료 수도원 점수 두 배", "성 추가 행동으로 방패 획득", "상품 판매 점수 두 배",
   "종료 방패 점수 두 배", "단계 말 번호 공급 타일 직접 배치", "단계 말 검은 공급 타일 직접 배치",
-  "차례에 주사위 하나 자유 변경", "지역을 한 칸 크게 계산", "인접 조건 없이 배치",
+  "자신의 턴 2번당 주사위 하나 자유 변경", "지역을 한 칸 크게 계산", "인접 조건 없이 배치",
   "저장고 타일 폐기당 은화 1개", "페이즈당 공급 타일 하나 찜", "은화 2개로 상대 저장고 타일 구매",
-  "다음 라운드부터 행동 주사위 3개", "상품 여섯 종류 보관", "턴당 구매 제한 해제",
+  "자신의 턴마다 행동 주사위 3개·2개 교대", "상품 여섯 종류 보관", "턴당 구매 제한 해제",
 ] as const;
 export const SHIELD_POINTS=[12,12,12,12,12,12,8,8,8,8,8,8,4,4,4,4,4,4,8,8,4,4,12,4] as const;
 export interface ShieldSlot { readonly id: string; readonly depot: DieValue; readonly index: number; readonly shieldNumber: number | null }
@@ -19,6 +19,8 @@ export interface ShieldLayout {
   readonly rules?: {
     readonly monasteryTarget: string | null;
     readonly dieChangedTurn: string | null;
+    readonly dieChangedRounds?: Readonly<Record<string, number>>;
+    readonly extraDieSchedule?: { readonly playerId: string; readonly firstRound: number };
     readonly phase: null | { readonly phase: string; readonly stage: "free" | "tribute" | "ready"; readonly freeDone: readonly number[]; readonly paid: readonly number[] };
   };
   readonly slots: readonly ShieldSlot[];
@@ -31,6 +33,41 @@ const record = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 export function shieldSlotCount(players: number, depot: number): number { return players === 4 || (players === 3 && depot % 2 === 0) ? 2 : 1; }
 export function shieldLayout(game: Pick<GameState,"extensionStates">): ShieldLayout | null {
   return (game.extensionStates.shields as unknown as ShieldLayout) ?? null;
+}
+
+type ShieldRound = Pick<GameState["turn"], "phase" | "round" | "stage">;
+type DiceShieldLayout = Pick<ShieldLayout, "effectsActive" | "rules" | "mounted">;
+export type DiceShieldStatus = "ready" | "used" | "cooldown" | "pending";
+
+// Each seat has exactly one normal turn per round, regardless of turn order.
+export function shieldRoundNumber(turn: Pick<ShieldRound, "phase" | "round">): number {
+  return "ABCDE".indexOf(turn.phase) * 5 + turn.round;
+}
+
+function legacyExtraDieStart(turn: ShieldRound, diceCount: number): number {
+  const round = shieldRoundNumber(turn);
+  // Existing saves keep the dice already rolled. Anchor the schedule on their next roll.
+  return turn.stage === "round-setup" ? Math.max(1, round - Number(diceCount === 3)) : round + Number(diceCount !== 3);
+}
+
+export function diceShieldStatus(layout: DiceShieldLayout | null, turn: ShieldRound, dice: GameState["dice"], playerId: string, number: number): DiceShieldStatus | undefined {
+  if ((number !== 16 && number !== 22) || !layout?.effectsActive || !layout.rules || !layout.mounted.some(m => m.playerId === playerId && m.shieldNumber === number)) return;
+  const rules = layout.rules, round = shieldRoundNumber(turn);
+  if (number === 16) {
+    const legacy = /^([A-E]):([1-5]):(.+)$/.exec(rules.dieChangedTurn ?? "");
+    const previous = rules.dieChangedRounds?.[playerId] ?? (legacy?.[3] === playerId ? "ABCDE".indexOf(legacy[1]) * 5 + Number(legacy[2]) : 0);
+    return previous === round ? "used" : previous > 0 && previous + 1 === round ? "cooldown" : "ready";
+  }
+  const start = rules.extraDieSchedule?.playerId === playerId ? rules.extraDieSchedule.firstRound : legacyExtraDieStart(turn, dice.players[playerId].length);
+  return round < start ? "pending" : (round - start) % 2 ? "cooldown" : "ready";
+}
+
+export function anchorLegacyExtraDie(game: GameState): GameState {
+  const layout = shieldLayout(game);
+  const owner = layout?.rules && layout.mounted.find(m => m.shieldNumber === 22);
+  if (!layout?.rules || !owner || layout.rules.extraDieSchedule?.playerId === owner.playerId) return game;
+  const firstRound = legacyExtraDieStart(game.turn, game.dice.players[owner.playerId].length);
+  return setShieldLayout(game, {...layout, rules: {...layout.rules, extraDieSchedule: {playerId: owner.playerId, firstRound}}});
 }
 /** Finite uniform sampling of the 18 unique shields, not a replacement pool. */
 export function createShieldLayout(players: 2 | 3 | 4, input: GameState["random"], active = false,custom=false): { layout: ShieldLayout; random: GameState["random"] } {
@@ -74,7 +111,11 @@ export function validShieldLayout(game: GameState): boolean {
       Object.keys(raw).sort().join(",")!==(active?"boxed,effectsActive,format,mounted,removed,rules,slots":"boxed,effectsActive,format,mounted,removed,slots") || !Array.isArray(raw.slots)||!Array.isArray(raw.mounted)||!Array.isArray(raw.removed)||!Array.isArray(raw.boxed))return false;
     if(active){
       const r=raw.rules;
-      if(!record(r)||Object.keys(r).sort().join(",")!=="dieChangedTurn,monasteryTarget,phase" || (r.monasteryTarget!==null&&!game.players.some(p=>p.id===r.monasteryTarget)) || (r.dieChangedTurn!==null&&(typeof r.dieChangedTurn!=="string"||!/^[A-E]:[1-5]:/.test(r.dieChangedTurn))))return false;
+      if(!record(r)||Object.keys(r).filter(key=>key!=="dieChangedRounds"&&key!=="extraDieSchedule").sort().join(",")!=="dieChangedTurn,monasteryTarget,phase" || (r.monasteryTarget!==null&&!game.players.some(p=>p.id===r.monasteryTarget)) || (r.dieChangedTurn!==null&&(typeof r.dieChangedTurn!=="string"||!/^[A-E]:[1-5]:/.test(r.dieChangedTurn))))return false;
+      const currentRound=shieldRoundNumber(game.turn);
+      const validRound=(n:unknown,latest:number)=>typeof n==="number"&&Number.isInteger(n)&&n>=1&&n<=latest;
+      if(r.dieChangedRounds!==undefined&&(!record(r.dieChangedRounds)||Object.entries(r.dieChangedRounds).some(([id,n])=>!game.players.some(p=>p.id===id)||!validRound(n,currentRound))))return false;
+      if(r.extraDieSchedule!==undefined){const s=r.extraDieSchedule;if(!custom||!record(s)||Object.keys(s).sort().join(",")!=="firstRound,playerId"||!game.players.some(p=>p.id===s.playerId)||!validRound(s.firstRound,currentRound+1))return false;}
       if(r.phase!==null){const f=r.phase;if(!record(f)||Object.keys(f).sort().join(",")!=="freeDone,paid,phase,stage"||game.turn.stage!=="phase-end"||f.phase!==game.turn.phase||!["free","tribute","ready"].includes(f.stage as string)||!Array.isArray(f.freeDone)||!Array.isArray(f.paid)||new Set(f.freeDone).size!==f.freeDone.length||new Set(f.paid).size!==f.paid.length||f.freeDone.some(n=>n!==14&&n!==15)||f.paid.some(n=>!Number.isInteger(n)||n<1||n>total))return false;const freeDone=f.freeDone,paid=f.paid;if(f.stage==="free"&&paid.length)return false;
         if(f.stage!=="free"&&raw.mounted.some(m=>m&&(m.shieldNumber===14||m.shieldNumber===15)&&!freeDone.includes(m.shieldNumber)))return false;
         if(f.stage==="ready"&&raw.mounted.some(m=>m&&!paid.includes(m.shieldNumber)))return false;}
@@ -136,7 +177,8 @@ export function acquireShieldPreview(game: GameState, action: ShieldAcquireActio
   return {...game,extensionStates:{...game.extensionStates,shields:{...layout,
     slots,
     mounted:[...layout.mounted.filter(m=>m!==old),{shieldNumber:slot.shieldNumber!,sourceDepot:slot.depot,...(custom?{sourceSlotId:slot.id}:{}),playerId:action.playerId,cellId:action.payload.castleCellId,castleTileId:game.players.find(p=>p.id===action.playerId)!.duchy.cells.find(c=>c.id===action.payload.castleCellId)!.tileId!}],
-    ...((layout.rules)?{rules:{...layout.rules,monasteryTarget:action.payload.replaceShieldNumber===6||slot.shieldNumber===6?null:layout.rules.monasteryTarget}}:{}),
+    ...((layout.rules)?{rules:{...layout.rules,monasteryTarget:action.payload.replaceShieldNumber===6||slot.shieldNumber===6?null:layout.rules.monasteryTarget,
+      ...(slot.shieldNumber===22?{extraDieSchedule:{playerId:action.playerId,firstRound:shieldRoundNumber(game.turn)+1}}:{})}}:{}),
   } as unknown as JsonValue}, players:game.players.map(p=>p.id===action.playerId?{...p,workers:p.workers-(free?0:cost)}:p),
     dice:free?game.dice:{...game.dice,players:{...game.dice.players,[action.playerId]:dice.map(d=>selected.includes(d.id)?{...d,used:true,value:slot.depot}:d) as unknown as GameState["dice"]["players"][string]}}};
 }
@@ -164,4 +206,3 @@ export function rewardShieldWorkerGain(game:GameState, gainingId:string, amount:
   return {...game,players:game.players.map(p=>p.id!==gainingId&&hasShield(game,p.id,2)?{...p,workers:p.workers+1}:p)};
 }
 export function setShieldLayout(game:GameState,layout:ShieldLayout):GameState{return {...game,extensionStates:{...game.extensionStates,shields:layout as unknown as JsonValue}};}
-export function shieldTurnKey(game:GameState,playerId:string):string{return `${game.turn.phase}:${game.turn.round}:${playerId}`;}

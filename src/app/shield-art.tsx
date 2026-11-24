@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
-import { SHIELD_ABILITIES,SHIELD_POINTS } from "../game/shields";
+import { SHIELD_ABILITIES,SHIELD_POINTS,type DiceShieldStatus } from "../game/shields";
 import { ResourceGlyph } from "./resource-icon";
 import {getTileHelp} from "../game/tile-help";
 import approved from "../../public/shields/manifest.json";
@@ -25,15 +25,20 @@ export function ShieldArt({number,x=0,y=0,numberSize=17,placeholder="—"}: {num
 }
 export function shieldLabel(number:number) { return `방패 ${number} · ${SHIELD_ABILITIES[number-1]}`; }
 
+export function diceShieldStatusText(number:number,status:DiceShieldStatus):string {
+  if(number===22)return status==="pending"?"다음 자신의 턴에 행동 주사위 3개":status==="ready"?"이번 턴 행동 주사위 3개":"이번 턴 행동 주사위 2개";
+  return status==="used"?"이번 턴에 사용함 · 다음 자신의 턴은 재사용 대기":status==="cooldown"?"이번 턴은 재사용 대기 · 다음 자신의 턴부터 사용 가능":"이번 턴 사용 가능";
+}
+
 export function ShieldThumbnail({number}:{number:number}) {
   return <svg className="inline-tile-art" width={24} height={28} viewBox="-30 -38 60 74" aria-hidden="true"><ShieldArt number={number}/></svg>;
 }
 
 /** Same board coordinates as the underlying castle; the parent hex owns the touch target. */
-export function MountedShield({number,tileId,x,y}:{number:number;tileId:string;x:number;y:number}) {
-  return <g data-mounted-shield={number} data-castle-tile={tileId} transform={`translate(${x} ${y})`} pointerEvents="none"><title>{shieldLabel(number)}</title><g data-mounted-shield-scale={MOUNTED_SHIELD_SCALE} transform={`scale(${MOUNTED_SHIELD_SCALE})`}><ShieldArt number={number} numberSize={23}/></g></g>;
+export function MountedShield({number,tileId,x,y,status}:{number:number;tileId:string;x:number;y:number;status?:DiceShieldStatus}) {
+  return <g data-mounted-shield={number} data-castle-tile={tileId} data-shield-dice-status={status} data-shield-dice-inactive={status&&status!=="ready"||undefined} transform={`translate(${x} ${y})`} pointerEvents="none"><title>{shieldLabel(number)}{status&&` · ${diceShieldStatusText(number,status)}`}</title><g data-mounted-shield-scale={MOUNTED_SHIELD_SCALE} transform={`scale(${MOUNTED_SHIELD_SCALE})`}><ShieldArt number={number} numberSize={23}/></g></g>;
 }
-export function ShieldDetails({number,onClose,active=true}:{number:number;onClose:()=>void;active?:boolean}) {
+export function ShieldDetails({number,onClose,active=true,status}:{number:number;onClose:()=>void;active?:boolean;status?:DiceShieldStatus}) {
   const help=getTileHelp("shield",number)!;
-  return <section role="dialog" aria-label="방패 상세" className="direct-confirm shield-detail" data-tile-help-inline><div className="shield-detail-heading"><svg viewBox="-30 -38 60 74" role="img" aria-label={`방패 ${number} 확대 이미지`}><ShieldArt number={number}/></svg><strong>{shieldLabel(number)}</strong></div><p>기본 종료 승점 {SHIELD_POINTS[number-1]}점</p><p>{help.summary}</p><p>{help.details}</p><p>{help.timing}</p><p>{active?"성에 장착된 동안 능력이 적용됩니다. 유지비와 종료 점수에는 현재 보유 효과가 반영됩니다.":"방패 UI 검증 모드입니다. 능력·유지비·종료 점수는 적용되지 않습니다."}</p><button onClick={onClose}>방패 상세 닫기</button></section>;
+  return <section role="dialog" aria-label="방패 상세" className="direct-confirm shield-detail" data-tile-help-inline><div className="shield-detail-heading"><svg viewBox="-30 -38 60 74" role="img" aria-label={`방패 ${number} 확대 이미지`} data-shield-dice-inactive={status&&status!=="ready"||undefined}><ShieldArt number={number}/></svg><strong>{shieldLabel(number)}</strong></div><p>기본 종료 승점 {SHIELD_POINTS[number-1]}점</p><p>{help.summary}</p><p>{help.details}</p><p>{help.timing}</p>{status&&<p data-shield-dice-status={status}>{diceShieldStatusText(number,status)}</p>}<p>{active?"성에 장착된 동안 능력이 적용됩니다. 유지비와 종료 점수에는 현재 보유 효과가 반영됩니다.":"방패 UI 검증 모드입니다. 능력·유지비·종료 점수는 적용되지 않습니다."}</p><button onClick={onClose}>방패 상세 닫기</button></section>;
 }
