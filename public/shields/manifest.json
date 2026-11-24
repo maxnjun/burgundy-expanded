@@ -3,7 +3,7 @@
     1200,
     1480
   ],
-  "mapping": "approved-number-1-to-18",
+  "mapping": "approved-number-1-to-24",
   "assets": [
     {
       "number": 1,
@@ -398,6 +398,156 @@
         38,
         10,
         1161,
+        1470
+      ]
+    },
+    {
+      "number": 19,
+      "file": "shield-19.png",
+      "source": "asset-inbox/shield-approved/originals/shield-19.png",
+      "sourceSha256": "e945bb6365ba17ab1c5590ef38be4c7f48587ed2680587d2da377e68225e8dec",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceMode": "RGBA",
+      "zipEntry": "방패 타일/19번.png",
+      "outputSha256": "033962f6f8c20c55bd00135f2a0e8b8eb3f066ad77577b606ecc5597e0e2b2e8",
+      "sourceBounds": [
+        30,
+        28,
+        1013,
+        1420
+      ],
+      "artBounds": [
+        84,
+        10,
+        1115,
+        1470
+      ]
+    },
+    {
+      "number": 20,
+      "file": "shield-20.png",
+      "source": "asset-inbox/shield-approved/originals/shield-20.png",
+      "sourceSha256": "4a99f41441e3a021507c07b127977e9b9eb2f9240e60a61b6ba0880817145b57",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceMode": "RGBA",
+      "zipEntry": "방패 타일/20번.png",
+      "outputSha256": "23864334cf6e5e4f81f676da61c2fce531f93d231e59dd2fb918485f0ca84c89",
+      "sourceBounds": [
+        31,
+        57,
+        1012,
+        1416
+      ],
+      "artBounds": [
+        73,
+        10,
+        1127,
+        1470
+      ]
+    },
+    {
+      "number": 21,
+      "file": "shield-21.png",
+      "source": "asset-inbox/shield-approved/originals/shield-21.png",
+      "sourceSha256": "91e65b79b2f3f06ae7d1192bd288572e8fc3bf90c78ba7391ee50b8406ae14f7",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceMode": "RGBA",
+      "zipEntry": "방패 타일/21번.png",
+      "outputSha256": "e53019c606c8d2c5fb4d0f3bb26407bd056747b7c68a1a91d97a006503f3a5e1",
+      "sourceBounds": [
+        31,
+        58,
+        1013,
+        1429
+      ],
+      "artBounds": [
+        77,
+        10,
+        1123,
+        1470
+      ]
+    },
+    {
+      "number": 22,
+      "file": "shield-22.png",
+      "source": "asset-inbox/shield-approved/originals/shield-22.png",
+      "sourceSha256": "198f78fd17272143efcc429743867d57c858efd56b08f15419f160b14b087ed9",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceMode": "RGBA",
+      "zipEntry": "방패 타일/22번.png",
+      "outputSha256": "796d98d0dc4baf6db648b5bb50660e234b286c2b97fdece081d1d2f5c525fe88",
+      "sourceBounds": [
+        31,
+        57,
+        1012,
+        1398
+      ],
+      "artBounds": [
+        66,
+        10,
+        1134,
+        1470
+      ]
+    },
+    {
+      "number": 23,
+      "file": "shield-23.png",
+      "source": "asset-inbox/shield-approved/originals/shield-23.png",
+      "sourceSha256": "d26eb500689ee178c53dc44902f959ef83707a05d0bba2cdc70569472c2a7b83",
+      "sourceSize": [
+        1043,
+        1508
+      ],
+      "sourceMode": "RGBA",
+      "zipEntry": "방패 타일/23번.png",
+      "outputSha256": "0a55bacf04aba02fa2a477bbd4c773cf025c6f81cee424052ba61cf67c919323",
+      "sourceBounds": [
+        31,
+        58,
+        1012,
+        1386
+      ],
+      "artBounds": [
+        60,
+        10,
+        1139,
+        1470
+      ]
+    },
+    {
+      "number": 24,
+      "file": "shield-24.png",
+      "source": "asset-inbox/shield-approved/originals/shield-24.png",
+      "sourceSha256": "e8fa16571ab693b4d7ef657f5b247158eeeee098d1dfb91c61d3c630618af3ef",
+      "sourceSize": [
+        1086,
+        1448
+      ],
+      "sourceMode": "RGB",
+      "zipEntry": "방패 타일/24번.png",
+      "outputSha256": "5acb22ade70a511817e543bea19c0d63bdfec4bd2abff017c4c794dfc8e20b6f",
+      "sourceBounds": [
+        82,
+        57,
+        1005,
+        1360
+      ],
+      "artBounds": [
+        83,
+        10,
+        1117,
         1470
       ]
     }

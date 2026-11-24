@@ -18,11 +18,11 @@ async function decoded(page:Page){
  await page.locator("image,img").evaluateAll(els=>Promise.all(els.map(async el=>{const image=new Image();image.src=el.getAttribute("href")??el.getAttribute("src")!;await image.decode();})));
 }
 
-test("all 29 approved faces load by number with one baked border and shared hex at every PC zoom",async({page})=>{
- expect(assets.assets.map(a=>a.number)).toEqual(Array.from({length:29},(_,i)=>i+1));
- expect(new Set(assets.assets.map(a=>a.file)).size).toBe(29);
+test("all 32 approved faces load by number with one baked border and shared hex at every PC zoom",async({page})=>{
+ expect(assets.assets.map(a=>a.number)).toEqual(Array.from({length:32},(_,i)=>i+1));
+ expect(new Set(assets.assets.map(a=>a.file)).size).toBe(32);
  await page.goto("/monastery-gallery");await decoded(page);
- await expect(page.locator('[data-baked-tile-frame="approved-monastery"]')).toHaveCount(58);
+ await expect(page.locator('[data-baked-tile-frame="approved-monastery"]')).toHaveCount(64);
  await expect(page.locator("[data-tile-frame],[data-rim-band],[data-resource-effect]")).toHaveCount(0);
  // Number/effect/black-back artwork is already in the PNG; no second SVG drawing.
  await expect(page.locator("[data-tile-art] text,[data-tile-art] path")).toHaveCount(0);
@@ -44,7 +44,7 @@ test("all 29 approved faces load by number with one baked border and shared hex 
  await decoded(page);await page.screenshot({path:`${out}/before-after.png`,fullPage:true});
  for(const zoom of [100,160,200]){
   const w=48*Math.sqrt(3)*zoom/100;
-  const tiles=assets.assets.map((a,i)=>renderToStaticMarkup(createElement(TileArt,{tile:{...face(a.number),id:`adjacent-${a.number}`},x:i%6*100+(Math.floor(i/6)%2?50:0),y:Math.floor(i/6)*H*.75,width:100,height:H}),{identifierPrefix:`m${a.number}`})).join("");
+  const tiles=assets.assets.slice(0,29).map((a,i)=>renderToStaticMarkup(createElement(TileArt,{tile:{...face(a.number),id:`adjacent-${a.number}`},x:i%6*100+(Math.floor(i/6)%2?50:0),y:Math.floor(i/6)*H*.75,width:100,height:H}),{identifierPrefix:`m${a.number}`})).join("");
   await page.setContent(`<body style="margin:0;background:#efe2c3"><h3>29 faces · ${zoom}%</h3><svg data-neighbours viewBox="0 0 650 ${H*4}" width="${w*6.5}" height="${H*4*w/100}" style="background:#ff00ff">${tiles}</svg></body>`);
   await decoded(page);await expect(page.locator('[data-baked-tile-frame="approved-monastery"]')).toHaveCount(29);
   const distance=await page.locator("[data-tile-art]").evaluateAll((els,H)=>{
@@ -80,7 +80,7 @@ async function load(page:Page,game:ReturnType<typeof setup>){
 test("all 29 faces match in numbered black supply storage estate and placement preview without state changes",async({page})=>{
  await init(page);
  for(let start=0;start<29;start+=3){
-  const batch=assets.assets.slice(start,start+3),game=fixture(batch);await load(page,game);await decoded(page);
+  const batch=assets.assets.slice(start,Math.min(start+3,29)),game=fixture(batch);await load(page,game);await decoded(page);
   const board=page.getByRole("group",{name:"규칙A 영지",exact:true});
   for(const a of batch){
    const supplyCount=[...game.market.blackDepot,...game.market.numberedDepots.flatMap(d=>d.slots.map(s=>s.tileId))].filter(id=>{const tile=id?game.tiles[id]:null;return tile?.type==="monastery"&&tile.number===a.number;}).length;

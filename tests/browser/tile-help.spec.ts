@@ -24,7 +24,7 @@ async function fits(page:Page,popup:Locator){const b=(await popup.boundingBox())
 async function touchStart(page:Page,cdp:CDPSession,source:Locator){await source.scrollIntoViewIfNeeded();const b=(await source.boundingBox())!;const p={x:b.x+b.width/2,y:b.y+b.height/2,id:1};await cdp.send("Input.dispatchTouchEvent",{type:"touchStart",touchPoints:[p]});return p;}
 async function touchEnd(cdp:CDPSession){await cdp.send("Input.dispatchTouchEvent",{type:"touchEnd",touchPoints:[]});}
 
-test("bottom encyclopedia contains monastery29 shield18 and independent category/detail toggles",async({page},info)=>{
+test("bottom encyclopedia shows 32 monastery and 24 shield faces with independent category/detail toggles",async({page},info)=>{
  const g=await load(page,3,true),panel=page.locator(".tile-encyclopedia");await panel.scrollIntoViewIfNeeded();
  await expect(panel).toHaveAttribute("open","");await expect(panel.getByRole("button",{name:"방패 카테고리",exact:true}).locator("svg text")).toHaveText("?");
  for(const [kind,label,total] of [["monastery","수도원",32],["shield","방패",24]] as const){
@@ -32,7 +32,7 @@ test("bottom encyclopedia contains monastery29 shield18 and independent category
   expect(await entries.evaluateAll(els=>els.map(e=>e.getAttribute("data-help-entry")))).toEqual(Array.from({length:total},(_,i)=>`${kind}:${i+1}`));
   for(let n=1;n<=total;n++){
    const button=panel.locator(`[data-help-entry="${kind}:${n}"]`);await button.click();const content=panel.locator(".tile-help-selected");await expect(content.locator("h3")).toHaveText(getTileHelp(kind,n)!.name);await expect(content.locator(".tile-help-summary")).toHaveText(getTileHelp(kind,n)!.summary);
-   if(kind==="monastery"&&n<=29)await expect(button.locator("image")).toHaveAttribute("data-approved-monastery",String(n));
+   await expect(button.locator("image")).toHaveAttribute(`data-${kind==="shield"?"shield-image":"approved-monastery"}`,String(n));
   }
   await entries.last().click();await expect(panel.locator(".tile-help-selected")).toHaveCount(0);
  }

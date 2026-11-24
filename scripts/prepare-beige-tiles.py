@@ -74,16 +74,16 @@ def measure(source):
     return center, radius, scale, vertices
 
 
-def common_alpha():
-    radius = SIZE/2
+def common_alpha(size=SIZE):
+    radius = size/2
     points = [(radius+radius*math.cos(math.radians(-90+60*i)),
                radius+radius*math.sin(math.radians(-90+60*i))) for i in range(6)]
-    mask = Image.new("L", (SIZE*4, SIZE*4))
+    mask = Image.new("L", (size*4, size*4))
     ImageDraw.Draw(mask).polygon([(x*4, y*4) for x, y in points], fill=255)
-    mask = mask.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
+    mask = mask.resize((size, size), Image.Resampling.LANCZOS)
     p = mask.load()
-    for y in range(SIZE):
-        for x in range(SIZE):
+    for y in range(size):
+        for x in range(size):
             dx, dy = abs(x+.5-radius), abs(y+.5-radius)
             if dx > math.sqrt(3)*radius/2 or dy+dx/math.sqrt(3) > radius:
                 p[x, y] = 0
@@ -93,8 +93,9 @@ def common_alpha():
 def registered(source, center, scale, alpha):
     # One uniform affine resampling. No per-side warp, recolour or generated art.
     cx, cy = center
-    rgb = source.convert("RGB").transform((SIZE, SIZE), Image.Transform.AFFINE,
-        (1/scale, 0, cx-SIZE/2/scale, 0, 1/scale, cy-SIZE/2/scale), Image.Resampling.BICUBIC)
+    size = alpha.width
+    rgb = source.convert("RGB").transform(alpha.size, Image.Transform.AFFINE,
+        (1/scale, 0, cx-size/2/scale, 0, 1/scale, cy-size/2/scale), Image.Resampling.BICUBIC)
     result = rgb.convert("RGBA")
     result.putalpha(alpha)
     result.paste((0, 0, 0, 0), mask=alpha.point(lambda a: 255 if a == 0 else 0))

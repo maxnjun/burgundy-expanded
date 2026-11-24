@@ -19,7 +19,7 @@
     115.47005383792516
   ],
   "renderMode": "full-face-approved-baked-border-no-svg-overlay",
-  "count": 29,
+  "count": 32,
   "zipSha256": "81ad011a09699ef0012fdb697a6f0c7d9e3772e2231cedece6c86a72aba1705e",
   "registration": "measured-inscribed-hex-isotropic-4px-matte-guard",
   "protectedInnerFraction": 0.9,
@@ -1501,6 +1501,165 @@
         0,
         955,
         1024
+      ]
+    },
+    {
+      "number": 30,
+      "file": "monastery-30.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-30.png",
+      "sourceSha256": "593948433feadafbfee9a0354e43a853bf1ac939384a88b5ac4106be7c400998",
+      "sourceSize": [
+        1293,
+        1216
+      ],
+      "sourceMode": "RGB",
+      "zipEntry": "수도원 타일/30번.png",
+      "outputSha256": "7f78979c1887bd55696ce1c61227762c324f1785a36f85e74e085290fed9e436",
+      "canvas": 768,
+      "measuredSourceCenter": [
+        643.0916185945307,
+        605.3728972948871
+      ],
+      "measuredSourceVertices": [
+        [
+          643.2473342426274,
+          79.85874624061496
+        ],
+        [
+          1119.0,
+          364.95014922278926
+        ],
+        [
+          1119.0,
+          848.3623428582464
+        ],
+        [
+          643.2569685011274,
+          1126.7906411470215
+        ],
+        [
+          166.90509220475906,
+          850.7632428509427
+        ],
+        [
+          167.14031661867043,
+          361.512261449708
+        ]
+      ],
+      "registeredSourceRadius": 511.8275947469924,
+      "isotropicScale": 0.7502526318257998,
+      "protectedFraction": 0.9313338219162793,
+      "alphaBounds": [
+        51,
+        0,
+        717,
+        768
+      ]
+    },
+    {
+      "number": 31,
+      "file": "monastery-31.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-31.png",
+      "sourceSha256": "c1bee2a0d5a1c8d27f7b149b661a2fc21239d9ef942bdbf8887dcf900bcfb1ad",
+      "sourceSize": [
+        1293,
+        1216
+      ],
+      "sourceMode": "RGB",
+      "zipEntry": "수도원 타일/31번.png",
+      "outputSha256": "18fa266aece4569f2af12074832f6bc0497f16a089c1bd969d2c08d1c0bd432d",
+      "canvas": 768,
+      "measuredSourceCenter": [
+        643.4469249518055,
+        604.7447222364332
+      ],
+      "measuredSourceVertices": [
+        [
+          642.6479681256175,
+          78.81033967313934
+        ],
+        [
+          1120.0,
+          362.590732603868
+        ],
+        [
+          1120.0,
+          848.7018265675518
+        ],
+        [
+          644.0335815852156,
+          1127.8150419861263
+        ],
+        [
+          167.0,
+          850.1537326219144
+        ],
+        [
+          167.0,
+          360.39665996599945
+        ]
+      ],
+      "registeredSourceRadius": 513.774435904299,
+      "isotropicScale": 0.7474097058257057,
+      "protectedFraction": 0.9336666503791738,
+      "alphaBounds": [
+        51,
+        0,
+        717,
+        768
+      ]
+    },
+    {
+      "number": 32,
+      "file": "monastery-32.png",
+      "source": "asset-inbox/monastery-approved/originals/monastery-32.png",
+      "sourceSha256": "d48169686166051c1a85663ffddbcacc52e6c8d55ffa6daf564b75cdd3bc82db",
+      "sourceSize": [
+        1293,
+        1216
+      ],
+      "sourceMode": "RGB",
+      "zipEntry": "수도원 타일/32번.png",
+      "outputSha256": "4ce66586f97580343c56ddfd0d80a292fc827d16b6adfd1465c0cae2a68fc72e",
+      "canvas": 768,
+      "measuredSourceCenter": [
+        643.7570897207653,
+        605.1336068123875
+      ],
+      "measuredSourceVertices": [
+        [
+          643.9668536327158,
+          80.03232934044891
+        ],
+        [
+          1121.0,
+          364.9277897605671
+        ],
+        [
+          1121.0,
+          848.0743593290134
+        ],
+        [
+          642.5756846918757,
+          1127.321830026045
+        ],
+        [
+          167.0,
+          850.4491589653318
+        ],
+        [
+          167.0,
+          359.9961734529188
+        ]
+      ],
+      "registeredSourceRadius": 512.339918578516,
+      "isotropicScale": 0.749502402751294,
+      "protectedFraction": 0.9297139366664187,
+      "alphaBounds": [
+        51,
+        0,
+        717,
+        768
       ]
     }
   ]

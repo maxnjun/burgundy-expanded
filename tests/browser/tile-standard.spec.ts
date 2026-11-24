@@ -14,7 +14,7 @@ const faces:Tile[]=[
  {id:"castle",type:"castle",back:"black"},{id:"mine",type:"mine",back:"black"},{id:"ship",type:"ship",back:"black"},
  ...["market","carpenters-workshop","church","warehouse","boarding-house","bank","town-hall","watchtower","crane","white-castle"].map(building=>({id:building,type:"building",building,back:"black"}) as Tile),
  ...["sheep","pigs","cattle","chickens","geese"].map(species=>({id:species,type:"livestock",species,count:2,back:"black"}) as Tile),
- ...Array.from({length:29},(_,i)=>i+1).map(number=>({id:`monastery-${number}`,type:"monastery",number,back:"black"}) as Tile),
+ ...Array.from({length:32},(_,i)=>i+1).map(number=>({id:`monastery-${number}`,type:"monastery",number,back:"black"}) as Tile),
  {id:"inn",type:"inn",back:"black"},
 ];
 
@@ -25,7 +25,7 @@ test("every tile face shares viewBox clip inward frame and readable resource siz
  await page.locator('image,img').evaluateAll(async els=>Promise.all(els.map(async el=>{const i=new Image();i.src=el.getAttribute('href')??el.getAttribute('src')!;await i.decode();})));
  const tiles=page.locator('[data-tile-art]');await expect(tiles).toHaveCount(faces.length);
  await expect(tiles.locator('image[data-approved-building]')).toHaveCount(10);
- await expect(tiles.locator('image[data-approved-monastery]')).toHaveCount(29);
+ await expect(tiles.locator('image[data-approved-monastery]')).toHaveCount(32);
  await expect(tiles.locator('[data-rim-band]')).toHaveCount(27);
  for(const tile of await tiles.all()){
   const baked=['approved-beige','approved-monastery'].includes((await tile.getAttribute('data-baked-tile-frame'))??'');

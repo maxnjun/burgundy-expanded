@@ -25,4 +25,6 @@ for(let number=1;number<=18;number++){
  assets.push({number,file,sourceSha256:sha(source),outputSha256:sha(output),sourceSize:[w,h],sourceBounds:[left,top,right+1,bottom+1],artBounds:[x,y,x+meta.width,y+meta.height]});
  console.log(`${file}: ${w}x${h} → 1200x1480 RGBA, artwork ${meta.width}x${meta.height}`);
 }
-const path='public/shields/manifest.json',bytes=Buffer.from(JSON.stringify({canvas:[1200,1480],mapping:'approved-number-1-to-18',assets},null,2)+'\n');if(check)assert.deepEqual(await readFile(path),bytes);else await writeFile(path,bytes);
+const path='public/shields/manifest.json',current=JSON.parse(await readFile(path));
+if(check){assert.deepEqual(current.canvas,[1200,1480]);assert.deepEqual(current.assets.filter(a=>a.number<=18),assets);}
+else await writeFile(path,JSON.stringify({...current,assets:[...assets,...reviewed.filter(a=>a.number>18)]},null,2)+'\n');

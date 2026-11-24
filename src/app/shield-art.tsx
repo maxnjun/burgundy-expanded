@@ -25,11 +25,15 @@ export function ShieldArt({number,x=0,y=0,numberSize=17,placeholder="—"}: {num
 }
 export function shieldLabel(number:number) { return `방패 ${number} · ${SHIELD_ABILITIES[number-1]}`; }
 
+export function ShieldThumbnail({number}:{number:number}) {
+  return <svg className="inline-tile-art" width={24} height={28} viewBox="-30 -38 60 74" aria-hidden="true"><ShieldArt number={number}/></svg>;
+}
+
 /** Same board coordinates as the underlying castle; the parent hex owns the touch target. */
 export function MountedShield({number,tileId,x,y}:{number:number;tileId:string;x:number;y:number}) {
   return <g data-mounted-shield={number} data-castle-tile={tileId} transform={`translate(${x} ${y})`} pointerEvents="none"><title>{shieldLabel(number)}</title><g data-mounted-shield-scale={MOUNTED_SHIELD_SCALE} transform={`scale(${MOUNTED_SHIELD_SCALE})`}><ShieldArt number={number} numberSize={23}/></g></g>;
 }
 export function ShieldDetails({number,onClose,active=true}:{number:number;onClose:()=>void;active?:boolean}) {
   const help=getTileHelp("shield",number)!;
-  return <section role="dialog" aria-label="방패 상세" className="direct-confirm" data-tile-help-inline><div className="shield-detail-heading"><svg viewBox="-30 -38 60 74" role="img" aria-label={`방패 ${number} 확대 이미지`}><ShieldArt number={number}/></svg><strong>{shieldLabel(number)}</strong></div><p>기본 종료 승점 {SHIELD_POINTS[number-1]}점</p><p>{help.summary}</p><p>{help.details}</p><p>{help.timing}</p><p>{active?"성에 장착된 동안 능력이 적용됩니다. 유지비와 종료 점수에는 현재 보유 효과가 반영됩니다.":"방패 UI 검증 모드입니다. 능력·유지비·종료 점수는 적용되지 않습니다."}</p><button onClick={onClose}>방패 상세 닫기</button></section>;
+  return <section role="dialog" aria-label="방패 상세" className="direct-confirm shield-detail" data-tile-help-inline><div className="shield-detail-heading"><svg viewBox="-30 -38 60 74" role="img" aria-label={`방패 ${number} 확대 이미지`}><ShieldArt number={number}/></svg><strong>{shieldLabel(number)}</strong></div><p>기본 종료 승점 {SHIELD_POINTS[number-1]}점</p><p>{help.summary}</p><p>{help.details}</p><p>{help.timing}</p><p>{active?"성에 장착된 동안 능력이 적용됩니다. 유지비와 종료 점수에는 현재 보유 효과가 반영됩니다.":"방패 UI 검증 모드입니다. 능력·유지비·종료 점수는 적용되지 않습니다."}</p><button onClick={onClose}>방패 상세 닫기</button></section>;
 }

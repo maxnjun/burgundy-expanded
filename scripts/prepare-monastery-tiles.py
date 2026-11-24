@@ -201,11 +201,16 @@ def main(check):
                 "zipSha256": ZIP_SHA, "registration": "measured-inscribed-hex-isotropic-4px-matte-guard",
                 "protectedInnerFraction": .90, "assets": catalog}
     path = OUTPUT / "manifest.json"
+    existing = json.loads(path.read_text(encoding="utf-8")) if path.exists() else manifest
+    custom = [a for a in existing["assets"] if a["number"] > 29]
     if check:
-        assert json.loads(path.read_text(encoding="utf-8")) == json.loads(json.dumps(manifest))
-        assert len(list(OUTPUT.glob("monastery-*.png"))) == 29
+        assert {**existing, "count": 29, "assets": [a for a in existing["assets"] if a["number"] <= 29]} == json.loads(json.dumps(manifest))
+        assert existing["count"] == 29 + len(custom)
+        assert {p.name for p in OUTPUT.glob("monastery-*.png")} == {a["file"] for a in existing["assets"]}
         assert (OUTPUT / "_preview_sheet.png").exists()
     else:
+        manifest["assets"] = [*catalog, *custom]
+        manifest["count"] = len(manifest["assets"])
         path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
         preview(catalog)
     verify_browser_edges()

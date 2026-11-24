@@ -35,4 +35,8 @@
 
 ## 승인 이미지 등록
 
-현재 신규 번호는 기존 SVG 프레임의 임시 그림을 쓴다. 향후 승인본은 `shield-19.png`~`shield-24.png`를 `public/shields/` 및 그 manifest에, `monastery-30.png`~`monastery-32.png`를 `public/assets/tiles/monastery/final/` 및 그 manifest에 등록한다. 방패는 기존 투명 1200×1480 비율, 수도원은 기존 1024×1024 투명 정사각 캔버스에 정렬된 육각형 완성 PNG를 사용한다. 31번 앞면은 노란 수도원이며 검은 공급 분류를 그림에도 식별 가능하게 표시한다. 공통 클립과 승인 에셋 처리 규격은 [타일 에셋 규격](design/tile-asset-standard.md)을 따른다.
+승인 원본은 `asset-inbox/shield-approved/originals/shield-19.png`~`shield-24.png`와 `asset-inbox/monastery-approved/originals/monastery-30.png`~`monastery-32.png`에 보존한다. 수도원 31번도 제공된 ZIP의 `31번.png`를 사용했다. 30~32번 원본은 1293×1216 RGB, 방패 19~23번은 1043×1508 RGBA, 방패 24번은 1086×1448 RGB다.
+
+파생 파일은 같은 번호로 각각 `public/shields/` (1200×1480 RGBA)와 `public/assets/tiles/monastery/final/` (768×768 RGBA)에 등록했다. 수도원은 기존 1~29번의 1024 캔버스와 동일한 비율·중심·바깥 SVG 클립을 사용한다. 31번의 노란 앞면과 검은 공급 분류는 각각 이미지와 기존 타일 데이터가 담당한다. 방패 24번은 화면 바깥에서 이어지는 배경을 제거하고 효과 안의 검은 육각형을 보존했다. 기존 PNG 47장의 파일 해시가 유지된다.
+
+재현 및 검사 명령은 `python scripts/prepare-custom-tile-art.py --check`다. 공통 클립과 에셋 처리 규격은 [타일 에셋 규격](design/tile-asset-standard.md)을 따른다.

@@ -36,7 +36,7 @@ import { LocalBoardDraft } from "./board-choices";
 import { startTransition, useEffect, useEffectEvent, useCallback, useRef, useState, useMemo } from "react";
 import Link from "next/link";
 import { shieldLayout, hasShield } from "../game/shields";
-import { shieldLabel, MountedShield, ShieldDetails } from "./shield-art";
+import { shieldLabel, MountedShield, ShieldDetails, ShieldThumbnail } from "./shield-art";
 import type { GameAction, GameState, PlayerState, PlayerColor, TileType } from "../game/types";
 import { applyCoreAction, validateCoreAction, orderedPlayers, checkCoreGameEnd } from "../game/core";
 import {isCastleAction} from "../game/castle-actions";
@@ -389,7 +389,7 @@ export default function GameScreen() {
     <div className="game-layout">
       {shields && <section className="shield-action-tools" aria-label="방패 배치 검증">
         {die&&!selectedShield&&![...shieldOptions.values()].some(a=>a.length>0)&&<p role="status">{!active.duchy.cells.some(c=>c.tileId&&game.tiles[c.tileId]?.type==="castle")?"방패를 장착할 자신의 성 타일이 없습니다.":dice.filter(d=>!d.used).length<2?"방패 획득에는 사용하지 않은 주사위 두 개가 필요합니다.":"현재 획득 가능한 방패가 없습니다. 일꾼 비용과 필수 선택을 확인하세요."}</p>}
-        {selectedShield && <p role="status">{shieldLabel(selectedShield.shieldNumber!)} · 장착할 성을 누르세요 · {costLabel(shieldCandidates[0]??bonusShields.find(a=>boardTarget(game,a).shield?.slotId===selectedShield.id)??null)}</p>}
+        {selectedShield && <p role="status">{selectedShield.shieldNumber!>=19&&<ShieldThumbnail number={selectedShield.shieldNumber!}/>} {shieldLabel(selectedShield.shieldNumber!)} · 장착할 성을 누르세요 · {costLabel(shieldCandidates[0]??bonusShields.find(a=>boardTarget(game,a).shield?.slotId===selectedShield.id)??null)}</p>}
         {shields.effectsActive && <div className="shield-rule-tools">
 
           {shields.mounted.filter(m=>m.shieldNumber===6).map(m=><div key={m.shieldNumber}><strong>{game.players.find(p=>p.id===m.playerId)?.name} · 방패6</strong>{shields.rules!.monasteryTarget?<p>수도원 공유 대상: {game.players.find(p=>p.id===shields.rules!.monasteryTarget)?.name} · 상대 수도원27 제외</p>:<><label>수도원 공유 대상 <select aria-label="방패6 수도원 공유 대상" value={shieldTarget} onChange={e=>setShieldTarget(e.target.value)}><option value="">플레이어 선택</option>{game.players.filter(p=>p.id!==m.playerId).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label><button className="outline-button" disabled={!shieldTarget||!permitted({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId:m.playerId,payload:{targetPlayerId:shieldTarget}})} onClick={()=>run({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId:m.playerId,payload:{targetPlayerId:shieldTarget}})}>방패6 대상 확정 (변경 불가)</button></>}</div>)}

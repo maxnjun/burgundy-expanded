@@ -6,7 +6,7 @@ import {beginHistory} from '../../src/game/turn-history';
 import {serializeTurnHistory} from '../../src/game/turn-history-cache';
 import {boardTarget,directActions} from '../../src/game/direct-actions';
 import {settleShieldState} from '../../src/game/core/shield-effects';
-import {shieldLayout} from '../../src/game/shields';
+import {setShieldLayout,shieldLayout} from '../../src/game/shields';
 import {boundary,choose,step} from '../fixtures/shields';
 import {customGame,customMount,moveTile,officialTerritory} from '../fixtures/custom-rules';
 import {isolatedRooms} from './isolated-rooms';
@@ -64,15 +64,27 @@ test('the added slot stays beside the original with one backdrop and both empty 
  const start=await j(0).getAttribute('transform');
  const n0=shieldLayout(b)!.slots.find(s=>s.depot===slot.depot&&s.index===0)!.shieldNumber!;
  const started=step(b,{type:'roll-round',playerId:'seat-1'});
+ const emptyBoth=customMount(customMount(started,n0),slot.shieldNumber!);
+ const returned=nextPhase(emptyBoth);
+ const layout=shieldLayout(started)!;
+ const extra=layout.boxed.find(n=>n>=19)!;
+ const bothNew=setShieldLayout(started,{...layout,slots:layout.slots.map(s=>s.depot===slot.depot&&s.index===0?{...s,shieldNumber:extra}:s),boxed:layout.boxed.map(n=>n===extra?n0:n)});
  for(const [name,game,empty] of [
   ['initial-empty',customMount(a,n0),1],
   ['expanded',started,0],
+  ['both-new',bothNew,0],
   ['empty-and-new',customMount(started,n0),1],
-  ['both-empty',customMount(customMount(started,n0),slot.shieldNumber!),2],
+  ['both-empty',emptyBoth,2],
+  ['returned',returned,0],
  ] as const){
   await load(page,game);
   await expect(group.locator('[data-shield-zone]')).toHaveCount(1);
   await expect(group.locator('[data-empty=true]')).toHaveCount(empty);
+  await expect(group.locator('image[data-shield-image]')).toHaveCount((name==='initial-empty'?1:2)-empty);
+  if(name==='returned'){
+   await expect(j(0).locator(`image[data-shield-image="${n0}"]`)).toHaveCount(1);
+   await expect(j(1).locator(`image[data-shield-image="${slot.shieldNumber}"]`)).toHaveCount(1);
+  }
   await expect(j(0)).toHaveAttribute('transform',start!);
   if(name!=='initial-empty'){
    await expect(group.locator('[data-shield-horizontal=true]')).toHaveCount(1);
