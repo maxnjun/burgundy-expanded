@@ -73,6 +73,18 @@ test('monastery 31 keeps its black-supply identity with the approved yellow face
  const approved=black.locator('image[data-approved-monastery="31"]');
  await expect(approved).toBeAttached();
  await expect(approved).toHaveAttribute('href',/monastery-31\.png\?v=/);
+ const diamond=await approved.evaluate(async el=>{
+  const image=new Image();
+  image.src=el.getAttribute('href')!;
+  await image.decode();
+  const canvas=document.createElement('canvas');
+  canvas.width=canvas.height=1;
+  const pixels=canvas.getContext('2d')!;
+  pixels.drawImage(image,384,685,1,1,0,0,1,1);
+  return Array.from(pixels.getImageData(0,0,1,1).data);
+ });
+ expect(diamond[3]).toBe(255);
+ expect(Math.max(...diamond.slice(0,3))).toBeLessThan(80);
  await black.screenshot({path:info.outputPath('black-supply-31.png')});
 });
 

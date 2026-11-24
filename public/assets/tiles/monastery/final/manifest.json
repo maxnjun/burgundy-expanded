@@ -1559,49 +1559,48 @@
     {
       "number": 31,
       "file": "monastery-31.png",
-      "source": "asset-inbox/monastery-approved/originals/monastery-31.png",
-      "sourceSha256": "c1bee2a0d5a1c8d27f7b149b661a2fc21239d9ef942bdbf8887dcf900bcfb1ad",
+      "source": "asset-inbox/monastery-approved/originals/monastery-31-revised.png",
+      "sourceSha256": "a8c7cb8a0617e5742064f6dd4f81e0242564a5cb1cd4efe91ca17c41c5d7d04f",
       "sourceSize": [
-        1293,
+        1294,
         1216
       ],
       "sourceMode": "RGB",
-      "zipEntry": "수도원 타일/31번.png",
-      "outputSha256": "18fa266aece4569f2af12074832f6bc0497f16a089c1bd969d2c08d1c0bd432d",
+      "outputSha256": "c00a67e8b6e6d255e2e6468b809e5f668ee83f4e4438e5297a5be9750041d54e",
       "canvas": 768,
       "measuredSourceCenter": [
-        643.4469249518055,
-        604.7447222364332
+        643.8066677170476,
+        606.6851534982261
       ],
       "measuredSourceVertices": [
         [
-          642.6479681256175,
-          78.81033967313934
+          642.605902158145,
+          79.23563234835629
         ],
         [
-          1120.0,
-          362.590732603868
+          1121.0,
+          365.1139142031563
         ],
         [
-          1120.0,
-          848.7018265675518
+          1121.0,
+          850.7971727854227
         ],
         [
-          644.0335815852156,
-          1127.8150419861263
-        ],
-        [
-          167.0,
-          850.1537326219144
+          644.2341041441402,
+          1130.2052271316275
         ],
         [
           167.0,
-          360.39665996599945
+          852.620577590664
+        ],
+        [
+          167.0,
+          362.1383969301298
         ]
       ],
-      "registeredSourceRadius": 513.774435904299,
-      "isotropicScale": 0.7474097058257057,
-      "protectedFraction": 0.9336666503791738,
+      "registeredSourceRadius": 513.6632223107542,
+      "isotropicScale": 0.7475715280384411,
+      "protectedFraction": 0.9322121023416043,
       "alphaBounds": [
         51,
         0,

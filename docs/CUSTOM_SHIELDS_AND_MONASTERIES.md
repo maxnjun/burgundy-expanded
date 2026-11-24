@@ -35,7 +35,7 @@
 
 ## 승인 이미지 등록
 
-승인 원본은 `asset-inbox/shield-approved/originals/shield-19.png`~`shield-24.png`와 `asset-inbox/monastery-approved/originals/monastery-30.png`~`monastery-32.png`에 보존한다. 수도원 31번도 제공된 ZIP의 `31번.png`를 사용했다. 30~32번 원본은 1293×1216 RGB, 방패 19~23번은 1043×1508 RGBA, 방패 24번은 1086×1448 RGB다.
+승인 원본은 `asset-inbox/shield-approved/originals/shield-19.png`~`shield-24.png`와 `asset-inbox/monastery-approved/originals/monastery-30.png`~`monastery-32.png`에 보존한다. 수도원 31번은 같은 폴더의 `monastery-31-revised.png`(1294×1216 RGB)를 현재 파생본에 사용한다. 이 수정본은 하단 검은 마름모가 추가된 첨부 원본이다. 수도원 ZIP 원본은 1293×1216 RGB, 방패 19~23번은 1043×1508 RGBA, 방패 24번은 1086×1448 RGB다.
 
 파생 파일은 같은 번호로 각각 `public/shields/` (1200×1480 RGBA)와 `public/assets/tiles/monastery/final/` (768×768 RGBA)에 등록했다. 수도원은 기존 1~29번의 1024 캔버스와 동일한 비율·중심·바깥 SVG 클립을 사용한다. 31번의 노란 앞면과 검은 공급 분류는 각각 이미지와 기존 타일 데이터가 담당한다. 방패 24번은 화면 바깥에서 이어지는 배경을 제거하고 효과 안의 검은 육각형을 보존했다. 기존 PNG 47장의 파일 해시가 유지된다.
 

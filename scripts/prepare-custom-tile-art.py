@@ -17,7 +17,7 @@ spec.loader.exec_module(monastery)
 
 SOURCE_HASHES = {
     "monastery-30": "593948433feadafbfee9a0354e43a853bf1ac939384a88b5ac4106be7c400998",
-    "monastery-31": "c1bee2a0d5a1c8d27f7b149b661a2fc21239d9ef942bdbf8887dcf900bcfb1ad",
+    "monastery-31": "a8c7cb8a0617e5742064f6dd4f81e0242564a5cb1cd4efe91ca17c41c5d7d04f",
     "monastery-32": "d48169686166051c1a85663ffddbcacc52e6c8d55ffa6daf564b75cdd3bc82db",
     "shield-19": "e945bb6365ba17ab1c5590ef38be4c7f48587ed2680587d2da377e68225e8dec",
     "shield-20": "4a99f41441e3a021507c07b127977e9b9eb2f9240e60a61b6ba0880817145b57",
@@ -119,7 +119,8 @@ def update_family(family, folder, first, last, check):
     for number in range(first, last + 1):
         name = f"{family}-{number}"
         filename = f"{name}.png"
-        source = f"asset-inbox/{family}-approved/originals/{filename}"
+        source_filename = "monastery-31-revised.png" if name == "monastery-31" else filename
+        source = f"asset-inbox/{family}-approved/originals/{source_filename}"
         data = (ROOT / source).read_bytes()
         digest = sha256(data).hexdigest()
         assert digest == SOURCE_HASHES[name], f"Unreviewed source: {source}"
@@ -134,10 +135,14 @@ def update_family(family, folder, first, last, check):
             assert actual.format == "PNG" and actual.mode == "RGBA" and actual.size == image.size
             assert actual.tobytes() == image.tobytes(), f"Rebuild {filename}"
         else:
-            image.save(output, optimize=True)
+            png = BytesIO()
+            image.save(png, format="PNG", optimize=True)
+            if not output.exists() or output.read_bytes() != png.getvalue():
+                output.write_bytes(png.getvalue())
+        provenance = {"zipEntry": f"{'수도원' if alpha else '방패'} 타일/{number}번.png"} if source_filename == filename else {}
         assets.append({"number": number, "file": filename, "source": source, "sourceSha256": digest,
                        "sourceSize": original.size, "sourceMode": original.mode,
-                       "zipEntry": f"{'수도원' if alpha else '방패'} 타일/{number}번.png",
+                       **provenance,
                        **({"scoreArtwork": {"points": 12, "numeralFromShield": 23}}
                           if family == "shield" and number in (21, 24) else {}),
                        "outputSha256": sha256(output.read_bytes()).hexdigest(), **geometry})
@@ -150,7 +155,7 @@ def update_family(family, folder, first, last, check):
     normalized = json.dumps(expected, ensure_ascii=False, indent=2) + "\n"
     if check:
         assert manifest == json.loads(normalized), f"Stale manifest: {manifest_path}"
-    else:
+    elif manifest != json.loads(normalized):
         manifest_path.write_text(normalized, encoding="utf-8")
 
 
