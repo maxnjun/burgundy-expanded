@@ -33,7 +33,7 @@ function nextPhase(game:GameState){
  return n.turn.stage==='phase-end'?step(n,a):n;
 }
 
-test('shield 21 skips a turn and shield 22 grays out until the next phase',async({page},info)=>{
+test('shield 21 has no dice status and shield 22 grays out until the next phase',async({page},info)=>{
  const roll=(game:GameState)=>step(game,{type:'roll-round',playerId:'seat-1'});
  await load(page,customMount(customMount(customGame(),22),21));
  const control=page.getByLabel('방패21 주사위 변경',{exact:true});
@@ -51,19 +51,16 @@ test('shield 21 skips a turn and shield 22 grays out until the next phase',async
  await expect(dice.nth(2)).toBeEnabled();
  expect(await dice.nth(2).textContent()).toBe(["","⚀","⚁","⚂","⚃","⚄","⚅"][(await current(page)).dice.players["seat-1"][2]!.value]);
  await expect(used).toBeDisabled();
- const game=await current(page);
- const face=game.dice.players['seat-1'][2]!.value===1?2:1;
- await press(page.getByLabel('방패21 변경 대상 주사위 3',{exact:true}));
- await press(page.getByLabel('방패21 눈금 '+face+'로 변경',{exact:true}));
- await expect(control).toHaveAttribute('disabled','');
- await expect(shield(21)).toHaveAttribute('data-shield-dice-status','used');
+ await expect(control).toHaveCount(0);
+ await expect(shield(21)).not.toHaveAttribute('data-shield-dice-status',/./);
 
  await load(page,roll(finishDiceRound(await current(page))));
  await page.reload();
  await expect(dice).toHaveCount(2);
- await expect(control).toHaveAttribute('disabled','');
+ await expect(control).toHaveCount(0);
  await expect(used).toBeDisabled();
- for(const number of [21,22])await expect(shield(number)).toHaveCSS('filter','grayscale(1)');
+ await expect(shield(22)).toHaveCSS('filter','grayscale(1)');
+ await expect(shield(21)).toHaveCSS('filter','none');
  await expect(shield(22).locator('title').last()).toHaveText(/이번 페이즈에 사용 완료/);
  await page.screenshot({path:info.outputPath('shield-dice-used.png')});
  const advance:GameAction={type:'advance-phase',playerId:'seat-1'};
@@ -73,10 +70,57 @@ test('shield 21 skips a turn and shield 22 grays out until the next phase',async
  await load(page,roll(next));
  await expect(dice).toHaveCount(2);
  await expect(extra).toBeEnabled();
- await expect(page.getByLabel('방패21 변경 대상 주사위 1',{exact:true})).toBeEnabled();
- for(const number of [21,22])await expect(shield(number)).toHaveAttribute('data-shield-dice-status','ready');
+ await expect(control).toHaveCount(0);
+ await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
  await expect(shield(21).locator('title').last()).toHaveText(/기본 종료 승점 12점/);
 });
+test('shield 21 purchase pays only the bank and shield 19 discard pays two silver',async({page},info)=>{
+ await page.addInitScript(()=>localStorage.setItem('burgundy-expanded:pinned-guidance-v1','off'));
+ const mounted=customMount(customMount(customGame(),21),19);
+ const {game,tileId}=moveTile(mounted,t=>t.type==='ship',undefined,1);
+ await load(page,game);
+ const purchase=page.locator('.custom-board-actions details').filter({hasText:'방패 21번 · 상대 저장고 구매'});
+ await press(purchase.locator('summary'));
+ await press(purchase.getByRole('button',{name:/왕실B의 .* 선택/}));
+ await expect(purchase.getByText('은화 2개를 공용 은행에 지불합니다. 판매자 보상은 없습니다.')).toBeVisible();
+ await purchase.screenshot({path:info.outputPath('shield-21-bank-payment.png')});
+ await press(purchase.getByRole('button',{name:'구매 확정',exact:true}));
+ await expect.poll(async()=> (await current(page)).players.map(p=>p.silver)).toEqual([28,30]);
+ expect((await current(page)).players[1].storage).not.toContain(tileId);
+ await expect(purchase).toHaveCount(0);
+ const discard=page.locator('.custom-board-actions details').filter({hasText:'보관 타일 폐기'});
+ await press(discard.locator('summary'));
+ await press(discard.getByRole('button',{name:/폐기 후보/}));
+ await press(discard.getByRole('button',{name:'타일 폐기 확정',exact:true}));
+ await expect.poll(async()=> (await current(page)).players.map(p=>p.silver)).toEqual([30,30]);
+ expect((await current(page)).market.removedTileIds).toContain(tileId);
+ await page.reload();
+ await expect.poll(async()=> (await current(page)).players.map(p=>p.silver)).toEqual([30,30]);
+ for(const n of [19,21]){
+  const mounted=page.locator(`[data-mounted-shield="${n}"]`);
+  const art=mounted.locator(`[data-shield-image="${n}"]`);
+  await expect(art).toHaveAttribute('href',new RegExp(`shield-${n}\\.png\\?v=[0-9a-f]+`));
+  if(info.project.name==='desktop-1280'){
+   await press(mounted.locator('..'));
+   const detail=page.getByRole('dialog',{name:'방패 상세',exact:true});
+   await expect(detail).toContainText(n===19?'타일마다 은화 2개':'판매자에게 별도 보상은 없습니다');
+   await page.mouse.move(1,1);
+   await expect(page.locator('#tile-effect-tooltip')).toHaveCount(0);
+   await detail.screenshot({path:info.outputPath(`shield-${n}-details.png`)});
+   await press(detail.getByRole('button',{name:'방패 상세 닫기'}));
+  }
+ }
+ if(info.project.name==='desktop-1280'){
+  const board=page.getByRole('group',{name:'왕실A 영지',exact:true});
+  const enlarge=page.getByRole('button',{name:'왕실A 영지 확대',exact:true});
+  let zoom=100;
+  for(const level of [100,160,200]){
+   while(zoom<level){await press(enlarge);zoom+=10;}
+   await board.screenshot({path:info.outputPath(`shields-estate-${level}.png`)});
+  }
+ }
+});
+
 test('monastery 31 previews the historical refund, cancels, persists and undoes',async({page},info)=>{
  const {game,a,target,region}=officialTerritory();await load(page,game);
  await press(page.getByText('수도원 31번 · 빈 영지 칸 색상 변경',{exact:true}));
@@ -288,7 +332,7 @@ test('shield 20 reserves a board tile and 21 purchases a chosen rival tile',asyn
  await press(page.getByRole('button',{name:/왕실B의 광산 선택/}));
  await press(page.getByRole('button',{name:'구매 확정',exact:true}));
  await expect.poll(async()=>(await current(page)).players[0].storage).toContain(rival.tileId);
- expect((await current(page)).players[1].silver).toBe(game.players[1].silver+2);
+ expect((await current(page)).players[1].silver).toBe(game.players[1].silver);
 });
 
 test('three action dice, six goods stacks and four storage keys render together',async({page},info)=>{

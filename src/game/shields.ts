@@ -8,12 +8,12 @@ export const SHIELD_ABILITIES = [
   "판매 상품마다 은화", "종료 수도원 점수 두 배", "성 추가 행동으로 방패 획득", "상품 판매 점수 두 배",
   "종료 방패 점수 두 배", "단계 말 번호 공급 타일 직접 배치", "단계 말 검은 공급 타일 직접 배치",
   "자신의 턴 2번당 주사위 하나 자유 변경", "지역을 한 칸 크게 계산", "인접 조건 없이 배치",
-  "저장고 타일 폐기당 은화 1개", "페이즈당 공급 타일 하나 찜", "상대 저장고 타일 구매 · 자기 턴 2번당 눈금 변경",
+  "저장고 타일 폐기당 은화 2개", "페이즈당 공급 타일 하나 찜", "공용 은행에 은화 2개를 내고 상대 저장고 타일 구매",
   "페이즈당 한 번, 원하는 자기 턴에 행동 주사위 추가", "상품 여섯 종류 보관", "턴당 구매 제한 해제",
 ] as const;
 export const SHIELD_POINTS=[12,12,12,12,12,12,8,8,8,8,8,8,4,4,4,4,4,4,8,8,12,4,12,12] as const;
-export const DIE_CHANGE_COMMANDS={16:"change-die",21:"change-die-21"} as const;
-export const dieChangeShield=(command:string)=>command===DIE_CHANGE_COMMANDS[16]?16:command===DIE_CHANGE_COMMANDS[21]?21:undefined;
+export const DIE_CHANGE_COMMAND="change-die";
+export const dieChangeShield=(command:string)=>command===DIE_CHANGE_COMMAND?16:undefined;
 export interface ShieldSlot { readonly id: string; readonly depot: DieValue; readonly index: number; readonly shieldNumber: number | null }
 export interface ShieldLayout {
   readonly format: "shield-layout-preview-v1" | "shield-rules-v1";
@@ -22,6 +22,7 @@ export interface ShieldLayout {
     readonly monasteryTarget: string | null;
     readonly dieChangedTurn: string | null;
     readonly dieChangedRounds?: Readonly<Record<string, number>>;
+    /** Accepted for saves made before shield 21 lost its die effect. */
     readonly dieChangedRounds21?: Readonly<Record<string, number>>;
     readonly extraDieUsedRound?: number;
     /** Accepted for saves from before manual activation. */
@@ -55,15 +56,14 @@ function legacyExtraDieRound(turn:ShieldRound,dice:GameState["dice"]):number {
 }
 
 export function diceShieldStatus(layout: DiceShieldLayout | null, turn: ShieldRound, dice: GameState["dice"], playerId: string, number: number): DiceShieldStatus | undefined {
-  if ((number !== 16 && number !== 21 && number !== 22) || !layout?.effectsActive || !layout.rules || !layout.mounted.some(m => m.playerId === playerId && m.shieldNumber === number)) return;
+  if ((number !== 16 && number !== 22) || !layout?.effectsActive || !layout.rules || !layout.mounted.some(m => m.playerId === playerId && m.shieldNumber === number)) return;
   const rules = layout.rules, round = shieldRoundNumber(turn);
   if (number === 22) {
     const used = rules.extraDieUsedRound ?? legacyExtraDieRound(turn,dice);
     return Math.ceil(used / 5) === Math.ceil(round / 5) ? "used" : "ready";
   }
   const legacy = /^([A-E]):([1-5]):(.+)$/.exec(rules.dieChangedTurn ?? "");
-  const earlier16 = rules.dieChangedRounds?.[playerId] ?? (legacy?.[3] === playerId ? "ABCDE".indexOf(legacy[1]) * 5 + Number(legacy[2]) : 0);
-  const previous = number===21 ? rules.dieChangedRounds21?.[playerId] ?? 0 : earlier16;
+  const previous = rules.dieChangedRounds?.[playerId] ?? (legacy?.[3] === playerId ? "ABCDE".indexOf(legacy[1]) * 5 + Number(legacy[2]) : 0);
   return previous === round ? "used" : previous > 0 && previous + 1 === round ? "cooldown" : "ready";
 }
 

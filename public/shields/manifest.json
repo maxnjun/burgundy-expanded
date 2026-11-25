@@ -412,7 +412,7 @@
       ],
       "sourceMode": "RGBA",
       "zipEntry": "방패 타일/19번.png",
-      "outputSha256": "033962f6f8c20c55bd00135f2a0e8b8eb3f066ad77577b606ecc5597e0e2b2e8",
+      "outputSha256": "d00f442b74cb7b1754d8294efd8845ec08522a05a264dff2e149509d54f6343f",
       "sourceBounds": [
         30,
         28,
@@ -466,7 +466,7 @@
         "points": 12,
         "numeralFromShield": 23
       },
-      "outputSha256": "987fc89765ce12023fcba19c5e692b7db6efac78be4834911086e31ede1816d2",
+      "outputSha256": "5b14185b2eb0001eca9cf8ca90cc5bc8ca2839506695aa3ec8ef499a25d26c14",
       "sourceBounds": [
         31,
         58,

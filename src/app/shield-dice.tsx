@@ -2,15 +2,15 @@ import {useState} from 'react';
 import type {GameAction,GameState,PlayerState} from '../game/types';
 import {playerPaint} from '../game/player-colors';
 import {WhiteDie} from './white-die';
-import {DIE_CHANGE_COMMANDS,type DiceShieldStatus} from '../game/shields';
+import {DIE_CHANGE_COMMAND,type DiceShieldStatus} from '../game/shields';
 import {diceShieldStatusText} from './shield-art';
 
 type Dice=GameState['dice']['players'][string];
-export function ShieldDieChange({number=16,dice,player,actions,disabled=false,status,onAction}:{number?:16|21;dice:Dice;player:PlayerState;actions:readonly GameAction[];disabled?:boolean;status?:DiceShieldStatus;onAction:(a:GameAction)=>void}){
+export function ShieldDieChange({dice,player,actions,disabled=false,status,onAction}:{dice:Dice;player:PlayerState;actions:readonly GameAction[];disabled?:boolean;status?:DiceShieldStatus;onAction:(a:GameAction)=>void}){
  const [chosen,setChosen]=useState<string|null>(null);
- const name=`방패${number}`;
- if(status&&status!=="ready")return <fieldset className="shield-dice-change" disabled aria-label={`${name} 주사위 변경`} data-shield-dice-inactive data-shield-dice-status={status}><legend>{name} · 주사위 변경</legend><p>{diceShieldStatusText(number,status)}</p></fieldset>;
- const changes=actions.filter((a):a is Extract<GameAction,{type:'extension'}>=>a.type==='extension'&&a.extensionId==='shields'&&a.command===DIE_CHANGE_COMMANDS[number]);
+ const name='방패16';
+ if(status&&status!=="ready")return <fieldset className="shield-dice-change" disabled aria-label={`${name} 주사위 변경`} data-shield-dice-inactive data-shield-dice-status={status}><legend>{name} · 주사위 변경</legend><p>{diceShieldStatusText(16,status)}</p></fieldset>;
+ const changes=actions.filter((a):a is Extract<GameAction,{type:'extension'}>=>a.type==='extension'&&a.extensionId==='shields'&&a.command===DIE_CHANGE_COMMAND);
  if(!changes.length)return null;
  const selected=dice.find(d=>d.id===chosen&&!d.used)?.id??dice.find(d=>!d.used)?.id;
  return <fieldset className="shield-dice-change" disabled={disabled} aria-label={`${name} 주사위 변경`}><legend>{name} · 변경할 주사위 → 새 눈금</legend><div>{dice.map((d,i)=><button key={d.id} aria-label={`${name} 변경 대상 주사위 ${i+1}`} aria-pressed={selected===d.id} disabled={d.used} onClick={()=>setChosen(d.id)}><svg width="32" height="32" viewBox="0 0 28 28"><WhiteDie x={14} y={14} value={d.value} color={playerPaint(player).fill}/></svg></button>)}</div><div>{changes.filter(a=>(a.payload as {dieId:string}).dieId===selected).map(a=>{const value=(a.payload as {value:number}).value;return <button key={value} aria-label={`${name} 눈금 ${value}로 변경`} onClick={()=>onAction(a)}><svg width="32" height="32" viewBox="0 0 28 28"><WhiteDie x={14} y={14} value={value}/></svg></button>;})}</div></fieldset>;

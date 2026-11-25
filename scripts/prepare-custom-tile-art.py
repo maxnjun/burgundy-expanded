@@ -1,4 +1,4 @@
-"""Register the nine approved custom faces without changing the legacy artwork."""
+"""Register approved custom faces and apply the shield balance artwork."""
 import argparse
 import importlib.util
 import json
@@ -105,6 +105,67 @@ def update_shield_score(image, donor, number):
     assert image.getchannel("A").tobytes() == original_alpha.tobytes()
 
 
+def approved_art(path, digest):
+    data = (ROOT / path).read_bytes()
+    assert sha256(data).hexdigest() == digest, f"Unreviewed artwork: {path}"
+    return Image.open(BytesIO(data)).convert("RGBA")
+
+
+def restore_parchment(image, sample, cover, bounds, left, right):
+    # Keep the donor's paper texture and match the target's falloff toward the rim.
+    size = (bounds[2] - bounds[0], bounds[3] - bounds[1])
+    texture = sample.convert("RGB").resize(size, Image.Resampling.LANCZOS)
+    detail = ImageChops.subtract(texture, texture.filter(ImageFilter.GaussianBlur(24)), offset=128)
+    lighting = Image.new("RGB", (size[0], 1))
+    lighting.putdata([tuple(round(a + (b - a) * x / (size[0] - 1)) for a, b in zip(left, right))
+                      for x in range(size[0])])
+    patch = ImageChops.add(detail, lighting.resize(size), offset=-128)
+    image.paste(patch, bounds[:2], cover.filter(ImageFilter.GaussianBlur(7)).crop(bounds))
+
+
+def update_shield_effect(image, parchment, number):
+    original_alpha = image.getchannel("A")
+    cover = Image.new("L", image.size)
+    draw = ImageDraw.Draw(cover)
+    if number == 19:
+        # Cover the old large coin and its shadow while keeping the arrowhead.
+        draw.ellipse((787, 656, 1058, 946), fill=255)
+        draw.polygon([(777, 729), (805, 794), (777, 857), (777, 700)], fill=0)
+        sample = parchment.crop((813, 569, 1041, 947))
+        coin = approved_art("public/assets/icons/silver-coin.png",
+                            "6556abb727ef1998005dc4cca0bbca1ac52720efcd09dd9945b01d6080f506ad")
+        coin = coin.crop(coin.getbbox())
+        coin.thumbnail((129, 129), Image.Resampling.LANCZOS)
+        restore_parchment(image, sample, cover, (784, 635, 1060, 965), (228, 204, 181), (181, 150, 125))
+        image.alpha_composite(coin, (816, 723))
+        image.alpha_composite(coin, (914, 753))
+    else:
+        # Only mask the old recipient; retain the coins, arrow and lower transfer.
+        draw.polygon([(765, 533), (788, 507), (840, 497), (891, 519), (904, 571),
+                      (931, 585), (943, 617), (929, 649), (900, 674), (934, 732),
+                      (924, 758), (718, 763), (707, 741), (722, 690), (735, 657),
+                      (710, 645), (705, 619), (724, 586), (764, 573)], fill=255)
+        draw.polygon([(882, 549), (894, 465), (936, 465), (970, 495), (990, 537),
+                      (995, 582), (914, 588)], fill=255)
+        sample = parchment.crop((822, 494, 1020, 945))
+        # Coordinates measured in the approved 1024px beige bank tile.
+        bank = approved_art("public/assets/tiles/beige/final/bank.png",
+                            "25234addf9d489c6bdd9663479b7ded1f13feb487203389a5f9d961333d37166")
+        mask = Image.new("L", bank.size)
+        ImageDraw.Draw(mask).polygon([(229, 549), (280, 471), (278, 423), (335, 376), (391, 313),
+                                      (391, 215), (445, 190), (469, 209), (466, 258), (529, 280),
+                                      (581, 232), (609, 232), (630, 267), (660, 297), (691, 276),
+                                      (714, 293), (715, 351), (794, 420), (782, 470), (805, 489),
+                                      (845, 563), (845, 686), (801, 729), (708, 766), (660, 775),
+                                      (573, 741), (476, 712), (383, 680), (296, 661), (236, 609)], fill=255)
+        bank.putalpha(ImageChops.multiply(bank.getchannel("A"), mask.filter(ImageFilter.GaussianBlur(2))))
+        bank = bank.crop(bank.getbbox())
+        bank.thumbnail((263, 256), Image.Resampling.LANCZOS)
+        restore_parchment(image, sample, cover, (703, 445, 1015, 790), (240, 217, 193), (200, 172, 146))
+        image.alpha_composite(bank, (716, 505))
+    assert image.getchannel("A").tobytes() == original_alpha.tobytes()
+
+
 def update_family(family, folder, first, last, check):
     manifest_path = folder / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -112,9 +173,9 @@ def update_family(family, folder, first, last, check):
     assert [a["number"] for a in existing] == list(range(1, first))
     alpha = monastery.geometry.common_alpha(MONASTERY_CANVAS) if family == "monastery" else None
     if family == "shield":
-        donor_bytes = (ROOT / "asset-inbox/shield-approved/originals/shield-23.png").read_bytes()
-        assert sha256(donor_bytes).hexdigest() == SOURCE_HASHES["shield-23"]
-        donor, _ = register_shield(Image.open(BytesIO(donor_bytes)))
+        donor, parchment = (
+            register_shield(approved_art(f"asset-inbox/shield-approved/originals/shield-{n}.png",
+                                         SOURCE_HASHES[f"shield-{n}"]))[0] for n in (23, 20))
     assets = []
     for number in range(first, last + 1):
         name = f"{family}-{number}"
@@ -129,6 +190,8 @@ def update_family(family, folder, first, last, check):
         image, geometry = register_monastery(original, alpha) if alpha else register_shield(original)
         if family == "shield" and number in (21, 24):
             update_shield_score(image, donor, number)
+        if family == "shield" and number in (19, 21):
+            update_shield_effect(image, parchment, number)
         output = folder / filename
         if check:
             actual = Image.open(output)

@@ -18,7 +18,7 @@ export function actionLabel(s:GameState,a:GameAction):string{
     const payload=a.payload as Record<string,unknown>;
     if(a.command==="cancel-reservation")return "방패 20번 · 찜 취소";
     if(a.command==="reserve-tile")return `방패 20번 · ${tileName(s,payload.tileId as string)} 찜`;
-    if(a.command==="buy-rival-tile")return `방패 21번 · ${s.players.find(p=>p.id===payload.ownerId)?.name}에게 은화 2개 지급 · ${tileName(s,payload.tileId as string)} 구매`;
+    if(a.command==="buy-rival-tile")return `방패 21번 · ${s.players.find(p=>p.id===payload.ownerId)?.name}의 ${tileName(s,payload.tileId as string)} 구매 · 공용 은행에 은화 2개`;
     if(a.command==="discard-storage")return `보관 타일 폐기 · ${s.tiles[payload.tileId as string]?tileName(s,payload.tileId as string):'포도 타일'}`;
     if(a.command==="choose-monastery-target")return `방패6 · ${s.players.find(p=>p.id===payload.targetPlayerId)?.name} 수도원 공유`;
     if(a.command==="use-extra-die")return "방패 22번 · 세 번째 주사위 굴리기";

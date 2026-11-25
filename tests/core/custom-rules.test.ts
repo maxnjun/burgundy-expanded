@@ -11,6 +11,7 @@ import {orderedPlayers} from '../../src/game/core/state';
 import {settleShieldState} from '../../src/game/core/shield-effects';
 import {prepareShipChoice} from '../../src/game/core/ship';
 import {chooseComputerAction} from '../../src/game/computer';
+import {areAxialNeighbors} from '../../src/game/boards/axial';
 import {boundary,choose,finishDiceRound,placed,roundtrip,step} from '../fixtures/shields';
 import {customGame,customMount,moveTile,officialTerritory,special} from '../fixtures/custom-rules';
 import type {GameState,DieValue} from '../../src/game/types';
@@ -113,18 +114,21 @@ for(const [count,expected] of [[2,[6,7,8,9,10]],[3,[9,10,11,12,12]],[4,[12,12,12
  assert.equal(n.status,'finished');assert.equal(shieldLayout(n)?.slots.length,expected.at(-1));
 });
 
-test('paid rival transfer pays the owner, prints one shared opportunity and 24 lifts it',()=>{
+test('shield 21 pays the bank, leaves the seller uncompensated and shares the purchase limit except with 24',()=>{
  let game=customMount(customGame(),21);
  game=moveTile(game,t=>t.type==='ship',undefined,1).game;
  game=moveTile(game,t=>t.type==='mine',undefined,1,1).game;
  const first=options(game).find(a=>a.type==='extension'&&a.command==='buy-rival-tile')!;
  const once=step(game,first);
- assert.equal(once.players[1].silver,32);assert.equal(once.players[0].silver,28);
+ assert.equal(once.players[0].silver,28);
+ assert.deepEqual(once.players[1],{...game.players[1],storage:game.players[1].storage.map(id=>once.players[0].storage.includes(id)?null:id)});
+ assert.match(readActionLog(createActionLog(game,once,first)).text,/공용 은행에 은화 2개/);
+ assert.deepEqual(roundtrip(once),once);
  assert.equal(options(once).some(a=>a.type==='buy-black-tile'||a.type==='extension'&&a.command==='buy-rival-tile'),false);
  let unlimited=customMount(game,24);
  unlimited=step(unlimited,first);
  unlimited=step(unlimited,options(unlimited).find(a=>a.type==='extension'&&a.command==='buy-rival-tile')!);
- assert.equal(unlimited.players[1].silver,34);
+ assert.deepEqual(unlimited.players.map(p=>p.silver),[26,30]);
  assert.ok(options(unlimited).some(a=>a.type==='buy-black-tile'));
 });
 
@@ -209,25 +213,45 @@ test('legacy third dice remain playable and count as the phase use on reload',()
  assert.equal(applyCoreAction(next,special('use-extra-die')).ok,false);
 });
 
-test('shield 21 has its own persisted dice cooldown and 21 and 24 score 12 each',()=>{
+test('old shield 21 cooldowns load without effect; shield 16 and final points are unchanged',()=>{
  let game=customMount(customMount(customGame(),21),16);
- const change=(number:16|21)=>special(number===16?'change-die':'change-die-21',{dieId:game.dice.players['seat-1'][0].id,value:game.dice.players['seat-1'][0].value===6?5:6});
+ const layout=shieldLayout(game)!;
+ game=roundtrip(setShieldLayout(game,{...layout,rules:{...layout.rules!,dieChangedRounds21:{'seat-1':1}}}));
+ const change=(command:string)=>special(command,{dieId:game.dice.players['seat-1'][0].id,value:game.dice.players['seat-1'][0].value===6?5:6});
  const status=(number:number)=>diceShieldStatus(shieldLayout(game),game.turn,game.dice,'seat-1',number);
- game=roundtrip(step(game,change(21)));
- assert.deepEqual([status(16),status(21)],['ready','used']);
- assert.equal(applyCoreAction(game,change(21)).ok,false);
- game=rollCustomRound(finishDiceRound(game));
- assert.deepEqual([status(16),status(21)],['ready','cooldown']);
+ assert.deepEqual([status(16),status(21)],['ready',undefined]);
+ assert.equal(applyCoreAction(game,change('change-die-21')).ok,false);
  assert.ok(!options(game).some(a=>a.type==='extension'&&a.command==='change-die-21'));
- game=step(game,change(16));
+ game=step(game,change('change-die'));
+ assert.equal(status(16),'used');
  game=rollCustomRound(finishDiceRound(game));
- assert.deepEqual([status(16),status(21)],['cooldown','ready']);
+ assert.deepEqual([status(16),status(21)],['cooldown',undefined]);
  game=rollCustomRound(finishDiceRound(game));
- assert.equal(status(21),'ready');
+ assert.equal(status(16),'ready');
  game=customMount(game,24);
  const final=finalScore(game,game.players[0]);
  assert.ok(final.ok);
  assert.deepEqual(final.value.finalAdditions.filter(e=>/shield-(21|24)$/.test(e.id)).map(e=>e.points),[12,12]);
+});
+
+test('shield 21 excludes grapes and the AI can buy a useful rival tile',()=>{
+ let game=customMount(customGame(2,true,true),21);
+ const grape=game.vineyards!.depots[0].tileId!;
+ const opponent=game.players[1];
+ game={...game,vineyards:{...game.vineyards!,depots:game.vineyards!.depots.map(s=>s.tileId===grape?{...s,tileId:null}:s)},
+  players:[game.players[0],{...opponent,vineyardReserve:[{tileId:grape,keys:[1,2]}]}]};
+ assert.ok(!options(game).some(a=>a.type==='extension'&&a.command==='buy-rival-tile'));
+ assert.equal(applyCoreAction(game,special('buy-rival-tile',{ownerId:opponent.id,tileId:grape,storageSlot:0})).ok,false);
+ game=customMount(customGame(),21);
+ const cells=game.players[0].duchy.cells;
+ const terrain=cells.find(c=>!c.tileId&&cells.some(n=>n.tileId&&areAxialNeighbors(c.coord,n.coord)))!.terrain;
+ game=moveTile(game,t=>t.type===terrain,undefined,1).game;
+ game={...game,market:{...game.market,removedTileIds:[...game.market.removedTileIds,...game.market.blackDepot.filter((id):id is string=>!!id)],
+  blackDepot:game.market.blackDepot.map(()=>null)}};
+ for(const die of game.dice.players['seat-1'])game=step(game,{type:'use-die',playerId:'seat-1',dieId:die.id,adjustment:{steps:[],workersSpent:0},intent:{kind:'take-workers'}});
+ const ai=chooseComputerAction(game,'seat-1');
+ assert.ok(ai.ok&&ai.value.type==='extension'&&ai.value.command==='buy-rival-tile');
+ assert.deepEqual(step(game,ai.value).players.map(p=>p.silver),[28,30]);
 });
 
 test('AI uses shield 22 by the end of the phase when available',()=>{
@@ -247,8 +271,16 @@ test('19 and 30 stack, 32 gives a fourth key, and shield 13 doubles each explici
  for(const number of [30,32]){const cellId=n.players[0].duchy.cells.find(c=>c.terrain==='monastery'&&!c.tileId)!.id;n=settleShieldState(moveTile(n,t=>t.type==='monastery'&&t.number===number,cellId).game);}
  assert.equal(n.players[0].storage.length,4);
  const storage=moveTile(n,t=>t.type==='mine');n=storage.game;
- const p=n.players[0];const discarded=discardStored(n,p.id,[storage.tileId,storage.tileId]);
- assert.deepEqual([discarded.players[0].silver-p.silver,discarded.players[0].workers-p.workers],[1,2]);
+ const grape=n.vineyards!.depots[0].tileId!;
+ n={...n,vineyards:{...n.vineyards!,depots:n.vineyards!.depots.map(s=>s.tileId===grape?{...s,tileId:null}:s)},
+  players:n.players.map((p,i)=>i?p:{...p,vineyardReserve:[{tileId:grape,keys:[1,2]}]})};
+ const p=n.players[0];
+ const discarded=discardStored(n,p.id,[storage.tileId,storage.tileId,grape,grape,'missing']);
+ assert.deepEqual([discarded.players[0].silver-p.silver,discarded.players[0].workers-p.workers],[4,4]);
+ assert.ok(discarded.market.removedTileIds.includes(storage.tileId));
+ assert.deepEqual(discarded.vineyards!.removed,[grape]);
+ assert.deepEqual(discarded.players[0].vineyardReserve,[]);
+ assert.deepEqual(roundtrip(discarded),discarded);
  const final=finalScore(discarded,discarded.players[0]);assert.ok(final.ok);
  assert.equal(final.value.finalAdditions.find(e=>e.id.endsWith('shield-19'))?.points,SHIELD_POINTS[18]*2);
  assert.equal(hasShield(n,p.id,13),true);

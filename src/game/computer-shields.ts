@@ -8,7 +8,7 @@ import type { GameState, PlayerState, GameAction } from "./types";
 export function shieldComputerValue(state:GameState,p:PlayerState,n:number):number{
  const layout=shieldLayout(state)!,remaining=5-"ABCDE".indexOf(state.turn.phase),tiles=p.duchy.cells.flatMap(c=>c.tileId?[state.tiles[c.tileId]]:[]),count=(type:string)=>tiles.filter(t=>t.type===type).length;
  const goods=p.goods.reduce((sum,g)=>sum+g.tiles.length,0),owned=layout.mounted.filter(m=>m.playerId===p.id).length;
- const potential=[0,count("livestock")*2,3,Math.min(p.workers,8),p.storage.filter(Boolean).length*2,goods,Math.max(...state.players.map(other=>monasteryNumbers(state,other).length))*2,3,count("mine")*3,goods*2,count("monastery")*2,count("castle"),goods*2,owned*4,5,5,4,4,6,2,2,4,10,3,5][n];
+ const potential=[0,count("livestock")*2,3,Math.min(p.workers,8),p.storage.filter(Boolean).length*2,goods,Math.max(...state.players.map(other=>monasteryNumbers(state,other).length))*2,3,count("mine")*3,goods*2,count("monastery")*2,count("castle"),goods*2,owned*4,5,5,4,4,6,4,2,3,10,3,5][n];
  return SHIELD_POINTS[n-1]+potential*Math.max(0,remaining-1)+Math.max(0,remaining-1)*2;
 }
 export function shieldExtensionValue(state:GameState,p:PlayerState,a:Extract<GameAction,{type:"extension"}>):number{

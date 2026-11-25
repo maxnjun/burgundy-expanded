@@ -75,7 +75,7 @@ export function CustomBoardActions({options,players,tiles,actor,revision,onActio
      {ids.map(id=><button key={id} aria-label={`${p.name}의 ${ownName(id)} 선택`} aria-pressed={selected?.kind==='rival'&&selected.id===id} onClick={()=>choose('rival',id)}>{art(id)}</button>)}
     </div></fieldset>;
    })}
-   {!!currentRivals.length&&<div><p>{players.find(p=>p.id===optionTile(currentRivals[0]).ownerId)?.name}에게 은화 2개를 지급합니다.</p>
+   {!!currentRivals.length&&<div><p>은화 2개를 공용 은행에 지불합니다. 판매자 보상은 없습니다.</p>
     <div className="custom-tile-options">{currentRivals.filter((o,i)=>optionTile(o).discardTileId||i===0).map(o=>{
      const id=optionTile(o).discardTileId;
      return <button key={optionTile(o).storageSlot} onClick={()=>finish(o)}>{id&&art(id)}{id?`${ownName(id)} 폐기 후 구매`:'구매 확정'}</button>;

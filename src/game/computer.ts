@@ -29,9 +29,13 @@ export function chooseComputerAction(state: GameState, playerId = state.turn.act
     if (action.type === "buy-workers") return player.workers<2?10:-190;
     if(action.type==="extension"&&action.extensionId==="shields"){
       const p=action.payload as {tileId:string;discardTileId?:string}|null;
-      if(action.command==='discard-storage'||action.command==='cancel-reservation')return -210;
+      if(action.command==='discard-storage'){
+        const tile=state.tiles[p!.tileId];
+        return hasShield(state,player.id,19)&&tile&&tile.type!=="inn"&&!player.duchy.cells.some(c=>!c.tileId&&c.terrain===tile.type)?-5:-210;
+      }
+      if(action.command==='cancel-reservation')return -210;
       if(action.command==='reserve-tile')return acquisitionValue(state,player,state.tiles[p!.tileId])-20;
-      if(action.command==='buy-rival-tile')return p!.discardTileId?-180:acquisitionValue(state,player,state.tiles[p!.tileId])-9;
+      if(action.command==='buy-rival-tile')return p!.discardTileId?-180:acquisitionValue(state,player,state.tiles[p!.tileId])-8;
       return shieldExtensionValue(state,player,action);
     }
     if(action.type==='extension'&&action.extensionId==='additional-hexes'&&action.command==='recolor'){

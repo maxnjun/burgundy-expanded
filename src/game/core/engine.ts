@@ -5,7 +5,7 @@ import {isCastleAction,suspendCastleAction} from "../castle-actions";
 import {resumeVineyards,vineStoreIntents} from "./vineyard-effects";
 import {intentIssue} from "./intents";
 import { settleShieldState, shieldSpecialIssue, applyShieldSpecial } from "./shield-effects";
-import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, recordLegacyExtraDie, diceShieldStatus, dieChangeShield, DIE_CHANGE_COMMANDS, type ShieldAcquireAction } from "../shields";
+import { acquireShieldPreview, shieldAcquireIssue, rewardShieldWorkerGain, shieldLayout, shieldWorkerSteps, recordLegacyExtraDie, diceShieldStatus, dieChangeShield, DIE_CHANGE_COMMAND, type ShieldAcquireAction } from "../shields";
 import type { EngineIssue, EngineResult, Transition, ValidationResult } from "../interfaces";
 import type { DieValue, GameAction, GameState, JsonValue, PlayerState } from "../types";
 import { drawDie } from "./random";
@@ -276,7 +276,7 @@ export function listCoreActionOptions(state: GameState, playerId: string): Engin
     if(layout.mounted.some(m=>m.playerId===playerId&&m.shieldNumber===6)&&layout.rules?.monasteryTarget===null)
       for(const target of state.players)candidates.push({type:"extension",extensionId:"shields",command:"choose-monastery-target",playerId,payload:{targetPlayerId:target.id}});
     if(state.turn.stage==="player-turn"&&state.turn.activePlayerId===playerId){
-      for(const number of [16,21] as const)if(diceShieldStatus(layout,state.turn,state.dice,playerId,number)==="ready")for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:DIE_CHANGE_COMMANDS[number],playerId,payload:{dieId:die.id,value}});
+      if(diceShieldStatus(layout,state.turn,state.dice,playerId,16)==="ready")for(const die of state.dice.players[playerId])for(let value=1;value<=6;value++)if(value!==die.value)candidates.push({type:"extension",extensionId:"shields",command:DIE_CHANGE_COMMAND,playerId,payload:{dieId:die.id,value}});
       if(diceShieldStatus(layout,state.turn,state.dice,playerId,22)==="ready")candidates.push({type:"extension",extensionId:"shields",command:"use-extra-die",playerId,payload:null});
       const dice=state.dice.players[playerId],pairs=dice.flatMap((first,i)=>dice.slice(i+1).filter(second=>!first.used&&!second.used).map(second=>[first,second] as const));
       if(!state.turn.pendingChoice&&!state.turn.pendingEffects.length)for(const slot of layout.slots)if(slot.shieldNumber!==null)for(const cell of player.duchy.cells)if(cell.tileId&&state.tiles[cell.tileId].type==="castle")for(const pair of pairs)

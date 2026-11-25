@@ -44,7 +44,7 @@ export function discardStored(state:GameState,playerId:string,ids:readonly strin
  const removed=[...new Set(ids)].filter(id=>p.storage.includes(id)||reserve.some(r=>r.tileId===id));
  if(!removed.length)return state;
  const workers=monasteryNumbers(state,p).includes(30)?removed.length*2:0;
- const next={...state,players:state.players.map(x=>x.id===playerId?{...x,workers:x.workers+workers,silver:x.silver+(hasShield(state,playerId,19)?removed.length:0),
+ const next={...state,players:state.players.map(x=>x.id===playerId?{...x,workers:x.workers+workers,silver:x.silver+(hasShield(state,playerId,19)?removed.length*2:0),
   storage:x.storage.map(id=>id&&removed.includes(id)?null:id),...(x.vineyardReserve?{vineyardReserve:reserve.filter(r=>!removed.includes(r.tileId))}:{})}:x),
   market:{...state.market,removedTileIds:[...state.market.removedTileIds,...removed.filter(id=>p.storage.includes(id))]},...(v?{vineyards:{...v,removed:[...v.removed,...removed.filter(id=>reserve.some(r=>r.tileId===id))]}}:{})};
  return rewardShieldWorkerGain(next,playerId,workers);

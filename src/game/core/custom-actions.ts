@@ -63,7 +63,7 @@ export function applyCustomShieldAction(game:GameState,player:PlayerState,action
  if(action.command==='discard-storage')return discardStored(game,id,[p.tileId]);
  const n=p.discardTileId?discardStored(game,id,[p.discardTileId]):game;
  return {...n,players:n.players.map(x=>x.id===id?{...x,silver:x.silver-2,storage:x.storage.map((tile,i)=>i===p.storageSlot?p.tileId:tile)}:
-  x.id===p.ownerId?{...x,silver:x.silver+2,storage:x.storage.map(tile=>tile===p.tileId?null:tile)}:x),
+  x.id===p.ownerId?{...x,storage:x.storage.map(tile=>tile===p.tileId?null:tile)}:x),
   turn:{...n.turn,blackPurchaseUsed:true}};
 }
 

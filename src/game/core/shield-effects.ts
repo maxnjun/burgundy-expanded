@@ -216,6 +216,5 @@ export function applyShieldSpecial(state:GameState,action:Extract<import("../typ
       {...layout,rules:{...layout.rules!,extraDieUsedRound:shieldRoundNumber(state.turn)}});
   }
   const dice=state.dice.players[action.playerId].map(d=>d.id===p.dieId?{...d,value:p.value}:d) as unknown as GameState["dice"]["players"][string];
-  const key=dieChangeShield(action.command)===21?"dieChangedRounds21":"dieChangedRounds";
-  return setShieldLayout({...state,dice:{...state.dice,players:{...state.dice.players,[action.playerId]:dice}}},{...layout,rules:{...layout.rules!,[key]:{...layout.rules![key],[action.playerId]:shieldRoundNumber(state.turn)}}});
+  return setShieldLayout({...state,dice:{...state.dice,players:{...state.dice.players,[action.playerId]:dice}}},{...layout,rules:{...layout.rules!,dieChangedRounds:{...layout.rules!.dieChangedRounds,[action.playerId]:shieldRoundNumber(state.turn)}}});
 }
