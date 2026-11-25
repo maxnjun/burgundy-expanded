@@ -2,6 +2,7 @@
 import {CurrentScores} from "../current-scores";
 import {useSupplyPurchase} from "../supply-purchase";
 import {GameSettings} from "../game-settings";
+import {useTurnSound} from "../turn-sound";
 import {BoardSupplyLayout} from "../board-supply-layout";
 import {FRUIT_NAMES} from "../vineyard-art";
 import {ShieldDieChange,ShieldExtraDie,ShieldPairDice} from "../shield-dice";
@@ -106,6 +107,7 @@ export default function OnlineGame(){
   const [name,setName]=useState(""),[code,setCode]=useState(""),[error,setError]=useState(""),[requestBusy,setBusy]=useState(false);
   const [connection,setConnection]=useState<ConnectionStatus>("connecting"),[updateVersion,setUpdateVersion]=useState(""),[pendingConnection,setPendingConnection]=useState<PendingConnection|null>(null),[copied,setCopied]=useState(false);
   const viewerId=view?.seat??"";
+  const turnSound=useTurnSound(view&&view.id===seat?.id?view.id:null,view,!!view?.joined&&view.activePlayerId===viewerId);
   const busy=requestBusy||!!pendingAction||!!updateVersion||!!seat&&(!["live","polling"].includes(connection)||recoveredSeat!==`${seat.id}:${viewerId}`);
   const resetSelection=useCallback(()=>{setCustomDraft(null);setShieldDicePair("");setPairDie("");setSelectedOnlineShield(null);setReplacement(null);setSelectedDie(undefined);setPurchaseMode(false);setMonasteryMode(false);setStorageTile(null);setSelectedVineTileId(null);setVineRotation(0);setPendingSupply(null);setGoodsSelecting(false);},[]);
   const custom=customDraft?.revision===view?.revision?customDraft:null;
@@ -257,7 +259,7 @@ export default function OnlineGame(){
   const touchBrowse=!custom&&(view?.status!=="setup"||!!view?.lobby&&!view.lobby.started)&&!selectedDie&&!selectedVineTileId&&!storageTile&&!selectedOnlineShield&&!pendingSupply&&!goodsSelecting&&!replacement&&!purchaseMode&&!monasteryMode&&!controlsBlocked&&!view?.actions.some(a=>a.action.type==="resolve-choice")&&!view?.castleAction;
   const canMonasteryPurchase=!controlsBlocked&&view?.actions.some(a=>a.action.type==="use-monastery-six");
   const canPurchase=!controlsBlocked&&view?.actions.some(a=>a.action.type==="buy-black-tile"||a.action.type==="extension"&&a.action.extensionId==="vineyards"&&(a.action.payload as {source?:string}).source==="store");
-  return <main data-guidance-pinned={pinnedGuidance} data-tile-help-touch-browse={touchBrowse} data-game-revision={view?.revision} className="app-shell table-view online-screen">{quickPurchase.dialog}<header className="topbar"><h1>Burgundy · 2인 온라인 방</h1><Link href="/">로컬 게임으로</Link><GameSettings pinned={pinnedGuidance} onPinned={setPinnedGuidance} vineyards={!!view?.vineyards}/></header>
+  return <main data-guidance-pinned={pinnedGuidance} data-tile-help-touch-browse={touchBrowse} data-game-revision={view?.revision} className="app-shell table-view online-screen">{quickPurchase.dialog}<header className="topbar"><h1>Burgundy · 2인 온라인 방</h1><Link href="/">로컬 게임으로</Link><GameSettings pinned={pinnedGuidance} onPinned={setPinnedGuidance} vineyards={!!view?.vineyards} turnSound={turnSound}/></header>
     <p className="live-scope">온라인 2인 · 초대 링크로 같은 방에 참가하세요. 서버가 행동과 자리를 보호하고, 연결이 끊기면 최신 상태를 다시 받아옵니다.</p>
     {detailShield!==null&&<ShieldDetails status={shieldStatus(detailShield)} number={detailShield} onClose={()=>setDetailShield(null)}/>}
     {replacement&&<section role="alertdialog" aria-label={vineDiscard(replacement)?"온라인 포도 폐기 확인":"온라인 타일 교체 확인"} className="direct-confirm"><p>{vineDiscard(replacement)?"선택한 보관 타일이 영구 폐기됩니다. 획득을 확정하시겠습니까?":"기존 보관 타일이 영구 제거됩니다. 교체하시겠습니까?"}</p><button disabled={!!busy} onClick={()=>void act(replacement)}>온라인 교체 확정</button><button disabled={!!busy} onClick={()=>choice.vine?updateBoardChoice({...choice.vine,discardIds:[]}):setReplacement(null)}>취소</button></section>}
