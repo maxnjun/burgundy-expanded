@@ -31,8 +31,8 @@ export function actionGuidance(game:GameState,actions:readonly GameAction[],sele
  if(selection.goodsTypes)return '가져올 상품 종류를 선택하세요.';
  if(selection.shieldNumber)return `방패 ${selection.shieldNumber}를 장착할 성을 선택하세요.`;
  if((game.turn.pendingChoice||game.turn.pendingEffects.length)&&!isCastleAction(game))return selection.tileId?'타일을 배치할 영지를 선택하세요.':effectGuidance(game);
- if(game.turn.stage==='round-setup')return '라운드를 준비하고 있습니다.';
- if(game.turn.stage==='phase-end')return '';
+ if(game.turn.stage==='round-setup')return actions.some(a=>a.type==='roll-round')?'라운드 주사위를 굴리세요.':'시작 플레이어가 주사위를 굴릴 차례입니다.';
+ if(game.turn.stage==='phase-end')return '페이즈를 정산하고 있습니다.';
  if(game.turn.stage!=='player-turn')return '게임 진행을 준비하고 있습니다.';
  if(selection.tileId)return player?.storage.includes(selection.tileId)?'타일을 배치할 영지를 선택하세요.':'교체할 저장고 타일을 선택하세요.';
  if(selection.vineTileId)return '포도 타일을 배치할 포도밭 자리를 선택하세요.';

@@ -18,7 +18,7 @@ test("direct automatic complete game saves every intermediate phase and first-ch
  for(let n=0;n<650&&g.status!=="finished";n++){
   const actor=g.turn.activePlayerId??g.turn.orderTrack[0].players[0],actions=directActions(g,actor);let action=automaticAction(g,actions);
   if(!action&&g.turn.pendingChoice){const c=g.turn.pendingChoice,o=c.options.find(o=>o.id.includes(":silver"))??c.options[0];action={type:"resolve-choice",playerId:c.playerId,choiceId:c.id,optionId:o.id};}
-  if(!action){const id=g.dice.players[actor].find(d=>!d.used)?.id;action=cheapestDieAction(actions,id,i=>i.kind==="take-workers")??actions.find(a=>a.type==="end-turn")??null;}
+  if(!action){const id=g.dice.players[actor].find(d=>!d.used)?.id;action=actions.find(a=>a.type==="roll-round")??cheapestDieAction(actions,id,i=>i.kind==="take-workers")??actions.find(a=>a.type==="end-turn")??null;}
   assert.ok(action);const result=applyCoreAction(g,action);assert.ok(result.ok);g=result.value.state;
   assert.doesNotThrow(()=>roundtrip(g),`save failed ${g.turn.phase}${g.turn.round} revision ${g.revision}`);
  }assert.equal(g.status,"finished");

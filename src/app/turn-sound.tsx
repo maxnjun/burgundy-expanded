@@ -23,7 +23,8 @@ function readPreference():SoundPreference{
 }
 
 export function useTurnSound(scope:string|null,turn:PlayerTurn|null,eligible:boolean):SoundControls{
-  const turnKey=turn?.stage==="player-turn"&&turn.activePlayerId?`${turn.phase}:${turn.round}:${turn.activePlayerId}`:null;
+  const turnKey=turn&&(turn.stage==="round-setup"||turn.stage==="player-turn")&&turn.activePlayerId
+    ?`${turn.phase}:${turn.round}:${turn.activePlayerId}`:null;
   const [value,setValue]=useState(defaults);
   const preference=useRef(defaults);
   const lastTurn=useRef<{scope:string;key:string|null}|null>(null);

@@ -3,9 +3,8 @@ import {monasteryNumbers} from '../game/core/state';
 import {PLAYER_COLORS,isPlayerColor,playerColorKey} from "../game/player-colors";
 import {roomChanged} from "./room-events";
 import {serverRelease} from "./release";
-import {boardTarget,type BoardTarget} from "../game/direct-actions";
+import {automaticAction,boardTarget,phaseAdvanceAction,type BoardTarget} from "../game/direct-actions";
 import {isCastleAction} from "../game/castle-actions";
-import {automaticVineReward} from "../game/core/vineyard-effects";
 import {actionGuidance} from "../game/action-guidance";
 import {actionLabel,createActionLog} from "../game/action-log";
 import {GRAPES,type Grape} from "../game/vineyards";
@@ -242,6 +241,17 @@ export class RoomStore {
     else {room.history=recordTurnAction(room.history??beginHistory(before,previousLogs),before,room.game,action as GameAction,previousLogs,room.logs);if(room.history.start)delete room.undoBarrier;}
     // Dice become public before the first player's undo checkpoint is established.
     if(turnKey(before)!==turnKey(room.game)){room.history=beginHistory(room.game,room.logs,true);delete room.undoBarrier;}
+    // Settle in the same room write, even when the next track leader is offline.
+    const advance=phaseAdvanceAction(room.game);
+    if(advance){
+      const settled=applyCoreAction(room.game,advance);
+      if(settled.ok){
+        room.logs=[createActionLog(room.game,settled.value.state,advance),...room.logs].slice(0,60);
+        room.game=settled.value.state;
+        room.history=beginHistory(room.game,room.logs);
+        delete room.undoBarrier;
+      }
+    }
     room.updatedAt=Date.now();await this.write(room);return this.publicView(room,seat);
   });}
   private undoReason(room:StoredRoom,playerId:string,kind:"turn"|"action"){
@@ -325,7 +335,7 @@ export class RoomStore {
     const actions=engineActions.map(action=>({action,label:actionLabel(s,action),group:action.type==="use-die"?action.intent.kind:action.type,target:boardTarget(s,action),cost:directCost(s,action)}));
     const layout=shieldLayout(s);
     const shields=layout?{format:layout.format,effectsActive:layout.effectsActive,slots:layout.slots,mounted:layout.mounted,removed:layout.removed,rules:layout.rules}:null;
-    const automatic=automaticVineReward(s,actions.map(a=>a.action));
+    const automatic=automaticAction(s,engineActions);
     return {customRules:s.config.customRules,regionRefunds:s.config.customRules?Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.category==="region-refund")])):undefined,tileReservations:s.tileReservations,purchase:{used:purchaseBlocked(s,s.players[seat].id),monasterySix:monasteryNumbers(s,s.players[seat]).includes(6)},discardedTiles:s.discardedTiles??[],commonBoard:{marketRecipeId:s.config.marketRecipeId,orderTrack:s.turn.orderTrack,phaseGoodsCounts:{A:s.market.phaseGoods.A.length,B:s.market.phaseGoods.B.length,C:s.market.phaseGoods.C.length,D:s.market.phaseGoods.D.length,E:s.market.phaseGoods.E.length},roundGoodsCount:s.market.roundGoods.length,revealedGoods:publicPhaseGoods(s),bonusTiles:s.market.bonusTiles},undo:{turnReason:this.undoReason(room,s.players[seat].id,"turn"),actionReason:this.undoReason(room,s.players[seat].id,"action")},...(room.startingPreview?{startingPreview:room.startingPreview}:{}),release:serverRelease(),...(room.lobby?{lobby:{...room.lobby,capacity:2}}:{}),automaticChoice:automatic&&actions.some(x=>JSON.stringify(x.action)===JSON.stringify(automatic))?automatic:null,castleAction:isCastleAction(s),guidance:actionGuidance(s,actions.map(a=>a.action)),boardDraft:room.draft?{version:1,seats:room.draft.seats}:null,fortressScores:Object.fromEntries(s.players.map(p=>[p.id,s.scoreLedger[p.id].filter(e=>e.id.startsWith("fortress:"))])),shields,vineyards:s.vineyards?{...s.vineyards,bag:[]}:undefined,tradeRoutes:s.tradeRoutes,finalScores:s.finalScores,id:room.id,revision:s.revision,seat:s.players[seat].id,stage:s.turn.stage,phase:s.turn.phase,round:s.turn.round,status:s.status,activePlayerId:s.turn.activePlayerId,players:s.players,tiles:Object.fromEntries([...visible].map(id=>[id,s.tiles[id]])),depots:s.market.numberedDepots,blackDepot:s.market.blackDepot,inns:s.market.inns,dice:s.dice,actions,logs:room.logs,joined:!!room.tokens[1],winnerIds:ending.ok&&ending.value.ended?ending.value.winnerIds:[]};
   }
 }

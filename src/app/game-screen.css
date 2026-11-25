@@ -250,7 +250,8 @@ button:has([data-approved-shield]):is(:hover,:active,:focus,:focus-visible,[aria
 .starter-roll:disabled{opacity:1;cursor:default}
 .starter-controls{display:flex;align-items:center;justify-content:flex-end;gap:.55rem;flex-wrap:wrap}
 .starter-controls button{min-height:44px}
-.starter-tumbling{animation:starter-tumble 450ms ease-out both}
+.starter-tumbling{animation:starter-tumble var(--dice-motion-time,450ms) ease-out var(--dice-motion-delay,0ms) both}
+.game-die-tumbling{display:inline-block;pointer-events:none}
 @keyframes starter-tumble{0%{transform:translateY(0) rotate(0)}35%{transform:translateY(-8px) rotate(155deg)}72%{transform:translateY(-2px) rotate(295deg)}100%{transform:translateY(0) rotate(360deg)}}
 @media(max-height:460px){.starter-dialog{padding:.8rem}.starter-seats{gap:.25rem;margin:.45rem 0}.starter-seats li{padding-block:.1rem}}
 @media(prefers-reduced-motion:reduce){.starter-tumbling{animation:none}}

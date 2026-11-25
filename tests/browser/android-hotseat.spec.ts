@@ -39,7 +39,8 @@ for(const count of [2,3,4])test(`Android hotseat ${count} identities, active boa
   await expect(page.locator('.estate-panel')).toHaveCount(count);await expect(page.locator('.estate-panel').first()).toHaveAttribute('data-player-id',id);
   await page.locator('[data-can-start="true"]').first().click();await page.getByRole('button',{name:'확정 및 턴 종료',exact:true}).click();
  }
- await expect.poll(async()=>(await state(page)).turn.stage).toBe('player-turn');
+ await page.getByRole('button',{name:'주사위 굴리기',exact:true}).click();
+ await expect(page.getByRole('button',{name:/^행동 주사위 1 눈/})).toBeEnabled();
  for(let i=0;i<count;i++){
   const before=await state(page),id=before.turn.activePlayerId!,name=before.players.find(p=>p.id===id)!.name;
   await expect(page.getByLabel('현재 핫시트 플레이어')).toContainText(name);await expect(page.locator('.estate-panel').first()).toHaveAttribute('data-player-id',id);

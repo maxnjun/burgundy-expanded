@@ -56,9 +56,9 @@ test('both online seats receive public discarded faces and vines, reconnect, and
    await context.routeWebSocket('**/api/rooms/*/live',ws=>ws.close());
   }
   await page.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),owner);await peer.addInitScript(s=>localStorage.setItem('burgundy-online-seat-v1',JSON.stringify(s)),other);
-  const guest=await peer.newPage();await page.goto('/online');await guest.goto(page.url());
-  const panel=page.locator('details.discarded-tiles'),peerPanel=guest.locator('details.discarded-tiles');await expect(panel).not.toHaveAttribute('open','');await expect(panel.locator('[data-discard-phase]')).toHaveCount(0);
-  await page.getByRole('button',{name:'단계 진행',exact:true}).click();
+  const guest=await peer.newPage();await page.goto('/online');await guest.goto(new URL('/online',page.url()).href);
+  const panel=page.locator('details.discarded-tiles'),peerPanel=guest.locator('details.discarded-tiles');await expect(panel).not.toHaveAttribute('open','');
+  await expect(page.getByRole('button',{name:'단계 진행',exact:true})).toHaveCount(0);
   for(const p of [panel,peerPanel]){await p.locator('summary').click();await expect(p.locator('[data-discarded-tile]')).toHaveCount(3);await expect(p.locator('[data-discarded-vine]')).toHaveCount(4);await expect(p.locator('h3')).toHaveText('A 페이즈 — 7개');}
   expect(await panel.locator('image').evaluateAll(es=>es.map(e=>e.getAttribute('href')))).toEqual(await peerPanel.locator('image').evaluateAll(es=>es.map(e=>e.getAttribute('href'))));
   const history=JSON.parse(await readFile(file,'utf8')).game.discardedTiles;await expect(page.getByRole('button',{name:'이전 행동으로',exact:true})).toBeDisabled();

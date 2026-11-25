@@ -4,6 +4,8 @@ import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, dirname, basename } from "node:path";
 import { RoomError, RoomStore } from "../../src/server/rooms";
+import {finishDiceRound,step} from "../fixtures/shields";
+import type {GameState} from "../../src/game/types";
 
 async function fixture(){
   const directory=await mkdtemp(join(tmpdir(),"burgundy-room-test-"));
@@ -45,6 +47,34 @@ test("concurrent room requests commit once and stale/replayed actions cannot cha
     const after=await f.store.view(f.owner.id,f.owner.token);assert.equal(after.revision,before.revision+1);
     await assert.rejects(()=>f.store.act(f.owner.id,f.owner.token,after.revision,{type:"use-die",playerId:"seat-1",dieId:"forged",intent:{kind:"take-workers"},adjustment:{workersSpent:0,steps:[]}}));
     assert.deepEqual(await f.store.view(f.owner.id,f.owner.token),after);
+  }finally{await f.cleanup();}
+});
+test("the last online turn settles the phase once without the next leader being connected",async()=>{
+  const f=await fixture();
+  try{
+    const path=join(f.directory,`${f.owner.id}.json`),room=JSON.parse(await readFile(path,"utf8"));
+    let game:GameState=room.game;
+    for(let round=1;round<=5;round++){
+      game=step(game,{type:"roll-round",playerId:"seat-1"});
+      if(round<5)game=finishDiceRound(game);
+    }
+    for(const playerId of ["seat-1","seat-2"]){
+      for(const die of game.dice.players[playerId])game=step(game,{
+        type:"use-die",playerId,dieId:die.id,adjustment:{steps:[],workersSpent:0},intent:{kind:"take-workers"},
+      });
+      if(playerId==="seat-1")game=step(game,{type:"end-turn",playerId});
+    }
+    await writeFile(path,JSON.stringify({...room,game}));
+    const ended={type:"end-turn",playerId:"seat-2"},request="end-phase-once-2026";
+    const next=await f.store.act(f.owner.id,f.guest.token,game.revision,ended,request);
+    assert.deepEqual([next.phase,next.round,next.stage,next.dice.rolledForRound],["B",1,"round-setup",false]);
+    assert.equal(next.revision,game.revision+2);
+    assert.deepEqual(next.discardedTiles?.map(history=>history.phase),["A"]);
+    assert.deepEqual(await f.store.act(f.owner.id,f.guest.token,game.revision,ended,request),next);
+    const owner=await new RoomStore(f.directory).view(f.owner.id,f.owner.token);
+    assert.equal(owner.automaticChoice,null);
+    assert.equal(owner.actions.find(a=>a.action.type==="roll-round")?.action.playerId,"seat-1");
+    assert.equal(owner.revision,next.revision);
   }finally{await f.cleanup();}
 });
 test("two authenticated clients finish a complete server game without hidden state",async()=>{

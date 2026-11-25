@@ -45,6 +45,11 @@ test('shield 21 skips a turn and shield 22 grays out until the next phase',async
  await expect(shield(22)).toHaveAttribute('data-shield-dice-status','ready');
  await press(extra);
  await expect(dice).toHaveCount(3);
+ await expect(dice.nth(2).locator('[data-die-rolling]')).toHaveCount(1);
+ await expect(dice.first().locator('[data-die-rolling]')).toHaveCount(0);
+ await expect(dice.first()).toBeDisabled();
+ await expect(dice.nth(2)).toBeEnabled();
+ expect(await dice.nth(2).textContent()).toBe(["","⚀","⚁","⚂","⚃","⚄","⚅"][(await current(page)).dice.players["seat-1"][2]!.value]);
  await expect(used).toBeDisabled();
  const game=await current(page);
  const face=game.dice.players['seat-1'][2]!.value===1?2:1;

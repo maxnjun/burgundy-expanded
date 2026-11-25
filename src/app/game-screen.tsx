@@ -8,6 +8,7 @@ import {purchaseBlocked} from "../game/purchases";
 import {AndroidVineyardSetting,useAndroid} from "./android-settings";
 import {GameSettings} from "./game-settings";
 import {TurnSoundSetting,useTurnSound} from "./turn-sound";
+import {DieFace,diceRollingText,rollForAction,shownDice,useDiceRoll} from "./dice-roll";
 import {BoardSupplyLayout} from "./board-supply-layout";
 import {DesignSetting} from "./design-settings";
 import {FRUIT_NAMES} from "./vineyard-art";
@@ -188,23 +189,25 @@ export default function GameScreen() {
   }
   const [selectingGoods,setSelectingGoods]=useState(false);
   const actorId = game.turn.activePlayerId ?? orderedPlayers(game)[0];
-  const turnSound=useTurnSound(saveReady?String(soundSession):null,game.turn,!computerPlayerIds.includes(actorId));
+  const turnSound=useTurnSound(saveReady?String(soundSession):null,{...game.turn,activePlayerId:actorId},!computerPlayerIds.includes(actorId));
+  const diceRoll=useDiceRoll();
   const active = game.players.find(p => p.id === actorId)!;
   const dice = game.dice.players[actorId];
   const die = dice[dieIndex];
   const officialOptions = getSelectableBoards();
   const legalActions=useMemo(()=>directActions(game,actorId),[game,actorId]);
-  const boardOptions=useMemo(()=>legalActions.map(action=>({action,target:boardTarget(game,action)})),[game,legalActions]);
+  const boardOptions=useMemo(()=>diceRoll.roll?[]:legalActions.map(action=>({action,target:boardTarget(game,action)})),[diceRoll.roll,game,legalActions]);
   const custom=customDraft?.revision===game.revision?customDraft:null;
   const customOptions=boardOptions.filter(isCustomBoardAction);
   const reserveFor=(id:string)=>customOptions.find(({action})=>action.type==="extension"&&action.command==="reserve-tile"&&(action.payload as {tileId:string}).tileId===id)?.action??null;
   const canRecolor=(id:string)=>custom?.mode==="recolor"&&customOptions.some(o=>o.target.recolor?.cellId===id);
   const choice=useMemo(()=>boardChoice(boardOptions,choiceDraft,game.revision),[boardOptions,choiceDraft,game.revision]);
   const confirmation=choice.vineAction??ordinaryConfirmation;
-  const actions=useMemo(()=>choice.vine?[]:legalActions,[choice.vine,legalActions]);
+  const actions=useMemo(()=>choice.vine||diceRoll.roll?[]:legalActions,[choice.vine,diceRoll.roll,legalActions]);
+  const roundRoll=actions.find(a=>a.type==="roll-round");
   const dieAction=(match:Parameters<typeof directBoardAction>[3])=>!computerTurn?directBoardAction(game,actions,die?.id,match):null;
   const computerTurn = computerPlayerIds.includes(actorId) && !computerPaused;
-  const permitted = (action: GameAction | null) => !computerTurn && action !== null && validateCoreAction(game, action).valid;
+  const permitted = (action: GameAction | null) => !computerTurn && !diceRoll.roll && action !== null && validateCoreAction(game, action).valid;
   const titleFor = (id: string) => { const t = game.tiles[id]; return t.type === "inn" ? "여관" : t.type === "building" ? buildingNames[t.building] : t.type === "livestock" ? `${LIVESTOCK_NAMES[t.species]} ${t.count}마리` : t.type === "monastery" ? `수도원 ${t.number}` : tileInfo[t.type].name; };
   const ending = checkCoreGameEnd(game);
   const shields=shieldLayout(game);
@@ -229,7 +232,7 @@ export default function GameScreen() {
     return dieAction(i=>i.kind==="take-tile"&&i.tileId===id)??actions.find(a=>a.type==="use-monastery-six"&&a.tileId===id)??null;
   }
   function activate(action:GameAction|null){
-    if(!action||choice.vine)return;
+    if(!action||choice.vine||diceRoll.active())return;
     if(hotseat&&action.type==="place-starting-castle"){
       if(permitted(action))setStartingPreview({playerId:action.playerId,cellId:action.cellId});
       return;
@@ -260,6 +263,7 @@ export default function GameScreen() {
     quickPurchase.tap(id,[...(ordinary?[ordinary]:[]),...(worker&&worker!==ordinary?[worker]:[])]);
   }
   function selectStorage(id:string|null,index:number){
+    if(diceRoll.active())return;
     if(choice.vine){if(id){const next=choice.discard(id);if(next)setChoiceDraft(next);}return;}
     if(choice.shieldGuidance)return;
     if(selectedTileId&&!active.storage.includes(selectedTileId)&&active.storage.every((_,i)=>!!keyOccupant(active,i))){
@@ -270,16 +274,18 @@ export default function GameScreen() {
     if(id&&active.vineyardReserve?.some(r=>r.tileId===id)){setSelectedVineTileId(id);return;}
     setSelectedShieldSlot(null);setSelectedTileId(selectedTileId===id?null:id);
   }
-  function selectDie(i:number){if(choice.vine)return;setSpecialMode(false);setPurchaseMode(false);setDieIndex(dieIndex===i?-1:i);setSelectedShieldSlot(null);setConfirmation(null);}
+  function selectDie(i:number){if(choice.vine||diceRoll.active())return;setSpecialMode(false);setPurchaseMode(false);setDieIndex(dieIndex===i?-1:i);setSelectedShieldSlot(null);setConfirmation(null);}
   function selectShieldDie(id:string){selectDie(-1);setPairDie(id);setSelectedTileId(null);setSelectedVineTileId(null);}
   const costLabel=(action:GameAction|null)=>action?`일꾼 ${directCost(game,action)}`:"불가";
   const workersAction=dieAction(i=>i.kind==="take-workers");
   const canMonasteryPurchase=actions.some(a=>a.type==="use-monastery-six"),hasMonasterySix=monasteryNumbers(game,active).includes(6);
   function run(action: GameAction) {
-    if(creating.current||choice.vine&&action!==choice.vineAction)return;
+    if(creating.current||diceRoll.active()||choice.vine&&action!==choice.vineAction)return;
     if(dispatched.current===game)return;
     const result = applyCoreAction(game, action);
     if (!result.ok) { setNotice(result.issues.some(i => i.code === "unresolved-rule") ? "이 효과는 아직 지원하지 않습니다." : "차례, 주사위 눈, 일꾼과 보관 공간을 확인해 주세요."); return; }
+    const roll=rollForAction(action);
+    if(roll)diceRoll.start(roll);
     dispatched.current=game;setChoiceDraft(null);setStartingPreview(null);setPairDie("");setSelectingGoods(false);setSelectedVineTileId(null);
     const before = game.players.find(p=>p.id===action.playerId)!;
     const routeSale=result.value.state.tradeRoutes?.routes[before.id]?.sales;const tradeLog=routeSale&&routeSale.length>(game.tradeRoutes?.routes[before.id]?.sales.length??0)?`무역로 ${routeSale.length}칸 · ${routeSale.at(-1)!.status==="mismatch"?"색상 불일치":routeSale.at(-1)!.status==="pending"?"보상 선택":"보상 획득"} · `:"";
@@ -296,21 +302,21 @@ export default function GameScreen() {
 
   const runAutomatic=useEffectEvent((action:GameAction)=>run(action));
   useEffect(()=>{
-    if(!saveReady||saveBlocked||settings||computerPlayerIds.includes(actorId)||confirmation)return;
+    if(!saveReady||saveBlocked||settings||computerPlayerIds.includes(actorId)||confirmation||diceRoll.roll)return;
     const action=automaticAction(game,actions);if(!action)return;
     const timer=setTimeout(()=>runAutomatic(action),350);return()=>clearTimeout(timer);
-  },[game,actions,saveReady,saveBlocked,settings,actorId,computerPlayerIds,confirmation]);
+  },[game,actions,saveReady,saveBlocked,settings,actorId,computerPlayerIds,confirmation,diceRoll.roll]);
 
   const runComputer = useEffectEvent((action: GameAction) => run(action));
   useEffect(() => {
-    if (!computerPlayerIds.includes(actorId) || computerPaused || game.status === "finished" || !saveReady || settings) return;
+    if (!computerPlayerIds.includes(actorId) || computerPaused || game.status === "finished" || !saveReady || settings || diceRoll.roll) return;
     const timer = setTimeout(() => {
       const decision = chooseComputerAction(game, actorId);
       if (decision.ok) runComputer(decision.value);
       else { setNotice("AI가 합법 행동을 찾지 못했습니다. 진행을 보존하고 일시정지했습니다."); setComputerPaused(true); }
     }, 450);
     return () => clearTimeout(timer);
-  }, [game, actorId, computerPlayerIds, computerPaused, saveReady, settings]);
+  }, [game, actorId, computerPlayerIds, computerPaused, saveReady, settings,diceRoll.roll]);
 
   function newSession() {
     if(creating.current)return;
@@ -357,7 +363,7 @@ export default function GameScreen() {
     const legal=player.duchy.cells.filter(c=>player.id===actorId&&canRecolor(c.id)||cellActions.get(c.id)!.placement||cellActions.get(c.id)!.shield).map(c=>c.id);
     const official = VERIFIED_BOARD_DEFINITIONS.find(b => b.id === player.duchy.boardId && b.verification.status === "verified");
     return <section key={player.id} data-player-id={player.id} data-readonly={hotseat&&player.id!==actorId||undefined} className={`panel estate-panel${hotseat&&player.id===actorId?" current-hotseat-board":""}`}><div className="estate-heading"><div><span className="eyebrow">YOUR DOMAIN</span><h2 style={tableView||hotseat?{color:playerPaint(player).ink}:undefined}>{player.name}의 영지 <span className="board-number">{official ? `영지 보드 ${official.officialNumber}번` : "비공식 연습 보드"}</span></h2></div><span className="live-status">{player.id === actorId ? "● 현재 차례" : hotseat?"조회 전용":"영지 보기"}</span></div>
-      {startingCastlePending(game,player.id)&&<p className="starting-castle-guidance">{player.id===actorId?"시작 성 타일을 배치할 위치를 선택하세요.":`${player.name}의 시작 성 선택 대기`}</p>}{<div className="estate-inventory"><GoodsInventory costFor={type=>{const a=dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type);return a?directCost(game,a):0;}} player={player} capacity={goodsCapacity(game,player.id)} canSell={type=>player.id===actorId&&!!dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type)} onSell={type=>activate(dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type))}/><SoldGoods player={player}/><div className="estate-dice">{game.dice.players[player.id].map((d,i) => <button key={d.id} style={{background:playerColor(player)}} className={`mini-die seat-die-${player.seat}${d.used ? " used" : ""}${player.id === actorId && dieIndex === i ? " chosen" : ""}`} aria-label={`${player.name} 개인 주사위 ${i+1} 눈 ${d.value}`} disabled={computerTurn || player.id !== actorId || game.turn.stage !== "player-turn" || d.used || (!!game.turn.pendingChoice&&!isCastleAction(game))} aria-pressed={player.id===actorId&&dieIndex===i} onClick={() => selectDie(i)}>{["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][d.value]}</button>)}</div><EarnedBonusTiles player={player}/><div className="estate-resources"><button aria-label={`${player.name} 일꾼 자원`} disabled={player.id!==actorId||!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> 일꾼 <b>{player.workers}</b>{player.id===actorId&&workersAction&&<small> +{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> 은화 <b>{player.silver}</b></span></div></div>}
+      {startingCastlePending(game,player.id)&&<p className="starting-castle-guidance">{player.id===actorId?"시작 성 타일을 배치할 위치를 선택하세요.":`${player.name}의 시작 성 선택 대기`}</p>}{<div className="estate-inventory"><GoodsInventory costFor={type=>{const a=dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type);return a?directCost(game,a):0;}} player={player} capacity={goodsCapacity(game,player.id)} canSell={type=>player.id===actorId&&!!dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type)} onSell={type=>activate(dieAction(i=>i.kind==="sell-goods"&&i.goodsType===type))}/><SoldGoods player={player}/><div className="estate-dice">{game.dice.players[player.id].map((d,i) => <button key={d.id} style={{background:playerColor(player)}} className={`mini-die seat-die-${player.seat}${d.used ? " used" : ""}${player.id === actorId && dieIndex === i ? " chosen" : ""}`} aria-label={`${player.name} 개인 주사위 ${i+1} 눈 ${d.value}`} disabled={!!diceRoll.roll || computerTurn || player.id !== actorId || game.turn.stage !== "player-turn" || d.used || (!!game.turn.pendingChoice&&!isCastleAction(game))} aria-pressed={player.id===actorId&&dieIndex===i} onClick={() => selectDie(i)}>{["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][d.value]}</button>)}</div><EarnedBonusTiles player={player}/><div className="estate-resources"><button aria-label={`${player.name} 일꾼 자원`} disabled={player.id!==actorId||!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> 일꾼 <b>{player.workers}</b>{player.id===actorId&&workersAction&&<small> +{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> 은화 <b>{player.silver}</b></span></div></div>}
       <div className={game.vineyards?"estate-vineyard-row":""}><div className="estate-original-board"><BoardViewport onZoom={delta=>setBoardZooms(old=>({...old,[player.id]:Math.max(.5,Math.min(2,+(Number(old[player.id]??1)+delta).toFixed(2)))}))}><svg className="live-estate-svg" style={game.vineyards?{width:`${zoom/(tableView?.58:1)*100}%`,height:"auto"}:undefined} width={620 * zoom} height={(fortressLinesFor(player.duchy.boardId).length?640:565) * zoom} viewBox={fortressLinesFor(player.duchy.boardId).length?"0 0 620 640":"0 0 620 565"} role="group" aria-label={`${player.name} 영지`}><circle cx="310" cy="282" r="260" fill="#eee9db" stroke="#cfbea0"/><EstateDecoration/>{player.duchy.cells.map(cell => {
         const {x,y}=estateCenter(cell.coord);
         const preview=hotseat&&startingPreview?.playerId===player.id&&startingPreview.cellId===cell.id;
@@ -376,9 +382,10 @@ export default function GameScreen() {
   }
 
   const undoBlocked=computerPlayerIds.includes(actorId)?"AI 차례는 되돌릴 수 없습니다.":confirmation||choice.vine||choice.selected||selectedTileId||selectedShieldSlot||selectedVineTileId||dieIndex>=0||specialMode?"현재 선택을 취소하거나 필수 후속 선택을 먼저 완료하세요.":"";
-  const stepReason=undoBlocked||(!canUndoTurn(history,game,'action')?"이 차례에서 취소할 행동이 없습니다.":"");
+  const stepReason=diceRoll.roll?diceRollingText:undoBlocked||(!canUndoTurn(history,game,'action')?"이 차례에서 취소할 행동이 없습니다.":"");
   const undoReason=stepReason||(!history.start?"불러온 차례의 시작 기록이 없습니다. 다음 차례부터 지원합니다.":"");
   function restoreTurn(kind:'turn'|'action'){
+    if(diceRoll.active())return;
     if(kind==='turn'?undoReason:stepReason)return;
     if(dispatched.current===game)return;
     const restored=undoTurn(history,game,kind);if(!restored)return;
@@ -387,8 +394,8 @@ export default function GameScreen() {
     setDieIndex(-1);setSelectedTileId(null);setSelectedShieldSlot(null);setConfirmation(null);setSpecialMode(false);setPurchaseMode(false);setNotice(kind==='turn'?'이번 차례 시작 상태로 복원했습니다.':'이전 행동으로 복원했습니다.');
   }
   const fallbackChoices=game.turn.pendingChoice?.options.filter(o=>{const t=boardTarget(game,{type:"resolve-choice",playerId:actorId,choiceId:game.turn.pendingChoice!.id,optionId:o.id});return !choice.vine&&!t.intent&&!t.goods&&!t.shield&&!t.blackTile&&!t.phaseTile&&!t.goodsDiscardType&&!t.storageDiscardId;})??[];
-  const guidance=!computerTurn&&(choice.vine?vineyardDiscardGuidance:choice.shieldGuidance)||actionGuidance(game,actions,{purchase:purchaseMode,dieId:die?.id,tileId:selectedTileId,vineTileId:selectedVineTileId,shieldNumber:selectedShield?.shieldNumber,special:specialMode,replacement:!!confirmation,goodsTypes:selectingGoods,computer:computerPlayerIds.includes(actorId)?(computerPaused?"paused":"playing"):undefined});
-  const endReason=!saveReady||saveBlocked?"게임 상태를 먼저 불러오세요.":computerPlayerIds.includes(actorId)?"AI 차례는 자동 진행됩니다.":confirmation||selectedTileId||selectedShieldSlot||selectedVineTileId||specialMode?"현재 선택을 완료하거나 취소하세요.":!canEndTurn(actions)?"두 주사위와 필수 후속 선택을 먼저 해결하세요.":"";
+  const guidance=diceRoll.roll?diceRollingText:!computerTurn&&(choice.vine?vineyardDiscardGuidance:choice.shieldGuidance)||actionGuidance(game,actions,{purchase:purchaseMode,dieId:die?.id,tileId:selectedTileId,vineTileId:selectedVineTileId,shieldNumber:selectedShield?.shieldNumber,special:specialMode,replacement:!!confirmation,goodsTypes:selectingGoods,computer:computerPlayerIds.includes(actorId)?(computerPaused?"paused":"playing"):undefined});
+  const endReason=diceRoll.roll?diceRollingText:!saveReady||saveBlocked?"게임 상태를 먼저 불러오세요.":computerPlayerIds.includes(actorId)?"AI 차례는 자동 진행됩니다.":confirmation||selectedTileId||selectedShieldSlot||selectedVineTileId||specialMode?"현재 선택을 완료하거나 취소하세요.":!canEndTurn(actions)?"두 주사위와 필수 후속 선택을 먼저 해결하세요.":"";
   const boards = hotseat||focus ? [active, ...game.players.filter(p => p.id !== actorId)] : game.players;
   const previousActor=useRef(actorId);
   useEffect(()=>{const area=estateArea.current;if(hotseat&&previousActor.current!==actorId&&area){const rect=area.getBoundingClientRect();if(rect.top<0&&rect.bottom>0)area.scrollIntoView({block:'start',behavior:'smooth'});}previousActor.current=actorId;},[actorId,hotseat]);
@@ -407,7 +414,7 @@ export default function GameScreen() {
     {saveIssue&&<p role="alert" className="live-scope">자동 저장 실패: {saveIssue} · 저장 파일 내보내기로 진행을 보관하세요.</p>}
     {detailShield!==null&&<ShieldDetails status={shieldStatus(detailShield)} number={detailShield} active={!!shields?.effectsActive} onClose={()=>setDetailShield(null)}/>}
     {notice && <p role="status" className="direct-toast">{notice}</p>}
-    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><CurrentScores players={game.players} current={actorId} ledger={game.scoreLedger}/><div className="direct-resources"><strong className="current-turn-name" style={{color:playerPaint(active).ink}}><span style={{background:playerPaint(active).fill}}/>{active.name}</strong><div className="direct-dice">{dice.map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={computerTurn||!!choice.vine||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice&&!isCastleAction(game)} onClick={()=>selectDie(i)}>{["","⚀","⚁","⚂","⚃","⚄","⚅"][d.value]}</button>)}</div><button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span>{(selectedTileId||selectedShield||selectedVineTileId)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedVineTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special" open><summary aria-label="추가 행동" title="추가 행동">⋯</summary><label className="tile-help-touch-purchase"><input type="checkbox" aria-label="보드에서 은화 구매 선택" checked={purchaseMode} disabled={!!choice.vine||!purchaseMode&&!canPurchase} onChange={e=>{setPurchaseMode(e.target.checked);setSpecialMode(false);setDieIndex(-1);}}/>은화 구매</label><label><input type="checkbox" aria-label="수도원6 일꾼 구매" checked={specialMode} disabled={computerTurn||!canMonasteryPurchase} onChange={e=>{setSpecialMode(e.target.checked);setPurchaseMode(false);setDieIndex(-1);}}/>수도원6 · 일꾼2 구매</label>{purchaseBlocked(game,actorId)&&<small role="status">이번 턴의 타일 구매 기회를 이미 사용했습니다.</small>}{hasMonasterySix&&!purchaseBlocked(game,actorId)&&!canMonasteryPurchase&&<small>일꾼 2개, 번호 공급처의 남은 타일과 저장고 조건을 확인하세요.</small>}{monasteryNumbers(game,active).includes(28)&&<button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button>}</details></div><p className="action-guidance" role="status" aria-live="polite" aria-label="현재 행동 안내">{guidance}</p>{(choice.selected||choice.vine)&&!computerTurn&&<button className="outline-button" onClick={()=>setChoiceDraft(null)}>{choice.vine?"포도 타일 선택 취소":"다른 타일 선택"}</button>}{isShieldUpkeep(fallbackChoices)&&<ShieldUpkeep key={game.turn.pendingChoice!.id} options={fallbackChoices} disabled={computerTurn} onChoose={optionId=>activate({type:"resolve-choice",playerId:actorId,choiceId:game.turn.pendingChoice!.id,optionId})}/>}{hotseat&&game.status==="setup"?<div className="starting-castle-confirm" role="region" aria-label="시작 성 배치 확인">{startingPreview?<><p>{active.name}의 시작 성 위치를 확인한 뒤 확정하세요.</p><button onClick={()=>setStartingPreview(null)}>위치 다시 선택</button><button onClick={()=>run({type:"place-starting-castle",playerId:actorId,cellId:startingPreview.cellId})}>확정 및 턴 종료</button></>:<p>시작 성을 배치할 칸을 선택하세요.</p>}</div>:<TurnControls state={game} undoReason={undoReason} stepReason={stepReason} endReason={endReason} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId})}/>}</section>}
+    {game.status!=="finished"&&<section className="direct-toolbar" aria-label="직접 게임 조작"><CurrentScores players={game.players} current={actorId} ledger={game.scoreLedger}/><div className="direct-resources"><strong className="current-turn-name" style={{color:playerPaint(active).ink}}><span style={{background:playerPaint(active).fill}}/>{active.name}</strong><div className="direct-dice" aria-busy={!!diceRoll.roll}>{shownDice(dice,diceRoll.roll).map((d,i)=><button key={d.id} aria-label={`행동 주사위 ${i+1} 눈 ${d.value}${d.used?" 사용됨":""}`} aria-pressed={dieIndex===i} disabled={!!diceRoll.roll||computerTurn||!!choice.vine||d.used||game.turn.stage!=="player-turn"||!!game.turn.pendingChoice&&!isCastleAction(game)} onClick={()=>selectDie(i)}><DieFace value={d.value} index={i} rolling={!!diceRoll.roll&&(diceRoll.roll.kind==="round"||i===2)}/></button>)}</div>{!computerTurn&&(roundRoll||diceRoll.roll?.kind==="round")&&<button className="outline-button" disabled={!roundRoll||!!diceRoll.roll||settings||!saveReady||saveBlocked} onClick={()=>{if(roundRoll)run(roundRoll);}}>주사위 굴리기</button>}<button className="direct-worker" aria-label="일꾼 자원" disabled={!workersAction} onClick={()=>activate(workersAction)}><ResourceIcon type="worker"/> <strong aria-label="현재 일꾼">{active.workers}</strong>{workersAction&&<small>+{monasteryNumbers(game,active).includes(14)?4:2}</small>}</button><span><ResourceIcon type="silver"/> <b aria-label="현재 은화">{active.silver}</b></span>{(selectedTileId||selectedShield||selectedVineTileId)&&<button aria-label="선택 취소" onClick={()=>{setSelectedTileId(null);setSelectedVineTileId(null);setSelectedShieldSlot(null);setConfirmation(null);}}>×</button>}<details className="direct-special" open><summary aria-label="추가 행동" title="추가 행동">⋯</summary><label className="tile-help-touch-purchase"><input type="checkbox" aria-label="보드에서 은화 구매 선택" checked={purchaseMode} disabled={!!choice.vine||!purchaseMode&&!canPurchase} onChange={e=>{setPurchaseMode(e.target.checked);setSpecialMode(false);setDieIndex(-1);}}/>은화 구매</label><label><input type="checkbox" aria-label="수도원6 일꾼 구매" checked={specialMode} disabled={computerTurn||!canMonasteryPurchase} onChange={e=>{setSpecialMode(e.target.checked);setPurchaseMode(false);setDieIndex(-1);}}/>수도원6 · 일꾼2 구매</label>{purchaseBlocked(game,actorId)&&<small role="status">이번 턴의 타일 구매 기회를 이미 사용했습니다.</small>}{hasMonasterySix&&!purchaseBlocked(game,actorId)&&!canMonasteryPurchase&&<small>일꾼 2개, 번호 공급처의 남은 타일과 저장고 조건을 확인하세요.</small>}{monasteryNumbers(game,active).includes(28)&&<button disabled={!permitted({type:"buy-workers",playerId:actorId})} onClick={()=>run({type:"buy-workers",playerId:actorId})}>수도원28 · 은화1 → 일꾼2</button>}</details></div><p className="action-guidance" role="status" aria-live="polite" aria-label="현재 행동 안내">{guidance}</p>{(choice.selected||choice.vine)&&!computerTurn&&<button className="outline-button" onClick={()=>setChoiceDraft(null)}>{choice.vine?"포도 타일 선택 취소":"다른 타일 선택"}</button>}{isShieldUpkeep(fallbackChoices)&&<ShieldUpkeep key={game.turn.pendingChoice!.id} options={fallbackChoices} disabled={computerTurn} onChoose={optionId=>activate({type:"resolve-choice",playerId:actorId,choiceId:game.turn.pendingChoice!.id,optionId})}/>}{hotseat&&game.status==="setup"?<div className="starting-castle-confirm" role="region" aria-label="시작 성 배치 확인">{startingPreview?<><p>{active.name}의 시작 성 위치를 확인한 뒤 확정하세요.</p><button onClick={()=>setStartingPreview(null)}>위치 다시 선택</button><button onClick={()=>run({type:"place-starting-castle",playerId:actorId,cellId:startingPreview.cellId})}>확정 및 턴 종료</button></>:<p>시작 성을 배치할 칸을 선택하세요.</p>}</div>:<TurnControls state={game} undoReason={undoReason} stepReason={stepReason} endReason={endReason} onUndo={()=>restoreTurn("turn")} onStep={()=>restoreTurn("action")} onEnd={()=>run({type:"end-turn",playerId:actorId})}/>}</section>}
 
     {!computerTurn&&!choice.vine&&<CustomBoardActions options={customOptions} players={game.players} tiles={game.tiles} actor={active} revision={game.revision} onAction={activate} reserveMode={custom?.mode==="reserve"} onReserve={open=>setCustomDraft(open?{revision:game.revision,mode:"reserve",cellId:""}:null)} recolorMode={custom?.mode==="recolor"} onRecolor={open=>setCustomDraft(open?{revision:game.revision,mode:"recolor",cellId:""}:null)} cellId={custom?.cellId??""} onCell={cellId=>setCustomDraft(cellId?{revision:game.revision,mode:"recolor",cellId}:null)} tileName={titleFor}/>}
     <ShieldDicePair actions={allShieldCandidates} dice={dice} selected={shieldDicePair} onSelect={setShieldDicePair}/>
