@@ -438,7 +438,7 @@ export default function GameScreen() {
 
 
     </div>
-    <details className="panel compact-log"><summary>행동과 점수 기록 · {logs.length}개</summary><div className="logs live-logs">{logs.map((message,i)=><p key={i}><ActionLog record={message} tiles={game.tiles} players={hotseat?game.players:undefined}/></p>)}</div></details>
+    <details className="panel compact-log action-log-panel"><summary>행동과 점수 기록 · {logs.length}개</summary><div className="logs live-logs">{logs.map((message,i)=><p key={i}><ActionLog record={message} tiles={game.tiles} players={game.players} showPlayerMarker={hotseat}/></p>)}</div></details>
     <DiscardedTiles history={game.discardedTiles} tiles={game.tiles}/>
     <TileEncyclopedia/>
     <footer><span>♜ BURGUNDY EXPANDED</span><p>자체 SVG · 연습 공급 · 공식 기본판 전체 게임 미완성</p><span>모든 행동은 규칙 검사 후 실행됩니다.</span></footer>
