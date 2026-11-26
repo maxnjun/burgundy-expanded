@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {expect,test,type Page} from '@playwright/test';
 import {serializeSavedGame} from '../../src/game/save';
 import {tileHexPoints} from '../../src/app/tile-frame';
@@ -72,7 +73,7 @@ test('monastery 31 keeps its black-supply identity with the approved yellow face
  const black=page.locator('[data-black-depot]');
  const approved=black.locator('image[data-approved-monastery="31"]');
  await expect(approved).toBeAttached();
- await expect(approved).toHaveAttribute('href',/monastery-31\.png\?v=/);
+ await expect(approved).toHaveAttribute('href',assetUrl("/assets/tiles/monastery/final/monastery-31.png"));
  const diamond=await approved.evaluate(async el=>{
   const image=new Image();
   image.src=el.getAttribute('href')!;

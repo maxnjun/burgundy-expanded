@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page,type Locator} from '@playwright/test';
 import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -99,7 +100,7 @@ test('shield 21 purchase pays only the bank and shield 19 discard pays two silve
  for(const n of [19,21]){
   const mounted=page.locator(`[data-mounted-shield="${n}"]`);
   const art=mounted.locator(`[data-shield-image="${n}"]`);
-  await expect(art).toHaveAttribute('href',new RegExp(`shield-${n}\\.png\\?v=[0-9a-f]+`));
+  await expect(art).toHaveAttribute('href',assetUrl(`/shields/shield-${n}.png`));
   if(info.project.name==='desktop-1280'){
    await press(mounted.locator('..'));
    const detail=page.getByRole('dialog',{name:'방패 상세',exact:true});

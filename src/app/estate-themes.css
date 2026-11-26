@@ -6,7 +6,7 @@
   --estate-paper:#fff0d5;
   --estate-shade:#edc7a1;
   --estate-title:#4f1b2a;
-  --estate-landscape:url('/assets/textures/estate-themes/royal-landscape.webp');
+  --estate-landscape:var(--art-royal-landscape);
   --estate-frame:linear-gradient(125deg,#a86732,#62162c 22%,#3c111f 54%,#8c233a 80%,#bf7d37);
   --estate-grid:#655237;
 }
@@ -18,9 +18,9 @@
   --estate-paper:#f9f7ec;
   --estate-shade:#d4e1e7;
   --estate-title:#1d3850;
-  --estate-landscape:url('/assets/textures/estate-themes/alpine-landscape.webp');
+  --estate-landscape:var(--art-alpine-landscape);
   --estate-frame:linear-gradient(130deg,#e2ded1,#8a96a2 29%,#365c81 49%,#70869a 64%,#e4dfcf);
-  --estate-paper-texture:url('/assets/textures/terrain-mine.webp');
+  --estate-paper-texture:var(--art-terrain-mine);
   --estate-grid:#455761;
 }
 
@@ -31,9 +31,9 @@
   --estate-paper:#f8eaca;
   --estate-shade:#d9b889;
   --estate-title:#224240;
-  --estate-landscape:url('/assets/textures/estate-themes/map-landscape.webp');
-  --estate-frame:url('/assets/textures/wood.webp');
-  --estate-map:url('/assets/textures/cartography.svg');
+  --estate-landscape:var(--art-map-landscape);
+  --estate-frame:var(--art-wood);
+  --estate-map:var(--art-cartography);
   --estate-grid:#594a39;
 }
 
@@ -69,7 +69,7 @@
   background:linear-gradient(110deg,#9aaa57 30%,#477e92 30% 52%,#c2a35e 52% 77%,#d5c257 77%);
 }
 [data-design-1="on"] [data-theme-preview="estate-theme-1"] .estate-theme-preview {
-  background:linear-gradient(90deg,#f4e5bf,transparent 70%),url('/assets/textures/terrain-castle.webp') center / cover;
+  background:linear-gradient(90deg,#f4e5bf,transparent 70%),var(--art-terrain-castle) center / cover;
 }
 
 :where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel {
@@ -78,7 +78,7 @@
   background:
     var(--estate-map,none) center 24% / min(100%,760px) auto no-repeat,
     linear-gradient(125deg,var(--estate-paper),color-mix(in srgb,var(--estate-shade) 92%,transparent)),
-    var(--estate-paper-texture,url('/assets/textures/parchment.webp')) center / 256px;
+    var(--estate-paper-texture,var(--art-parchment)) center / 256px;
   box-shadow:inset 0 0 0 2px var(--estate-rail),inset 0 0 0 4px var(--estate-highlight),0 3px 8px #51351f32;
 }
 
@@ -97,7 +97,7 @@
 :where([data-estate-theme]:not([data-estate-theme="estate-theme-1"])) .app-shell .estate-panel :is(
   .estate-inventory,.estate-keyspaces,.board-bottom,.personal-score-pages,.vineyard-personal,.trade-route-panel,.shield-controls
 ) {
-  background:linear-gradient(135deg,var(--estate-paper),color-mix(in srgb,var(--estate-shade) 61%,transparent)),url('/assets/textures/parchment.webp') center / 256px;
+  background:linear-gradient(135deg,var(--estate-paper),color-mix(in srgb,var(--estate-shade) 61%,transparent)),var(--art-parchment) center / 256px;
   border-color:var(--estate-edge);
   box-shadow:inset 0 0 0 1px var(--estate-highlight),inset 0 0 0 2px color-mix(in srgb,var(--estate-rail) 40%,transparent);
   color:var(--estate-title);

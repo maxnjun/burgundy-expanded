@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {Suspense} from "react";
 import {TileEffectTooltip} from "./tile-effect-tooltip";
 import {DesignProvider} from './design-settings';
+import "./runtime-assets.generated.css";
 import "./globals.css";
 import "./game-screen.css";
 import "./tile-help.css";

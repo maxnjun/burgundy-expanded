@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect} from "@playwright/test";
 import {createPracticeSession} from "../../src/game/practice";
 import {supplyInn,INN_PHASES} from "../../src/game/inns";
@@ -12,6 +13,7 @@ function setup(count:number,zoom=1,seats:2|4=2){
  return {game:g,saved:serializeSavedGame({format:"burgundy-local-v1",randomAlgorithm:"counter-v1",game:g,logs:[],view:{zoom:1,focus:false,table:true,commonZoom:zoom,boardZooms:{}}})};
 }
 for(let n=1;n<=5;n++)test(`inn stack${n} at100/160/200 preserves supply hits and purchases top only`,async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('burgundy-expanded:pinned-guidance-v1','off'));
  for(const zoom of [1,1.6,2]){
   const {saved}=setup(n,zoom);await page.goto('/updates');await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),saved);await page.goto('/');
   const board=page.getByRole('region',{name:'공용 공급처 보드',exact:true}),stack=board.locator('[data-inn-stack]');await expect(board.getByText('여관1 ◀',{exact:true})).toBeVisible();
@@ -21,11 +23,12 @@ for(let n=1;n<=5;n++)test(`inn stack${n} at100/160/200 preserves supply hits and
   await board.screenshot({path:`.local-data/qa/inn-stack-${n}-${zoom*100}.png`});
   await stack.screenshot({path:`.local-data/qa/inn-stack-detail-${n}-${zoom*100}.png`});
   for(const hit of [stack.locator('[data-inn-hit]'),board.locator('[data-black-depot] [data-supply-hit]').first()]){
-   await hit.scrollIntoViewIfNeeded();expect(await hit.evaluate(el=>{const b=el.getBoundingClientRect();return el===document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);})).toBe(true);
+   await hit.evaluate(el=>el.scrollIntoView({block:'center',inline:'center'}));await expect.poll(()=>hit.evaluate(el=>{const b=el.getBoundingClientRect();return el===document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);})).toBe(true);
   }
+  await page.getByLabel('보드에서 은화 구매 선택',{exact:true}).check();
   await stack.locator('[data-inn-hit]').click();await expect(stack.locator('[data-inn-layer]')).toHaveCount(n-1);
   await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.players[0].silver)).toBe(2);
-  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).logs[0])).toContain('여관 구매');
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).logs[0])).toContain('여관 타일 구매');
   await board.screenshot({path:`.local-data/qa/inn-acquired-${n}-${zoom*100}.png`});
  }
 });
@@ -43,7 +46,7 @@ test('inn storage, direct placement, saved estate, missing PNG fallback and disa
  const cell=page.locator(`[data-estate-cell="${put.intent.cellId}"]`).first();await cell.click();await expect(cell.locator('[data-inn-art]')).toHaveCount(1);await cell.screenshot({path:'.local-data/qa/inn-estate.png'});await page.locator('.estate-panel').first().screenshot({path:'.local-data/qa/inn-completed-estate.png'});
  const ledger=await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game.scoreLedger['seat-1']);expect(ledger.some((e:{category:string})=>e.category==='region-size')).toBe(true);
  await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-art]')).toHaveCount(1);
- await page.route('**/tiles/illustrations/inn.png*',r=>r.abort());await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-fallback]')).toHaveCount(1);
+ await page.route("**"+assetUrl("/tiles/illustrations/inn.png"),r=>r.abort());await page.reload();await expect(page.locator('[data-estate-tile] [data-inn-fallback]')).toHaveCount(1);
  const off=createPracticeSession({names:['off1','off2'],seed:'inn-off'});await page.evaluate(v=>localStorage.setItem('burgundy-expanded:local-v1',v),serializeSavedGame({format:'burgundy-local-v1',randomAlgorithm:'counter-v1',game:off,logs:[],view:{zoom:1,focus:false,table:true,boardZooms:{}}}));await page.reload();await expect(page.locator('[data-inn-stack]')).toHaveCount(0);
 });
 test('four seat market retains distinct inn and every existing tile hit',async({page})=>{

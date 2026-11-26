@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect} from "@playwright/test";
 import {resolve} from "node:path";
 import {existsSync} from "node:fs";
@@ -85,7 +86,7 @@ test("all ten production textures match across supply storage estate and zoom wi
   for(const scope of [board,page.locator(".estate-keyspaces").first(),page.locator(".common-board-svg")]){
    const images=scope.locator(selector);expect(await images.count()).toBeGreaterThan(0);
    for(const image of await images.all()){
-    await expect(image).toHaveAttribute("href",`${folder}${asset.file}?v=${asset.outputSha256.slice(0,12)}`);
+    await expect(image).toHaveAttribute("href",assetUrl(folder+asset.file));
     const svg=image.locator("xpath=ancestor::*[@data-tile-art][1]");await expect(svg.locator("[data-rim-band],[data-tile-backdrop]")).toHaveCount(0);await expect(svg.locator("clipPath polygon")).toHaveAttribute("points",tileHexPoints());
    }
   }
@@ -101,7 +102,8 @@ test("all ten production textures match across supply storage estate and zoom wi
 });
 
 test("missing approved textures retain SVG fallback and recover after reload",async({page})=>{
- await page.route("**/assets/tiles/beige/final/*.png*",route=>route.fulfill({status:404,body:"missing approved texture fixture"}));
+ const isUnavailableAsset=(url:URL)=>assets.assets.some(asset=>url.pathname===assetUrl(folder+asset.file));
+ await page.route(isUnavailableAsset,route=>route.fulfill({status:404,body:"missing approved texture fixture"}));
  await init(page);const game=fixture(assets.assets.slice(0,3));await load(page,game);
  const board=page.getByRole("group",{name:"규칙A 영지",exact:true});
  await expect(board.locator(`svg[data-tile-fallback^="${folder}"]`)).toHaveCount(10);
@@ -111,5 +113,5 @@ test("missing approved textures retain SVG fallback and recover after reload",as
   await expect(svg.locator("clipPath polygon")).toHaveAttribute("points",tileHexPoints(TILE_FRAME_INSET));expect(await svg.locator("path").count()).toBeGreaterThan(2);
  }
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
- await page.unroute("**/assets/tiles/beige/final/*.png*");await page.reload();await expect(board.locator("image[data-approved-building]")).toHaveCount(10);await expect(board.locator("[data-tile-fallback]")).toHaveCount(0);
+ await page.unroute(isUnavailableAsset);await page.reload();await expect(board.locator("image[data-approved-building]")).toHaveCount(10);await expect(board.locator("[data-tile-fallback]")).toHaveCount(0);
 });

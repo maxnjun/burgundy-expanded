@@ -1,10 +1,11 @@
 "use client";
+import {assetUrl} from "./runtime-assets";
+import {useImageFailure} from "./image-failure";
 import {WhiteDie} from "./white-die";
 
-import { useEffect, useId, useState, type SVGProps } from "react";
+import { useId, useState, type SVGProps } from "react";
 import type { BaseTile, Tile, TileType } from "../game/types";
 import { ESTATE_ART_HEIGHT } from "./estate-geometry";
-import centerIllustrations from "../../public/tiles/illustrations/center-manifest.json";
 import illustrations from "../../public/tiles/illustrations/manifest.json";
 import { TileFrame, tileHexPoints, TILE_FRAME_INSET } from "./tile-frame";
 import { InnArt } from "./inn-art";
@@ -38,17 +39,16 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
   const asset = assetName ? illustrations.assets[assetName] : null;
   const centerName=building==="crane"?"crane":tile.type==="livestock"&&tile.species==="geese"?"goose":null;
   const framedSource = monastery ? `/assets/tiles/monastery/final/${monastery.file}` : animal ? `/assets/tiles/animals/final/${animal.file}` : beige ? `/assets/tiles/beige/final/${beige.file}` : assetName ? `/tiles/${assetName}.png` : centerName?`/tiles/${centerName}.png`:null;
-  const candidate = monastery ? `${framedSource}?v=${monastery.outputSha256.slice(0,12)}` : animal ? `${framedSource}?v=${animal.outputSha256.slice(0,12)}` : beige ? `${framedSource}?v=${beige.outputSha256.slice(0,12)}` : assetName&&asset ? `/tiles/illustrations/${assetName}.png?v=${asset.outputSha256.slice(0,12)}` : (centerName?`/tiles/illustrations/${centerName}.png?v=${centerIllustrations.assets[centerName].outputSha256.slice(0,12)}`:null);
-  const [failedIllustration,setFailedIllustration]=useState<string|null>(null);
-  // An SSR image may fail before hydration attaches onError. Probe again after mount.
-  useEffect(()=>{if(!candidate)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailedIllustration(candidate);};probe.src=candidate;return()=>{active=false;probe.onerror=null;};},[candidate]);
-  const illustration=failedIllustration===candidate?null:candidate;
+  const source=monastery||animal||beige?framedSource:assetName&&asset?`/tiles/illustrations/${assetName}.png`:centerName?`/tiles/illustrations/${centerName}.png`:null;
+  const candidate=source?assetUrl(source):null;
+  const {failed,onError}=useImageFailure(candidate);
+  const illustration=failed?null:candidate;
   const fullTile=!!asset||!!beige||!!animal||!!monastery;
   const bakedFrame=(!!beige||!!monastery)&&!!illustration;
   const estateHeight=ESTATE_ART_HEIGHT,offset=(estateHeight-standard.vectorHeight)/2,centerWidth=standard.centerIllustrationWidth;
   const palette=animal?animalTiles.palette:asset?.palette??{dark:"#5d5b36",base:terrainPaint[tile.type],light:"#fff7bf"};
   // Every isolated asset shares one square canvas and the same SVG hex geometry.
-  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} data-baked-tile-frame={bakedFrame?(monastery?"approved-monastery":"approved-beige"):undefined} viewBox={`0 0 100 ${estateHeight}`} aria-hidden="true" focusable="false" data-tile-fallback={candidate&&failedIllustration===candidate?(framedSource??candidate):undefined} {...props}>
+  return <svg data-tile-art={tile.id} data-estate-art={estate||undefined} data-baked-tile-frame={bakedFrame?(monastery?"approved-monastery":"approved-beige"):undefined} viewBox={`0 0 100 ${estateHeight}`} aria-hidden="true" focusable="false" data-tile-fallback={failed?(framedSource??candidate):undefined} {...props}>
     <defs><clipPath id={clipId}><polygon points={tileHexPoints(bakedFrame?0:TILE_FRAME_INSET)}/></clipPath></defs>
     {!bakedFrame&&<TileFrame palette={palette} surface={animal?[animalTiles.surface,animalTiles.surface,animalTiles.surface]:asset?.surface} layer="backdrop"/>}
     <g clipPath={`url(#${clipId})`}><g transform={`translate(0 ${offset})`}>
@@ -113,7 +113,7 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
       <path d="M35 43V51H40V42M59 77V84M69 71V79" fill="#5d6548"/>
       <circle cx={standard.effect.numberX} cy={standard.effect.numberY} r={standard.effect.numberRadius} fill="#fff0b1" stroke="#8a7135"/><text x={standard.effect.numberX} y={standard.effect.numberY+5} textAnchor="middle" fill="#58452b" stroke="none" fontSize="15" fontWeight="bold">{tile.number}</text>
     </g>}
-    {illustration && <image data-tile-art-png={framedSource??illustration} data-approved-building={bakedFrame?beige?.buildingType:undefined} data-approved-monastery={monastery?.number} data-approved-animal={animal?`${animal.species}-${animal.count}`:undefined} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={()=>setFailedIllustration(illustration)}/>}
+    {illustration && <image data-tile-art-png={framedSource??illustration} data-approved-building={bakedFrame?beige?.buildingType:undefined} data-approved-monastery={monastery?.number} data-approved-animal={animal?`${animal.species}-${animal.count}`:undefined} data-estate-image={estate&&fullTile?"illustration":undefined} data-isolated-art={fullTile?assetName:undefined} href={illustration} data-tile-image-mode={fullTile?"full":"illustration"} x={fullTile?(100-estateHeight)/2:(100-centerWidth)/2} y={fullTile?-offset:(standard.vectorHeight-centerWidth)/2} width={fullTile?estateHeight:centerWidth} height={fullTile?estateHeight:centerWidth} preserveAspectRatio="xMidYMid meet" onError={onError}/>}
     {tile.type === "livestock" && <g><circle cx="50" cy="16" r="7" fill="#f2e6b5" stroke="#687348"/><text x="50" y="20" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#425131">{tile.count}</text></g>}
     {tile.back === "black" && !(monastery&&illustration) && <path d="M50 94 55 99 50 104 45 99Z" fill="#252c28" stroke="#e6d6aa" strokeWidth=".7"/>}
     {!illustration&&tile.type==="monastery"&&tile.number===30&&<ResourceGlyph type="worker" x={46} y={61} size={17}/>}
@@ -127,7 +127,7 @@ function BaseTileArt({ tile, estate=false, ...props }: { tile: BaseTile; estate?
 export function GoodsArt({ value, ...props }: { value: number } & SVGProps<SVGSVGElement>) {
   const asset = goodsTiles.assets.find(a=>"value" in a&&a.value===value);
   const [failed, setFailed] = useState<string|null>(null);
-  const source = asset ? `/assets/goods/${asset.file}?v=${asset.sha256.slice(0,12)}` : null;
+  const source = asset ? assetUrl(`/assets/goods/${asset.file}`) : null;
   const colors = ["", "#795a98", "#cda43b", "#ae3934", "#488e9c", "#cb8436", "#608568"];
   return <svg data-goods-value={value} viewBox="0 0 40 40" width={52} height={52} aria-hidden="true" {...props}>
     {source&&failed!==source ? <image data-goods-image={asset!.file} href={source} width="40" height="40" preserveAspectRatio="xMidYMid meet" onError={()=>setFailed(source)}/> : <><rect x="1" y="1" width="38" height="38" rx="2" fill={colors[value]} stroke="#776044"/><path d="M5 5H35V35H5Z" fill="none" stroke="#fff0cd" opacity=".65"/><path d="M12 13 20 9 29 14V26L21 31 12 26Z" fill="#e5c48a" stroke="#604d37"/><path d="M12 13 21 18 29 14M21 18V31M16 11 25 16V28" fill="none" stroke="#89643d"/><WhiteDie x={11} y={29} value={value} size={16}/></>}
@@ -138,6 +138,6 @@ export function GoodsBackArt(props:SVGProps<SVGSVGElement>){
   const asset = goodsTiles.assets.find(a=>a.file==="goods_back.png")!;
   const [failed, setFailed] = useState(false);
   return <svg data-goods-back="true" viewBox="0 0 30 30" aria-hidden="true" {...props}>
-    {!failed ? <image data-goods-image="goods_back.png" href={`/assets/goods/${asset.file}?v=${asset.sha256.slice(0,12)}`} width="30" height="30" preserveAspectRatio="xMidYMid meet" onError={()=>setFailed(true)}/> : <><rect x="1" y="1" width="28" height="28" rx="3" fill="#84643c" stroke="#cfb77e"/><path d="M5 15 15 5 25 15 15 25Z" fill="none" stroke="#ead49a"/><path d="M9 15H21M15 9V21" stroke="#ead49a"/></>}
+    {!failed ? <image data-goods-image="goods_back.png" href={assetUrl(`/assets/goods/${asset.file}`)} width="30" height="30" preserveAspectRatio="xMidYMid meet" onError={()=>setFailed(true)}/> : <><rect x="1" y="1" width="28" height="28" rx="3" fill="#84643c" stroke="#cfb77e"/><path d="M5 15 15 5 25 15 15 25Z" fill="none" stroke="#ead49a"/><path d="M9 15H21M15 9V21" stroke="#ead49a"/></>}
   </svg>;
 }

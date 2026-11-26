@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page} from '@playwright/test';
 import {setup} from '../fixtures/shields';
 import {serializeSavedGame} from '../../src/game/save';
@@ -53,12 +54,12 @@ test('redacted board goods use one anonymous back and public goods keep their fa
  const markup=renderToStaticMarkup(createElement(CommonBoard,{game:redacted,selectedTileId:null,onSelect:()=>{},titleFor:()=>'',zoom:1,onZoom:()=>{},showCosts:false,actionFor:()=>null,costFor:()=>0}));
  await page.setContent(markup);
  await expect(waiting).toHaveCount(4);await expect(waiting.locator('[data-goods-value]')).toHaveCount(0);await expect(waiting.locator('[data-goods-image="goods_back.png"]')).toHaveCount(4);
- const urls=await waiting.locator('image').evaluateAll(ns=>ns.map(n=>n.getAttribute('href')));expect(new Set(urls).size).toBe(1);expect(urls[0]).toMatch(/^\/assets\/goods\/goods_back\.png\?v=/);
+ const urls=await waiting.locator('image').evaluateAll(ns=>ns.map(n=>n.getAttribute('href')));expect(new Set(urls).size).toBe(1);expect(urls[0]).toBe(assetUrl("/assets/goods/goods_back.png"));
  await expect(waiting.locator('[data-goods-back]')).toHaveCount(4);await page.reload();await expect(waiting.locator('[data-goods-value]')).toHaveCount(4);expect(await current(page)).toEqual(g);
 });
 
 test('missing approved art preserves usable numbered fronts and anonymous backs',async({page})=>{
- await page.route('**/assets/goods/goods_1.png*',r=>r.abort());await page.route('**/assets/goods/goods_back.png*',r=>r.abort());await install(page);
+ await page.route("**"+assetUrl("/assets/goods/goods_1.png"),r=>r.abort());await page.route("**"+assetUrl("/assets/goods/goods_back.png"),r=>r.abort());await install(page);
  const inventory=page.locator('.estate-inventory').first();await expect(inventory.locator('[data-goods-layer][data-goods-value="1"] [data-white-die="1"] circle')).toHaveCount(1);
  const backs=inventory.locator('[data-goods-back]');await expect(backs).toHaveCount(1);await expect(backs.locator('image')).toHaveCount(0);await expect(backs.locator('[data-goods-value],[data-white-die],text')).toHaveCount(0);await expect(backs.locator('rect')).toHaveCount(1);
 });

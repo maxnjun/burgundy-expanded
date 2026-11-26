@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page,type Locator} from '@playwright/test';
 import sharp from 'sharp';
 import {renderedVinePair} from './vineyard-rendered-pair';
@@ -28,7 +29,7 @@ for(const zoom of [100,160,200])test(`approved vineyard fruit and candy assets, 
  await expect(tiles).toHaveCount(3);await expect(tiles.locator('[data-white-die],text')).toHaveCount(0);await expect(supply.locator('.vineyard-depot-values [data-white-die]')).toHaveCount(6);
  for(const a of manifest.assets){
   const fruit=supply.locator(`[data-vineyard-fruit="${a.grape}"]`).first(),candy=supply.locator(`img[data-candy-token="${a.grape}"]`);
-  await expect(fruit).toHaveAttribute('href',new RegExp(`${a.fruit.file}\\?v=${a.fruit.sha256.slice(0,12)}$`));await expect(candy).toHaveAttribute('src',new RegExp(a.candy.file));
+  await expect(fruit).toHaveAttribute('href',assetUrl("/assets/vineyards/"+a.fruit.file));await expect(candy).toHaveAttribute('src',assetUrl("/assets/vineyards/"+a.candy.file));
   expect(await candy.evaluate(e=>(e as HTMLImageElement).complete&&(e as HTMLImageElement).naturalWidth===512)).toBe(true);
   expect(await fruit.evaluate(async e=>{const img=new Image();img.src=e.getAttribute('href')!;await img.decode();return img.naturalWidth;})).toBe(768);
   const f=(await fruit.boundingBox())!,c=(await candy.boundingBox())!;expect(c.width*480/512).toBeLessThan(f.width*(a.fruit.alphaBounds[2]-a.fruit.alphaBounds[0])/768);
@@ -104,8 +105,8 @@ for(const flipped of [false,true])test(`placed vineyard reuses the supply outlin
  expect(await current(page)).toEqual(g);expect(await board.locator('.vineyard-token-row b').textContent()).toBe(`예상 ${vineScore(g.vineyards,'seat-1')}점`);await board.screenshot({path:info.outputPath(`connected-board-${flipped?'flipped':'normal'}.png`)});await page.reload();await expect(board.locator('[data-occupied=true]')).toHaveCount(g.vineyards.players['seat-1'].placed.length);
 });
 
-test('online two seats see the same approved fruit, placement and authenticated reload/undo',async({page,browser},info)=>{
- const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL:'http://127.0.0.1:3000'});
+test('online two seats see the same approved fruit, placement and authenticated reload/undo',async({page,browser,baseURL},info)=>{
+ const server=await isolatedRooms(),peer=await browser.newContext({...info.project.use,baseURL});
  try{
   const owner=await(await fetch(server.url+'/api/rooms',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'과일A',vineyards:true})})).json();const guest=await(await fetch(`${server.url}/api/rooms/${owner.id}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'과일B'})})).json();
   const file=join(server.directory,owner.id+'.json'),raw=JSON.parse(await readFile(file,'utf8'));const g={...galleryFixture(),revision:raw.game.revision+10};raw.game=g;raw.history=beginHistory(g,[],true);raw.logs=[];await writeFile(file,JSON.stringify(raw));

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { body, respond } from "../../src/server/room-http";
-import { RoomError } from "../../src/server/rooms";
+import { gunzipSync } from "node:zlib";
+import { body, respond, roomHandlers } from "../../src/server/room-http";
+import { RoomError, RoomStore } from "../../src/server/rooms";
 const request=(origin:string,value:string,contentType="application/json")=>new Request("http://localhost:3000/api/rooms",{method:"POST",headers:{Host:"127.0.0.1:3000",Origin:origin,"Content-Type":contentType},body:value});
 test("room requests compare browser origin to actual host behind Next's internal URL",async()=>{
   assert.deepEqual(await body(request("http://127.0.0.1:3000",'{"name":"A"}')),{name:"A"});
@@ -20,4 +21,27 @@ test("room errors preserve safe HTTP statuses across development hot reload",asy
   const old=class RoomError extends Error{status=403;};
   const response=await respond(async()=>{throw new old("다른 좌석의 행동");});assert.equal(response.status,403);
   const unknown=await respond(async()=>{throw Object.assign(new Error("secret diagnostic"),{status:403});});assert.equal(unknown.status,500);assert.ok(!(await unknown.text()).includes("secret diagnostic"));
+});
+
+test("room JSON negotiates gzip and a known revision returns an authenticated no-store 204",async()=>{
+  const state={revision:8,logs:Array(150).fill("room log")};
+  const compressed=await respond(async()=>state,new Request("http://localhost",{headers:{"Accept-Encoding":"br, gzip"}}));
+  assert.equal(compressed.headers.get("content-encoding"),"gzip");
+  assert.equal(compressed.headers.get("vary"),"Accept-Encoding");
+  assert.deepEqual(JSON.parse(gunzipSync(Buffer.from(await compressed.arrayBuffer())).toString()),state);
+  const plain=await respond(async()=>state,new Request("http://localhost",{headers:{"Accept-Encoding":"gzip;q=0"}}));
+  assert.equal(plain.headers.get("content-encoding"),null);
+  assert.deepEqual(await plain.json(),state);
+  const store=new RoomStore(".");
+  store.view=async(_id,token,known?:number)=>{
+    if(token!=="fixture")throw new RoomError(401,"invalid seat");
+    assert.equal(known,8);
+    return null!;
+  };
+  const get=(token:string)=>roomHandlers(store).view(new Request("http://localhost",{headers:{Authorization:`Bearer ${token}`,"X-Room-Revision":"8"}}),"fixture");
+  const unchanged=await get("fixture");
+  assert.equal(unchanged.status,204);
+  assert.equal(unchanged.headers.get("cache-control"),"no-store");
+  assert.equal(await unchanged.text(),"");
+  assert.equal((await get("other")).status,401);
 });

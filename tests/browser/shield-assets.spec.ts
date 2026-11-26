@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page} from '@playwright/test';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -14,7 +15,7 @@ async function load(page:Page,g:GameState){const saved=serializeSavedGame({forma
 test('all twenty-four approved shields map to transparent cached PNGs with no duplicate SVG artwork',async({page},info)=>{
  await page.goto('/');const gallery=renderToStaticMarkup(createElement('div',{style:{display:'flex',flexWrap:'wrap'}},...approved.assets.map(a=>createElement('svg',{key:a.number,width:120,height:148,viewBox:'-30 -38 60 74'},createElement(ShieldArt,{number:a.number})))));await page.setContent(`<body style="background:#f3e7ca">${gallery}</body>`);
  expect(approved.assets.map(a=>a.number)).toEqual(Array.from({length:24},(_,i)=>i+1));await expect(page.locator('image[data-shield-image]')).toHaveCount(24);
- for(const a of approved.assets){const image=page.locator(`image[data-shield-image="${a.number}"]`),href=(await image.getAttribute('href'))!;expect(href).toBe(`/shields/shield-${String(a.number).padStart(2,'0')}.png?v=${a.outputSha256.slice(0,12)}`);await expect(image).toHaveAttribute('preserveAspectRatio','xMidYMid meet');const response=await page.request.get(href);expect(response.ok()).toBe(true);expect(createHash('sha256').update(await response.body()).digest('hex')).toBe(a.outputSha256);}
+ for(const a of approved.assets){const image=page.locator(`image[data-shield-image="${a.number}"]`),href=(await image.getAttribute('href'))!;expect(href).toBe(assetUrl(`/shields/${a.file}`));await expect(image).toHaveAttribute('preserveAspectRatio','xMidYMid meet');const response=await page.request.get(href);expect(response.ok()).toBe(true);expect(createHash('sha256').update(await response.body()).digest('hex')).toBe(href.split("/").at(-1)!.split(".")[0]);}
  const proof=await page.locator('image[data-shield-image]').evaluateAll(async(elements,geometry)=>{
   const results=[];for(const el of elements){const image=new Image();image.src=el.getAttribute('href')!;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const context=canvas.getContext('2d')!;context.drawImage(image,0,0);const rgba=context.getImageData(0,0,image.width,image.height).data;let outsideHexPixels=0;
    for(let i=0;i<image.width*image.height;i++)if(rgba[4*i+3]){const x=((i%image.width+.5)/image.width-.5)*geometry.width*geometry.scale,y=((Math.floor(i/image.width)+.5)/image.height-.5)*geometry.height*geometry.scale;if(Math.abs(x)>48*Math.sqrt(3)/2||Math.abs(y)+Math.abs(x)/Math.sqrt(3)>48)outsideHexPixels++;}
@@ -36,7 +37,7 @@ test('only mounted faces grow eighteen percent, stay centered, survive detail zo
 });
 
 test('missing approved shield recovers the original resource-safe SVG and then the PNG after reload',async({page})=>{
- await page.route('**/shields/shield-08.png*',route=>route.fulfill({status:404,body:'missing image fixture'}));await page.clock.install();const g=mount(setup(),8);await load(page,g);const root=page.locator('[data-mounted-shield="8"]');await expect(root.locator('[data-resource-shield="silver"]')).toHaveCount(1);await expect(root.locator('image[data-shield-image]')).toHaveCount(0);
+ await page.route("**"+assetUrl("/shields/shield-08.png"),route=>route.fulfill({status:404,body:'missing image fixture'}));await page.clock.install();const g=mount(setup(),8);await load(page,g);const root=page.locator('[data-mounted-shield="8"]');await expect(root.locator('[data-resource-shield="silver"]')).toHaveCount(1);await expect(root.locator('image[data-shield-image]')).toHaveCount(0);
  expect(await root.locator('[data-resource-shield]').evaluate(el=>{const icon=el.querySelector<SVGGraphicsElement>('image')!.getBBox(),texts=el.querySelectorAll<SVGGraphicsElement>('text'),number=texts[0].getBBox(),score=texts[1].getBBox();return icon.y+icon.height<=number.y&&number.y+number.height<=score.y;})).toBe(true);
- expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game)).toEqual(g);await page.unroute('**/shields/shield-08.png*');await page.reload();await expect(root.locator('image[data-shield-image="8"]')).toHaveCount(1);
+ expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game)).toEqual(g);await page.unroute("**"+assetUrl("/shields/shield-08.png"));await page.reload();await expect(root.locator('image[data-shield-image="8"]')).toHaveCount(1);
 });

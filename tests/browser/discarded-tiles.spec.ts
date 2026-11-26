@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page} from '@playwright/test';
 import {readFile,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -12,7 +13,7 @@ const envelope=(game:GameState)=>({format:'burgundy-local-v1' as const,randomAlg
 const current=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem('burgundy-expanded:local-v1')!).game as GameState);
 async function load(page:Page,game:GameState){
  await page.addInitScript(s=>{if(!sessionStorage.getItem('discard-fixture')){localStorage.setItem('burgundy-expanded:local-v1',s);sessionStorage.setItem('discard-fixture','1');}},serializeSavedGame(envelope(game)));
- await page.goto('/');await expect.poll(async()=>(await current(page)).turn.stage).toBe('player-turn');
+ await page.goto('/');await expect.poll(async()=>(await current(page)).revision).toBe(game.revision);
  await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();await page.getByLabel('합법 행동 및 안내 문구 상단 고정',{exact:true}).uncheck();await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();
 }
 const advance=(g:GameState)=>discardStep(g,{type:'advance-phase',playerId:'seat-1'});
@@ -21,11 +22,12 @@ test('local phase history uses real images, folds independently and survives exp
  const game=advance(discardBoundary());await load(page,game);
  const panel=page.locator('details.discarded-tiles'),log=page.locator('details.compact-log').filter({hasText:'행동과 점수 기록'}),a=game.discardedTiles![0];
  await expect(panel).not.toHaveAttribute('open','');await expect(panel.locator('summary')).toHaveText('버려진 타일 · 총 3개');
+ await expect(panel.locator('image')).toHaveCount(0);
  expect(await panel.evaluate(e=>e.previousElementSibling?.classList.contains('compact-log'))).toBe(true);
  await log.locator('summary').click();await panel.locator('summary').click();await log.locator('summary').click();await expect(panel).toHaveAttribute('open','');await expect(log).not.toHaveAttribute('open','');
  await expect(panel.locator('[data-discard-phase]')).toHaveCount(1);await expect(panel.locator('h3')).toHaveText('A 페이즈 — 3개');await expect(panel.locator('[data-discarded-tile]')).toHaveCount(3);
  const before=await current(page);await expect(panel.locator('button,input,[draggable=true]')).toHaveCount(0);
- for(const id of a.tileIds){const tile=game.tiles[id],art=panel.locator(`[data-discarded-tile="${id}"] svg`).first();await expect(art).toBeVisible();if(tile.type==='monastery')await expect(art.locator('image')).toHaveAttribute('href',new RegExp(`monastery-${String(tile.number).padStart(2,'0')}\\.png`));}
+ for(const id of a.tileIds){const tile=game.tiles[id],art=panel.locator(`[data-discarded-tile="${id}"] svg`).first();await expect(art).toBeVisible();if(tile.type==='monastery')await expect(art.locator('image')).toHaveAttribute('href',assetUrl(`/assets/tiles/monastery/final/monastery-${String(tile.number).padStart(2,'0')}.png`));}
  await panel.locator('[data-discarded-tile]').first().click();expect(await current(page)).toEqual(before);
  for(const zoom of [1,1.6,2]){await page.evaluate(z=>document.documentElement.style.zoom=String(z),zoom);await panel.screenshot({path:info.outputPath(`discarded-${zoom}.png`)});}
  await page.evaluate(()=>document.documentElement.style.zoom='1');
@@ -43,6 +45,8 @@ test('legacy missing history and an empty completed phase show no invented old r
  const {discardedTiles:ignored,...old}=createPracticeSession({names:['old1','old2'],seed:'old'});void ignored;await load(page,old);
  const panel=page.locator('details.discarded-tiles');await panel.locator('summary').click();await expect(panel).toContainText('아직 버려진 타일이 없습니다.');await expect(panel.locator('[data-discard-phase]')).toHaveCount(0);
  await page.getByRole('button',{name:'⚙ 게임 준비',exact:true}).click();await page.getByLabel('저장 파일 불러오기',{exact:true}).setInputFiles({name:'empty.json',mimeType:'application/json',buffer:Buffer.from(serializeSavedGame(envelope(advance(discardBoundary(0)))))});
+ await expect(panel.locator('summary')).toHaveText('버려진 타일 · 총 0개');
+ if(await panel.getAttribute('open')===null)await panel.locator('summary').click();
  await expect(panel.locator('h3')).toHaveText('A 페이즈 — 0개');await expect(panel.locator('[data-discarded-tile]')).toHaveCount(0);await panel.screenshot({path:info.outputPath('discarded-empty.png')});
 });
 

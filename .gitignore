@@ -73,6 +73,8 @@ logs/
 /.local-data/
 /test-results/
 /playwright-report/
+/public/_art/
+/src/app/runtime-assets.generated.*
 
 # typescript
 *.tsbuildinfo

@@ -1,9 +1,9 @@
+import {assetUrl} from "./runtime-assets";
 import type { CSSProperties } from "react";
 import standard from "./tile-standard.json";
-import manifest from "../../public/assets/icons/manifest.json";
 
 export type ResourceType="silver"|"worker";
-export const resourceAssets={silver:`/assets/icons/silver-coin.png?v=${manifest.assets["silver-coin"].sha256.slice(0,12)}`,worker:`/assets/icons/worker.png?v=${manifest.assets.worker.sha256.slice(0,12)}`} as const;
+export const resourceAssets={silver:assetUrl(`/assets/icons/silver-coin.png`),worker:assetUrl(`/assets/icons/worker.png`)} as const;
 /** The same em square in HTML and SVG; transparent derivatives preserve aspect ratio. */
 export function ResourceIcon({type,size=24,style}:{type:ResourceType;size?:number;style?:CSSProperties}){
  // Native img is intentional: the exact same immutable PNG is also used by SVG image.

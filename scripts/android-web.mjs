@@ -4,6 +4,9 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const root = process.cwd();
+const assets=spawnSync(process.execPath,["scripts/prepare-runtime-assets.mjs"],{stdio:"inherit"});
+if(assets.status!==0)process.exit(assets.status??1);
+const runtimeAssets=JSON.parse(await readFile("src/app/runtime-assets.generated.json","utf8"));
 const version = JSON.parse(await readFile('mobile/version.json', 'utf8'));
 assert(Number.isSafeInteger(version.versionCode) && version.versionCode > 0);
 assert(version.onlineVersion==='source'||/^[a-f0-9]{40}$/.test(version.onlineVersion), 'Pin a compatible server SHA or use the current source commit');
@@ -13,7 +16,12 @@ assert(/^[a-f0-9]{40}$/.test(onlineVersion));
 const stage = path.join(root, '.local-data/android', `export-${Date.now()}`);
 await mkdir(stage, {recursive: true});
 await cp('src', path.join(stage, 'src'), {recursive: true, filter: source => path.resolve(source) !== path.resolve('src/app/api')});
-await cp('public', path.join(stage, 'public'), {recursive: true});
+const runtimeFiles=new Set(Object.values(runtimeAssets));
+await cp('public', path.join(stage, 'public'), {recursive: true,filter:source=>{
+  const file="/"+path.relative("public",source).split(path.sep).join("/");
+  if(file.startsWith("/_art/"))return runtimeFiles.has(file);
+  return !(file in runtimeAssets)&&!/(?:\/source|\/originals)(?:\/|$)|\/_preview_sheet\.png$/.test(file);
+}});
 for (const file of ['package.json', 'tsconfig.json']) await cp(file, path.join(stage, file));
 await symlink(path.join(root, 'node_modules'), path.join(stage, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
 await writeFile(path.join(stage, 'next.config.mjs'), `export default {output:'export',trailingSlash:true,turbopack:{root:${JSON.stringify(root)}}};\n`);

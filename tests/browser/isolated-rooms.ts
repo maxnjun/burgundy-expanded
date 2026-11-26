@@ -10,6 +10,8 @@ export async function isolatedRooms(){
  const handlers=roomHandlers(new RoomStore(directory));
  const server=createServer(async(req,res)=>{
   try{const chunks:Buffer[]=[];for await(const chunk of req)chunks.push(Buffer.from(chunk));const headers=new Headers();for(const [key,value]of Object.entries(req.headers))if(value)headers.set(key,Array.isArray(value)?value.join(","):value);
+   // Playwright's forwarding fetch already decodes the body before route.fulfill.
+   headers.delete("accept-encoding");
    const request=new Request(`http://${req.headers.host}${req.url}`,{method:req.method,headers,...(chunks.length?{body:Buffer.concat(chunks)}:{})});
    const match=new URL(request.url).pathname.match(/^\/api\/rooms(?:\/([a-f0-9]{24})(?:\/(join|actions))?)?$/);
    const response=!match?new Response(null,{status:404}):!match[1]?await handlers.create(request):match[2]==="join"?await handlers.join(request,match[1]):match[2]==="actions"?await handlers.act(request,match[1]):await handlers.view(request,match[1]);

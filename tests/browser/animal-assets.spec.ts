@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page} from "@playwright/test";
 import {createElement} from "react";
 import {renderToStaticMarkup} from "react-dom/server";
@@ -74,7 +75,7 @@ test("all thirteen textures and names match in numbered black storage estate and
    const selector=`image[data-approved-animal="${a.species}-${a.count}"]`;
    for(const scope of [board,page.locator(".estate-keyspaces").first(),page.locator(".common-board-svg")]){
     const images=scope.locator(selector);expect(await images.count()).toBeGreaterThan(0);
-    for(const image of await images.all()){await expect(image).toHaveAttribute("href",`${folder}${a.file}?v=${a.outputSha256.slice(0,12)}`);const svg=image.locator("xpath=ancestor::*[@data-tile-art][1]");await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);await expect(svg.locator("text")).toHaveText(String(a.count));}
+    for(const image of await images.all()){await expect(image).toHaveAttribute("href",assetUrl(folder+a.file));const svg=image.locator("xpath=ancestor::*[@data-tile-art][1]");await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);await expect(svg.locator("text")).toHaveText(String(a.count));}
    }
    if(a.species!=="geese")await expect(page.locator('.common-board-svg [data-depot] [data-tile-art="animal-numbered:'+a.file+'"]').locator(selector)).toHaveCount(1);
    expect(LIVESTOCK_NAMES[a.species as keyof typeof LIVESTOCK_NAMES]).toBe(a.nameKo);
@@ -91,9 +92,10 @@ test("all thirteen textures and names match in numbered black storage estate and
 });
 
 test("missing animal PNGs restore SVG without changing state and recover on reload",async({page})=>{
- await page.route("**/assets/tiles/animals/final/*.png*",r=>r.fulfill({status:404,body:"missing fixture"}));await init(page);const game=fixture(assets.assets.slice(0,2));await load(page,game);
+ const isUnavailableAsset=(url:URL)=>assets.assets.some(asset=>url.pathname===assetUrl(folder+asset.file));
+ await page.route(isUnavailableAsset,r=>r.fulfill({status:404,body:"missing fixture"}));await init(page);const game=fixture(assets.assets.slice(0,2));await load(page,game);
  const board=page.getByRole("group",{name:"규칙A 영지",exact:true});await expect(board.locator('[data-tile-fallback^="'+folder+'"]')).toHaveCount(2);await expect(board.locator("image[data-approved-animal]")).toHaveCount(0);
  for(const svg of await board.locator('[data-tile-fallback^="'+folder+'"]').all()){await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);expect(await svg.locator("ellipse").count()).toBeGreaterThan(0);}
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
- await page.unroute("**/assets/tiles/animals/final/*.png*");await page.reload();await expect(board.locator("image[data-approved-animal]")).toHaveCount(2);await expect(board.locator("[data-tile-fallback]")).toHaveCount(0);
+ await page.unroute(isUnavailableAsset);await page.reload();await expect(board.locator("image[data-approved-animal]")).toHaveCount(2);await expect(board.locator("[data-tile-fallback]")).toHaveCount(0);
 });

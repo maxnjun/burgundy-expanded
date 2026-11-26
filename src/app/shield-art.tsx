@@ -1,5 +1,6 @@
 "use client";
-import {useEffect,useState} from "react";
+import {assetUrl} from "./runtime-assets";
+import {useImageFailure} from "./image-failure";
 import { SHIELD_ABILITIES,SHIELD_POINTS,type DiceShieldStatus } from "../game/shields";
 import { ResourceGlyph } from "./resource-icon";
 import {getTileHelp} from "../game/tile-help";
@@ -8,13 +9,12 @@ export const SHIELD_ART_SIZE={width:52,height:52*1480/1200};
 export const MOUNTED_SHIELD_SCALE=1.18;
 const customEmblems:Readonly<Record<number,string>>={20:"◆",22:"⚂",23:"×6",24:"∞"};
 export function ShieldArt({number,x=0,y=0,numberSize=17,placeholder="—"}: {number:number|null;x?:number;y?:number;numberSize?:number;placeholder?:string}) {
-  const asset=approved.assets.find(a=>a.number===number),src=asset?`/shields/${asset.file}?v=${asset.outputSha256.slice(0,12)}`:null;
-  const [failed,setFailed]=useState<string|null>(null);
-  useEffect(()=>{if(!src)return;let active=true;const probe=new Image();probe.onerror=()=>{if(active)setFailed(src);};probe.src=src;return()=>{active=false;probe.onerror=null;};},[src]);
-  const image=src&&failed!==src;
+  const asset=approved.assets.find(a=>a.number===number),src=asset?assetUrl(`/shields/${asset.file}`):null;
+  const {failed,onError}=useImageFailure(src);
+  const image=src&&!failed;
   const resource=number===2||number===3?"worker":number===8||number===9||number===19||number===21?"silver":null;
   return <g data-tile-help={number===null?undefined:`shield:${number}`} data-approved-shield={image?number:undefined} data-resource-shield={!image?resource??undefined:undefined} transform={`translate(${x} ${y})`} fontFamily="Arial, sans-serif" aria-hidden="true">
-    {image?<><image data-shield-image={number} href={src} x={-SHIELD_ART_SIZE.width/2} y={-SHIELD_ART_SIZE.height/2} width={SHIELD_ART_SIZE.width} height={SHIELD_ART_SIZE.height} preserveAspectRatio="xMidYMid meet" pointerEvents="none" onError={()=>setFailed(src)}/><rect className="shield-outline" x={-SHIELD_ART_SIZE.width/2} y={-SHIELD_ART_SIZE.height/2} width={SHIELD_ART_SIZE.width} height={SHIELD_ART_SIZE.height} fill="transparent" stroke="transparent" strokeWidth="2"/></>:<>
+    {image?<><image data-shield-image={number} href={src} x={-SHIELD_ART_SIZE.width/2} y={-SHIELD_ART_SIZE.height/2} width={SHIELD_ART_SIZE.width} height={SHIELD_ART_SIZE.height} preserveAspectRatio="xMidYMid meet" pointerEvents="none" onError={onError}/><rect className="shield-outline" x={-SHIELD_ART_SIZE.width/2} y={-SHIELD_ART_SIZE.height/2} width={SHIELD_ART_SIZE.width} height={SHIELD_ART_SIZE.height} fill="transparent" stroke="transparent" strokeWidth="2"/></>:<>
     <path className="shield-outline" d="M-24-29 Q0-36 24-29 V1 Q24 19 0 31 Q-24 19-24 1Z" fill={number===null?"#c5c7c4":"#f8edcb"} stroke={number===null?"#91968e":"#a17b3e"} strokeWidth="2"/>
     <path d="M-18-24 Q0-29 18-24 V0 Q18 13 0 23 Q-18 13-18 0Z" fill={number===null?"#d8dad5":"#283e4c"} stroke={number===null?"#a8ada4":"#d3b776"}/>
     <text y={number===null?5:resource?0:-3} textAnchor="middle" fontSize={resource?Math.min(numberSize,18):numberSize} fontWeight="bold" fill={number===null?"#6c746b":"#fff3d0"}>{number??placeholder}</text>

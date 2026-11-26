@@ -1,6 +1,6 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {tileHexPoints,TILE_FRAME_INSET} from "../../src/app/tile-frame";
 import { createHash } from "node:crypto";
-import finalTiles from "../../public/tiles/illustrations/manifest.json";
 import { test, expect, type Locator } from "@playwright/test";
 import { setup, placed, stash } from "../fixtures/shields";
 import { validateCoreState } from "../../src/game/core/state";
@@ -43,7 +43,7 @@ test("four PNG illustrations share intact hex frames across supply storage estat
 test("castle silver mine and ship use one full PNG frame in supply storage estate and zoom",async({page},info)=>{
  await init(page);
  for(const asset of ["castle","mine","ship"] as const){const game=fixture(asset);await load(page,game);const path=`/tiles/${asset}.png`,images=page.locator(`image[data-tile-art-png="${path}"]`);await expect.poll(()=>images.count()).toBeGreaterThanOrEqual(3);
-  for(const image of await images.all()){const href=(await image.getAttribute("href"))!;expect(href).toContain(`?v=${finalTiles.assets[asset].outputSha256.slice(0,12)}`);const served=await page.request.get(href);expect(served.ok()).toBe(true);expect(createHash("sha256").update(await served.body()).digest("hex")).toBe(finalTiles.assets[asset].outputSha256);await expect(image).toHaveAttribute("data-tile-image-mode","full");await expect(image).toHaveAttribute("preserveAspectRatio","xMidYMid meet");await expect(frame(image).locator('[data-tile-frame="svg"]')).toHaveCount(0);await expect(frame(image)).toHaveAttribute("viewBox",/^0 0 100 115\.47/);}
+  for(const image of await images.all()){const href=(await image.getAttribute("href"))!;expect(href).toBe(assetUrl(`/tiles/illustrations/${asset}.png`));const served=await page.request.get(href);expect(served.ok()).toBe(true);expect(createHash("sha256").update(await served.body()).digest("hex")).toBe(href.split("/").at(-1)!.split(".")[0]);await expect(image).toHaveAttribute("data-tile-image-mode","full");await expect(image).toHaveAttribute("preserveAspectRatio","xMidYMid meet");await expect(frame(image).locator('[data-tile-frame="svg"]')).toHaveCount(0);await expect(frame(image)).toHaveAttribute("viewBox",/^0 0 100 115\.47/);}
   await expect(page.locator(`.estate-keyspaces image[data-tile-art-png="${path}"]`)).toHaveCount(1);expect(await page.locator(`.common-board-svg image[data-tile-art-png="${path}"]`).count()).toBeGreaterThanOrEqual(1);
   const board=page.getByRole("group",{name:"규칙A 영지",exact:true}),image=board.locator(`image[data-tile-art-png="${path}"]`).last();const visible=await visibleTile(image);await visible.scrollIntoViewIfNeeded();const before=(await visible.boundingBox())!;await page.getByRole("button",{name:"규칙A 영지 확대",exact:true}).click();expect((await visible.boundingBox())!.width).toBeGreaterThan(before.width);
   await expect(frame(image).locator("..")).toHaveAttribute("clip-path",/^url\(#estate-clip-/);await expect(frame(image).locator("[data-isolated-art]")).toHaveAttribute("preserveAspectRatio","xMidYMid meet");
@@ -52,10 +52,11 @@ test("castle silver mine and ship use one full PNG frame in supply storage estat
  }
 });
 test("missing full PNGs restore original SVG artwork and recover after reload",async({page})=>{
- await page.route(/\/(?:tiles\/illustrations\/(?:castle|mine|ship)|assets\/tiles\/monastery\/final\/monastery-(?:27|28))\.png/,route=>route.fulfill({status:404,body:"missing fixture"}));await init(page);
+ const isUnavailableAsset=(url:URL)=>["/tiles/illustrations/castle.png","/tiles/illustrations/mine.png","/tiles/illustrations/ship.png","/assets/tiles/monastery/final/monastery-27.png","/assets/tiles/monastery/final/monastery-28.png"].some(path=>url.pathname===assetUrl(path));
+ await page.route(isUnavailableAsset,route=>route.fulfill({status:404,body:"missing fixture"}));await init(page);
  for(const asset of ["castle","mine","ship","monastery-27","monastery-28"]){const game=fixture(asset);await load(page,game);const path=asset.startsWith("monastery")?`/assets/tiles/monastery/final/${asset}.png`:`/tiles/${asset}.png`,fallback=page.locator(`svg[data-tile-fallback="${path}"]`);await expect.poll(()=>fallback.count()).toBeGreaterThanOrEqual(3);await expect(page.locator(`image[data-tile-art-png="${path}"]`)).toHaveCount(0);
   for(const svg of await fallback.all()){await expect(svg.locator('[data-tile-frame="common"]')).toHaveCount(1);expect(await svg.locator("path").count()).toBeGreaterThan(2);}
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game.revision)).toBe(game.revision);
  }
- await page.unroute(/\/(?:tiles\/illustrations\/(?:castle|mine|ship)|assets\/tiles\/monastery\/final\/monastery-(?:27|28))\.png/);await page.reload();await expect(page.locator('image[data-tile-art-png="/assets/tiles/monastery/final/monastery-28.png"]').first()).toBeAttached();await expect(page.locator('svg[data-tile-fallback="/tiles/ship.png"]')).toHaveCount(0);
+ await page.unroute(isUnavailableAsset);await page.reload();await expect(page.locator('image[data-tile-art-png="/assets/tiles/monastery/final/monastery-28.png"]').first()).toBeAttached();await expect(page.locator('svg[data-tile-fallback="/tiles/ship.png"]')).toHaveCount(0);
 });

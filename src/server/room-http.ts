@@ -32,9 +32,23 @@ function knownRoomError(error:unknown):error is RoomError{
   const candidate=error as Error & {status?:number};
   return (error.name==="RoomError"||error.constructor.name==="RoomError")&&[400,401,403,404,409,413,415,426,429,500,503].includes(candidate.status??0);
 }
-export async function respond(task:()=>Promise<unknown>){
+export async function respond(task:()=>Promise<unknown>,request?:Request){
   const headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Game-Version":serverRelease().version};
-  try{return Response.json(await task(),{headers});}
+  try{
+    const result=await task();
+    if(result===null)return new Response(null,{status:204,headers});
+    const response=Response.json(result,{headers:{...headers,Vary:"Accept-Encoding"}});
+    // The custom Node server can pass route-handler JSON through without HTTP compression.
+    const gzip=request?.headers.get("accept-encoding")?.split(",").some(coding=>{
+      const [name,...params]=coding.trim().toLowerCase().split(";");
+      return name.trim()==="gzip"&&!params.some(param=>/^\s*q\s*=\s*0(?:\.0*)?\s*$/.test(param));
+    });
+    if(gzip&&response.body&&typeof result==="object"&&"revision" in result){
+      response.headers.set("Content-Encoding","gzip");
+      return new Response(response.body.pipeThrough(new CompressionStream("gzip")),{headers:response.headers});
+    }
+    return response;
+  }
   catch(error){
     const full=["ENOSPC","EDQUOT"].includes((error as NodeJS.ErrnoException)?.code??"");
     return Response.json({error:knownRoomError(error)?error.message:full?"서버 저장 공간이 부족합니다. 기존 방은 삭제하지 않습니다. 관리자에게 저장 공간 점검을 요청하세요.":"서버 저장 또는 검증에 실패했습니다. 진행은 기존 저장에서 보존됩니다.",...(knownRoomError(error)&&error.code?{code:error.code}:{})},{status:knownRoomError(error)?error.status:full?503:500,headers});
@@ -44,7 +58,11 @@ export async function respond(task:()=>Promise<unknown>){
 /** Shared handlers allow integration tests to inject an isolated store, never live rooms. */
 export function roomHandlers(store:RoomStore=rooms){return {
  create:(request:Request)=>respond(async()=>{roomLimit(request,"create",10);const data=await body(request);return store.create(data.name,data.shieldRules===undefined?false:data.shieldRules,data.whiteCastles===undefined?false:data.whiteCastles,data.boardRange??null,data.inns===undefined?false:data.inns,data.tradeRoutes===undefined?false:data.tradeRoutes,data.vineyards===undefined?false:data.vineyards,data.excludedGrapes??[],data.chooseStartingCastles??false,{id:data.roomId,token:data.seatToken,lobby:data.lobby,color:data.color,starterMethod:data.starterMethod,manualStarter:data.manualStarter},data.geese===undefined?true:data.geese);}),
- view:(request:Request,id:string)=>respond(async()=>{roomLimit(request,"view",240);return store.view(id,token(request));}),
+ view:(request:Request,id:string)=>respond(async()=>{
+  roomLimit(request,"view",240);
+  const known=request.headers.get("x-room-revision"),revision=known&&/^\d+$/.test(known)?Number(known):undefined;
+  return store.view(id,token(request),revision);
+ },request),
  join:(request:Request,id:string)=>respond(async()=>{roomLimit(request,"join",30);const data=await body(request);return store.joinRoom(id,data.name,data.seatToken,data.color);}),
- act:(request:Request,id:string)=>respond(async()=>{roomLimit(request,"act",180);const data=await body(request);return (data.action as {type?:string})?.type==="room-control"?store.control(id,token(request),data.revision,data.action,data.requestId):(data.action as {type?:string})?.type==="choose-board"?store.chooseBoard(id,token(request),data.revision,data.action,data.requestId):store.act(id,token(request),data.revision,data.action,data.requestId);}),
+ act:(request:Request,id:string)=>respond(async()=>{roomLimit(request,"act",180);const data=await body(request);return (data.action as {type?:string})?.type==="room-control"?store.control(id,token(request),data.revision,data.action,data.requestId):(data.action as {type?:string})?.type==="choose-board"?store.chooseBoard(id,token(request),data.revision,data.action,data.requestId):store.act(id,token(request),data.revision,data.action,data.requestId);},request),
 };}

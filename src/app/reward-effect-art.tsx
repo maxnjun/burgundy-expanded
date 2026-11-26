@@ -1,3 +1,4 @@
+import {assetUrl} from "./runtime-assets";
 import type {SVGProps} from 'react';
 import manifest from '../../public/assets/effects/manifest.json';
 
@@ -8,7 +9,7 @@ export function RewardEffectArt({effect,label,compact=false,fullCanvas=false,...
  const key=manifest.rewardMap[effect] as keyof typeof manifest.assets;
  const asset=compact&&(key==='market'||key==='building')?manifest.assets[`${key}-compact`]:manifest.assets[key];
  const [left,top,right,bottom]=asset.alphaBounds;
- return <svg {...props} className={`reward-effect-art ${props.className??''}`} data-reward-effect={effect} data-effect-asset={asset.file} role="img" aria-label={label} pointerEvents="none" viewBox={fullCanvas?`0 0 ${asset.canvas.join(' ')}`:`${left} ${top} ${right-left} ${bottom-top}`} preserveAspectRatio="xMidYMid meet"><title>{label}</title><image href={`/assets/effects/${asset.file}?v=${asset.sha256.slice(0,12)}`} width={asset.canvas[0]} height={asset.canvas[1]} preserveAspectRatio="xMidYMid meet"/></svg>;
+ return <svg {...props} className={`reward-effect-art ${props.className??''}`} data-reward-effect={effect} data-effect-asset={asset.file} role="img" aria-label={label} pointerEvents="none" viewBox={fullCanvas?`0 0 ${asset.canvas.join(' ')}`:`${left} ${top} ${right-left} ${bottom-top}`} preserveAspectRatio="xMidYMid meet"><title>{label}</title><image href={assetUrl(`/assets/effects/${asset.file}`)} width={asset.canvas[0]} height={asset.canvas[1]} preserveAspectRatio="xMidYMid meet"/></svg>;
 }
 
 /** Match the approved radius-91 review at the existing board's radius. */

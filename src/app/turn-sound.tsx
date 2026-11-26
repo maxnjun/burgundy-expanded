@@ -1,10 +1,11 @@
 "use client";
 
+import {assetUrl} from "./runtime-assets";
 import {startTransition,useEffect,useRef,useState} from "react";
 import type {TurnState} from "../game/types";
 
 const storageKey="burgundy-expanded:turn-sound-v1";
-const soundUrl="/assets/audio/04_wooden_ping.wav";
+const soundUrl=assetUrl("/assets/audio/04_wooden_ping.wav");
 type SoundPreference={enabled:boolean;volume:number};
 const defaults:SoundPreference={enabled:true,volume:50};
 type SoundControls={value:SoundPreference;onChange:(value:SoundPreference)=>void};

@@ -1,3 +1,4 @@
+import {assetUrl} from '../../src/app/runtime-assets';
 import {test,expect,type Page} from "@playwright/test";
 import {createHash} from "node:crypto";
 import {resolve} from "node:path";
@@ -33,7 +34,7 @@ test("all 32 approved faces load by number with one baked border and shared hex 
   for(const svg of await page.locator(`[data-tile-art]`).filter({has:page.locator(`image[data-approved-monastery="${asset.number}"]`)}).all()){
    await expect(svg).toHaveAttribute("viewBox",`0 0 100 ${H}`);
    await expect(svg.locator("clipPath polygon")).toHaveAttribute("points",tileHexPoints());
-   await expect(svg.locator("image")).toHaveAttribute("href",`${folder}${asset.file}?v=${asset.outputSha256.slice(0,12)}`);
+   await expect(svg.locator("image")).toHaveAttribute("href",assetUrl(folder+asset.file));
    await expect(svg.locator("image")).toHaveAttribute("preserveAspectRatio","xMidYMid meet");
   }
  }
@@ -88,7 +89,7 @@ test("all 29 faces match in numbered black supply storage estate and placement p
     const images=scope.locator(`image[data-approved-monastery="${a.number}"]`);
     await expect(images).toHaveCount(count);
     for(const image of await images.all()){
-     await expect(image).toHaveAttribute("href",`${folder}${a.file}?v=${a.outputSha256.slice(0,12)}`);
+     await expect(image).toHaveAttribute("href",assetUrl(folder+a.file));
      const tile=image.locator("xpath=ancestor::*[@data-tile-art][1]");await expect(tile.locator("[data-rim-band],[data-tile-backdrop],text,path")).toHaveCount(0);
     }
    }
@@ -105,7 +106,8 @@ test("all 29 faces match in numbered black supply storage estate and placement p
 });
 
 test("missing monastery images restore readable numbered SVG fallback and recover after reload",async({page})=>{
- await page.route("**/assets/tiles/monastery/final/*.png*",route=>route.fulfill({status:404,body:"missing approved image fixture"}));
+ const isUnavailableAsset=(url:URL)=>assets.assets.some(asset=>url.pathname===assetUrl(folder+asset.file));
+ await page.route(isUnavailableAsset,route=>route.fulfill({status:404,body:"missing approved image fixture"}));
  await init(page);const game=fixture(assets.assets.filter(a=>[1,14,29].includes(a.number)));await load(page,game);
  const board=page.getByRole("group",{name:"규칙A 영지",exact:true});
  await expect(board.locator(`[data-tile-fallback^="${folder}"]`)).toHaveCount(3);
@@ -117,6 +119,6 @@ test("missing monastery images restore readable numbered SVG fallback and recove
   expect(await svg.locator("text").allTextContents()).toContain(String(a));
  }
  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem("burgundy-expanded:local-v1")!).game)).toEqual(game);
- await page.unroute("**/assets/tiles/monastery/final/*.png*");await page.reload();await decoded(page);
+ await page.unroute(isUnavailableAsset);await page.reload();await decoded(page);
  await expect(board.locator("image[data-approved-monastery]")).toHaveCount(3);await expect(board.locator("[data-tile-fallback]")).toHaveCount(0);
 });

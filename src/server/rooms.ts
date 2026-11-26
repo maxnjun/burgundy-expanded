@@ -125,9 +125,11 @@ export class RoomStore {
     this.revisions.set(room,room.game.revision);return room;
   }
   private async write(room:StoredRoom){
-    if(Buffer.byteLength(JSON.stringify(room))>ROOM_BYTES&&room.history){room.history=beginHistory(room.game,room.logs);room.undoBarrier="되돌리기 기록 한도에 도달했습니다. 현재 진행은 보존됩니다.";}
-    if(Buffer.byteLength(JSON.stringify(room))>ROOM_BYTES)throw new RoomError(503,"방 데이터의 저장 한도를 초과했습니다. 이전 저장은 유지됩니다.","ROOM_STORAGE_FULL");
-    if(this.remote){await this.remote.write(room.id,JSON.stringify(room),this.revisions.get(room)??null);roomChanged(room.id);return;}
+    let saved=JSON.stringify(room);
+    if(Buffer.byteLength(saved)>ROOM_BYTES&&room.history){room.history=beginHistory(room.game,room.logs);room.undoBarrier="되돌리기 기록 한도에 도달했습니다. 현재 진행은 보존됩니다.";saved=JSON.stringify(room);}
+    if(Buffer.byteLength(saved)>ROOM_BYTES)throw new RoomError(503,"방 데이터의 저장 한도를 초과했습니다. 이전 저장은 유지됩니다.","ROOM_STORAGE_FULL");
+    const committedView=(token:string)=>this.publicView(room,this.seat(room,token));
+    if(this.remote){await this.remote.write(room.id,saved,this.revisions.get(room)??null);roomChanged(room.id,committedView);return;}
     await mkdir(this.directory,{recursive:true});
     const destination=this.path(room.id),temporary=destination+`.${randomBytes(6).toString("hex")}.tmp`;
     try{
@@ -137,10 +139,10 @@ export class RoomStore {
       const old=(await readdir(archive)).filter(n=>/^\d+\.json$/.test(n)).sort((a,b)=>Number(b.split('.')[0])-Number(a.split('.')[0]));
       for(const file of old.slice(8))await unlink(join(archive,file));
     }catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}
-    const file=await open(temporary,"wx",0o600);try{await file.writeFile(JSON.stringify(room));await file.sync();}finally{await file.close();}
+    const file=await open(temporary,"wx",0o600);try{await file.writeFile(saved);await file.sync();}finally{await file.close();}
     await replaceRoomFile(temporary,destination);
     try{await unlink(this.archivePath(room.id));}catch(e){if((e as NodeJS.ErrnoException).code!=="ENOENT")throw e;}
-    roomChanged(room.id);
+    roomChanged(room.id,committedView);
   }
   async maintain(){return this.serial("maintenance",async()=>{
     if(this.remote)return 0;
@@ -206,7 +208,12 @@ export class RoomStore {
     room.tokens[1]=digest(token);room.game={...room.game,revision:room.game.revision+1,players:room.game.players.map((p,i)=>i===1?{...p,name:guest,color:guestColor}:p),config:{...room.game.config,players:room.game.config.players.map((p,i)=>i===1?{...p,name:guest,color:guestColor}:p)}};
     room.logs=["두 플레이어가 참가했습니다.",...room.logs];room.updatedAt=Date.now();await this.write(room);return {id,token};
   });}
-  async view(id:string,token:string){const room=await this.read(id);return this.publicView(room,this.seat(room,token));}
+  async view(id:string,token:string):Promise<RoomView>;
+  async view(id:string,token:string,knownRevision:number|undefined):Promise<RoomView|null>;
+  async view(id:string,token:string,knownRevision?:number){
+    const room=await this.read(id),seat=this.seat(room,token);
+    return room.game.revision===knownRevision?null:this.publicView(room,seat);
+  }
   async act(id:string,token:string,revision:unknown,action:unknown,requestId?:unknown){return this.mutate(id,token,revision,action,requestId,async(room,seat)=>{
     const player=room.game.players[seat];
     if(room.lobby&&!room.lobby.started)throw new RoomError(409,"모두 준비한 뒤 방장이 게임을 시작해야 합니다.");

@@ -33,7 +33,7 @@ async function observeAudio(page:Page){
       const play=HTMLMediaElement.prototype.play;
       HTMLMediaElement.prototype.play=function(){
         const playback=play.call(this);
-        if(!(this instanceof HTMLAudioElement)||this.muted||!this.src.endsWith("/04_wooden_ping.wav"))return playback;
+        if(!(this instanceof HTMLAudioElement)||this.muted||!this.src.endsWith(".wav"))return playback;
         return playback.then(()=>{
           result.starts++;
           result.volumes.push(Math.round(this.volume*100));
